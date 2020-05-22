@@ -1,0 +1,7 @@
+%rename link old_link
+
+*link:
+%(old_link) -T %:getenv(ISAN /mk/gba-cart.ld) --gc-sections --nmagic
+
+*startfile:
+crti%O%s crtbegin%O%s

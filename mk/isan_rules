@@ -1,0 +1,91 @@
+#---------------------------------------------------------------------------------
+.SUFFIXES:
+#---------------------------------------------------------------------------------
+
+include $(DEVKITPRO)/devkitARM/base_tools
+
+ISAN ?= $(DEVKITPRO)/isan
+export ISAN
+
+#---------------------------------------------------------------------------------
+# add portlibs path
+#---------------------------------------------------------------------------------
+PORTLIBS_PATH := $(DEVKITPRO)/portlibs
+
+#---------------------------------------------------------------------------------
+# platform configuration
+#---------------------------------------------------------------------------------
+ifeq ($(IS_PLATFORM),gba)
+  ARCH     := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork -DIS_GBA
+  PORTLIBS := $(PORTLIBS_PATH)/gba $(PORTLIBS_PATH)/armv4
+else ifeq ($(IS_PLATFORM),ds7)
+  ARCH     := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork -DIS_DS7
+  PORTLIBS := $(PORTLIBS_PATH)/armv4
+else ifeq ($(IS_PLATFORM),ds9)
+  ARCH     := -march=armv5te -mtune=arm946e-s -marm -mthumb-interwork -DIS_DS9
+  PORTLIBS := $(PORTLIBS_PATH)/nds $(PORTLIBS_PATH)/armv5te
+else ifeq ($(IS_PLATFORM),3ds)
+  ARCH     := -march=armv5te -mtune=arm946e-s -marm -mthumb-interwork -DIS_3DS
+  PORTLIBS := $(PORTLIBS_PATH)/armv5te
+else
+  $(error "Unknown platform: $(IS_PLATFORM)")
+endif
+
+#---------------------------------------------------------------------------------
+# allow seeing compiler command lines with make V=1 (similar to autotools' silent)
+# TODO: move to devkitARM base_tools
+#---------------------------------------------------------------------------------
+ifeq ($(V),1)
+  SILENTMSG := @true
+  SILENTCMD :=
+else
+  SILENTMSG := @echo
+  SILENTCMD := @
+endif
+
+%.a:
+	$(SILENTMSG) Creating static library: $(notdir $@)
+	$(SILENTCMD)rm -f $@
+	$(SILENTCMD)$(AR) -rc $@ $^
+
+%.32.o: %.32.cpp
+	$(SILENTMSG) {C++ $(IS_PLATFORM)} $(notdir $<)
+	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.32.d $(CXXFLAGS) -marm -c $< -o $@ $(ERROR_FILTER)
+
+%.32.o: %.32.c
+	$(SILENTMSG) {C $(IS_PLATFORM)} $(notdir $<)
+	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.32.d $(CFLAGS) -marm -c $< -o $@ $(ERROR_FILTER)
+
+%.16.o: %.16.cpp
+	$(SILENTMSG) {C++ $(IS_PLATFORM)} $(notdir $<)
+	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.16.d $(CXXFLAGS) -mthumb -c $< -o $@ $(ERROR_FILTER)
+
+%.16.o: %.16.c
+	$(SILENTMSG) {C $(IS_PLATFORM)} $(notdir $<)
+	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.16.d $(CFLAGS) -mthumb -c $< -o $@ $(ERROR_FILTER)
+
+%.o: %.cpp
+	$(SILENTMSG) {C++ $(IS_PLATFORM)} $(notdir $<)
+	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+%.o: %.c
+	$(SILENTMSG) {C $(IS_PLATFORM)} $(notdir $<)
+	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d $(CFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+%.o: %.s
+	$(SILENTMSG) {asm $(IS_PLATFORM)} $(notdir $<)
+	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d -x assembler-with-cpp $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+%.o: %.S
+	$(SILENTMSG) {asm $(IS_PLATFORM)} $(notdir $<)
+	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d -x assembler-with-cpp $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+# canned command sequence for binary data
+#---------------------------------------------------------------------------------
+define bin2o
+	bin2s $< | $(AS) -o $(@)
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"_end[];" > `(echo $(<F) | tr . _)`.h
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`"[];" >> `(echo $(<F) | tr . _)`.h
+	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' -e 's/[^A-Za-z0-9_]/_/g')`_size";" >> `(echo $(<F) | tr . _)`.h
+endef

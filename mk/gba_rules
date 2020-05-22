@@ -1,0 +1,18 @@
+IS_PLATFORM := gba
+
+include $(ISAN)/mk/isan_rules
+
+%.gba: %.elf
+	$(SILENTCMD)$(OBJCOPY) -O binary $< $@
+	$(SILENTCMD)gbafix $@
+	$(SILENTMSG) Built: $(notdir $@)
+
+%_mb.elf:
+	$(SILENTMSG) Linking multiboot: $(notdir $@)
+	$(SILENTCMD)$(LD) $(LDFLAGS) -specs=$(ISAN)/mk/gba-mb.specs $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(NM) -CSn $@ > $(notdir $*.lst)
+
+%.elf:
+	$(SILENTMSG) Linking cartridge: $(notdir $@)
+	$(SILENTCMD)$(LD) $(LDFLAGS) -specs=$(ISAN)/mk/gba-cart.specs $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(NM) -CSn $@ > $(notdir $*.lst)
