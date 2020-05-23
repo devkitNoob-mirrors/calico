@@ -10,9 +10,28 @@
 
 .cfi_sections .debug_frame
 
+.macro SECT_TEXT name, align=2, section=text
+	.section .\section\().\name, "ax", %progbits
+	.align   \align
+.endm
+
+.macro SECT_RODATA name, align=2, section=rodata
+	.section .\section\().\name, "a"
+	.align   \align
+.endm
+
+.macro SECT_DATA name, align=2, section=data
+	.section .\section\().\name, "aw"
+	.align   \align
+.endm
+
+.macro SECT_BSS name, align=2, section=bss
+	.section .\section\().\name, "aw", %nobits
+	.align   \align
+.endm
+
 .macro FUNC_START32 name, section=text, linkage=global
-	.section  .\section\().\name, "ax", %progbits
-	.align    2
+	SECT_TEXT \name
 	.\linkage \name
 	.arm
 	.type     \name, %function
@@ -22,8 +41,7 @@
 .endm
 
 .macro FUNC_START16 name, section=text, linkage=global
-	.section  .\section\().\name, "ax", %progbits
-	.align    1
+	SECT_TEXT \name, 1
 	.\linkage \name
 	.thumb_func
 	.type     \name, %function
