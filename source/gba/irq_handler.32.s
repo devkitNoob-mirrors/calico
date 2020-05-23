@@ -1,6 +1,7 @@
 #include <isan/asm.inc>
 #include <isan/arm.h>
-#include <isan/hardware.h>
+#include <isan/gba/mm.h>
+#include <isan/gba/io.h>
 
 FUNC_START32 __irq_handler
 

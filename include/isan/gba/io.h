@@ -3,7 +3,7 @@
 #error "This header file is only for GBA"
 #endif
 
-#include "gba_mm.h"
+#include "mm.h"
 
 #define IO_DISPCNT  0x000
 #define IO_DISPSTAT 0x004
@@ -55,7 +55,7 @@
 #define IO_IME      0x208
 
 #if !__ASSEMBLER__
-#include "types.h"
+#include "../types.h"
 
 #define REG_IE      IS_REG(u16, IO_IE)
 #define REG_IF      IS_REG(u16, IO_IF)

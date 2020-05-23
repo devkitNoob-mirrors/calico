@@ -1,7 +1,7 @@
 #include <isan/asm.inc>
 #include <isan/arm.h>
-#include <isan/gba_mm.h>
-#include <isan/gba_io.h>
+#include <isan/gba/mm.h>
+#include <isan/gba/io.h>
 
 #ifndef IS_GBA_MULTIBOOT
 FUNC_START32 __gba_start, crt0
