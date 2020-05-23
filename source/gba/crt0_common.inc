@@ -59,6 +59,10 @@ FUNC_START32 __gba_start_mb, crt0
 	ldr  r1,  =__irq_handler
 	str  r1, [r12]
 
+	@ Enable interrupts
+	mov  r1, #1
+	strb r1, [r11, #IO_IME]
+
 #ifndef IS_GBA_MULTIBOOT
 	@ Copy EWRAM into place
 	ldr  r0, =__ewram_lma
