@@ -48,12 +48,26 @@ FUNC_START32 __gba_start_mb, crt0
 	@ Check for loaded-from-ROM-and-copy-into-ewram
 #endif
 
-	@ TODO: Copy iwram/ewram into place, etc
+	@ Copy IWRAM into place
+	ldr  r0, =__iwram_lma
+	ldr  r1, =__iwram_start
+	ldr  r2, =__iwram_end
+	bl   .Lcopy
 
 	@ Set interrupt vector
 	ldr  r12, =__irq_vector
 	ldr  r1,  =__irq_handler
 	str  r1, [r12]
+
+#ifndef IS_GBA_MULTIBOOT
+	@ Copy EWRAM into place
+	ldr  r0, =__ewram_lma
+	ldr  r1, =__ewram_start
+	ldr  r2, =__ewram_end
+	bl   .Lcopy
+#else
+	@ TODO: Clear EWRAM BSS
+#endif
 
 	@ TODO: Set up heap (fake_heap_start/end)
 	@ TODO: Call __libc_init_array
@@ -68,5 +82,15 @@ FUNC_START32 __gba_start_mb, crt0
 .Lreset:
 	@ If main() ever returns, we soft-reset
 	svc  0x00<<16 @ SoftReset
+
+.Lcopy:
+	subs r2, r2, r1
+	bxeq lr
+.LcopyLoop:
+	subs r2, r2, #4
+	ldmia r0!, {r3}
+	stmia r1!, {r3}
+	bne .LcopyLoop
+	bx lr
 
 FUNC_END
