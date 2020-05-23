@@ -9,8 +9,8 @@
 
 #include "isan/hardware.h"
 
-// ARM9 platforms: CP15 definitions
-#if defined(IS_DS9) || defined(IS_3DS)
+// arm9 (armv5) platforms: CP15 definitions
+#if __ARM_ARCH == 5
 #include "isan/cp15.h"
 #endif
 

@@ -1,9 +1,11 @@
 #pragma once
 
-#if defined(IS_GBA) || defined(IS_DS7)
+#if __ARM_ARCH_4T__
 .arch armv4t
-#elif defined(IS_DS9) || defined(IS_3DS)
+#elif __ARM_ARCH_5TE__
 .arch armv5te
+#else
+#error "Unsupported architecture"
 #endif
 
 .fpu softvfp
