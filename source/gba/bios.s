@@ -32,3 +32,7 @@ BIOSFUNC 0x15, RLUncompVram
 BIOSFUNC 0x16, Diff8bitUnfilterWram
 BIOSFUNC 0x17, Diff8bitUnfilterVram
 BIOSFUNC 0x18, Diff16bitUnfilter
+BIOSFUNC 0x19, SoundBias
+BIOSFUNC 0x1f, MidiKey2Freq
+BIOSFUNC 0x25, MultiBoot
+BIOSFUNC 0x26, HardReset

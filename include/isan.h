@@ -33,4 +33,8 @@
 
 #include "isan/irq.h"
 
+#if defined(IS_GBA)
+#include "isan/gba/bios.h"
+#endif
+
 #endif
