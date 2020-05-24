@@ -25,8 +25,9 @@ typedef volatile s32 vs32; ///< 32-bit volatile signed integer.
 typedef volatile s64 vs64; ///< 64-bit volatile signed integer.
 
 #define IS_PACKED     __attribute__((packed))
-#define IS_DEPRECATED __attribute__((packed))
+#define IS_DEPRECATED __attribute__((deprecated))
 #define IS_INLINE     __attribute__((always_inline)) static inline
+#define IS_NORETURN   __attribute__((noreturn))
 #define IS_DUMMY(_x)  (void)(_x)
 
 #if __cplusplus >= 201402L
