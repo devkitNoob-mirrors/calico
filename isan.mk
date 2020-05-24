@@ -23,16 +23,17 @@ INCLUDES := include
 # options for code generation
 #---------------------------------------------------------------------------------
 CFLAGS := \
-	-g -Wall -Werror $(BUILD_CFLAGS) \
+	-g -Wall -Werror \
 	-ffunction-sections -fdata-sections \
-	$(ARCH) $(INCLUDE)
+	$(BUILD_CFLAGS)
 
 CXXFLAGS := $(CFLAGS) \
-	-fno-rtti -fno-exceptions
+	-fno-rtti -fno-exceptions \
+	$(BUILD_CXXFLAGS)
 
 ASFLAGS := \
 	-g \
-	$(ARCH) $(INCLUDE)
+	$(BUILD_ASFLAGS)
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

@@ -50,35 +50,35 @@ endif
 
 %.32.o: %.32.cpp
 	$(SILENTMSG) {C++ $(IS_PLATFORM)} $(notdir $<)
-	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.32.d $(CXXFLAGS) -marm -c $< -o $@ $(ERROR_FILTER)
+	$(SILENTCMD)$(CXX) $(ARCH) -MMD -MP -MF $(DEPSDIR)/$*.32.d $(INCLUDE) $(CXXFLAGS) -marm -c $< -o $@ $(ERROR_FILTER)
 
 %.32.o: %.32.c
 	$(SILENTMSG) {C $(IS_PLATFORM)} $(notdir $<)
-	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.32.d $(CFLAGS) -marm -c $< -o $@ $(ERROR_FILTER)
+	$(SILENTCMD)$(CC) $(ARCH) -MMD -MP -MF $(DEPSDIR)/$*.32.d $(INCLUDE) $(CFLAGS) -marm -c $< -o $@ $(ERROR_FILTER)
 
 %.16.o: %.16.cpp
 	$(SILENTMSG) {C++ $(IS_PLATFORM)} $(notdir $<)
-	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.16.d $(CXXFLAGS) -mthumb -c $< -o $@ $(ERROR_FILTER)
+	$(SILENTCMD)$(CXX) $(ARCH) -MMD -MP -MF $(DEPSDIR)/$*.16.d $(INCLUDE) $(CXXFLAGS) -mthumb -c $< -o $@ $(ERROR_FILTER)
 
 %.16.o: %.16.c
 	$(SILENTMSG) {C $(IS_PLATFORM)} $(notdir $<)
-	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.16.d $(CFLAGS) -mthumb -c $< -o $@ $(ERROR_FILTER)
+	$(SILENTCMD)$(CC) $(ARCH) -MMD -MP -MF $(DEPSDIR)/$*.16.d $(INCLUDE) $(CFLAGS) -mthumb -c $< -o $@ $(ERROR_FILTER)
 
 %.o: %.cpp
 	$(SILENTMSG) {C++ $(IS_PLATFORM)} $(notdir $<)
-	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
+	$(SILENTCMD)$(CXX) $(ARCH) -MMD -MP -MF $(DEPSDIR)/$*.d $(INCLUDE) $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
 
 %.o: %.c
 	$(SILENTMSG) {C $(IS_PLATFORM)} $(notdir $<)
-	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d $(CFLAGS) -c $< -o $@ $(ERROR_FILTER)
+	$(SILENTCMD)$(CC) $(ARCH) -MMD -MP -MF $(DEPSDIR)/$*.d $(INCLUDE) $(CFLAGS) -c $< -o $@ $(ERROR_FILTER)
 
 %.o: %.s
 	$(SILENTMSG) {asm $(IS_PLATFORM)} $(notdir $<)
-	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d -x assembler-with-cpp $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
+	$(SILENTCMD)$(CC) $(ARCH) -MMD -MP -MF $(DEPSDIR)/$*.d -x assembler-with-cpp $(INCLUDE) $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
 
 %.o: %.S
 	$(SILENTMSG) {asm $(IS_PLATFORM)} $(notdir $<)
-	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d -x assembler-with-cpp $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
+	$(SILENTCMD)$(CC) $(ARCH) -MMD -MP -MF $(DEPSDIR)/$*.d -x assembler-with-cpp $(INCLUDE) $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
 
 #---------------------------------------------------------------------------------
 # canned command sequence for binary data

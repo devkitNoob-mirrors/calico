@@ -9,10 +9,10 @@ include $(ISAN)/mk/isan_rules
 
 %_mb.elf:
 	$(SILENTMSG) Linking multiboot: $(notdir $@)
-	$(SILENTCMD)$(LD) $(LDFLAGS) -specs=$(ISAN)/mk/gba-mb.specs $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	$(SILENTCMD)$(LD) $(ARCH) $(LDFLAGS) -specs=$(ISAN)/mk/gba-mb.specs $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 	@$(NM) -CSn $@ > $(notdir $*.lst)
 
 %.elf:
 	$(SILENTMSG) Linking cartridge: $(notdir $@)
-	$(SILENTCMD)$(LD) $(LDFLAGS) -specs=$(ISAN)/mk/gba-cart.specs $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	$(SILENTCMD)$(LD) $(ARCH) $(LDFLAGS) -specs=$(ISAN)/mk/gba-cart.specs $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 	@$(NM) -CSn $@ > $(notdir $*.lst)
