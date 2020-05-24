@@ -15,5 +15,7 @@
 #endif
 
 #if !__ASSEMBLER__
-// etc
+
+#include "isan/irq.h"
+
 #endif

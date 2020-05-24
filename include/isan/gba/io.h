@@ -53,13 +53,3 @@
 #define IO_IF       0x202
 #define IO_WAITCNT  0x204
 #define IO_IME      0x208
-
-#if !__ASSEMBLER__
-#include "../types.h"
-
-#define REG_IE      IS_REG(u16, IO_IE)
-#define REG_IF      IS_REG(u16, IO_IF)
-#define REG_WAITCNT IS_REG(u16, IO_WAITCNT)
-#define REG_IME     IS_REG(u16, IO_IME)
-
-#endif
