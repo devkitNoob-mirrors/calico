@@ -35,6 +35,7 @@
 
 #if defined(IS_GBA)
 #include "isan/gba/bios.h"
+#include "isan/gba/keypad.h"
 #endif
 
 #endif

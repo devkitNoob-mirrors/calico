@@ -5,6 +5,7 @@
 
 #include "mm.h"
 
+// Video engine
 #define IO_DISPCNT  0x000
 #define IO_DISPSTAT 0x004
 #define IO_VCOUNT   0x006
@@ -49,6 +50,11 @@
 #define IO_WINxH(_x)   (IO_WIN0H   + (IO_WIN1H  -IO_WIN0H  )*(_x))
 #define IO_WINxV(_x)   (IO_WIN0V   + (IO_WIN1V  -IO_WIN0V  )*(_x))
 
+// Keypad input
+#define IO_KEYINPUT 0x130
+#define IO_KEYCNT   0x132
+
+// Interrupt/system control
 #define IO_IE       0x200
 #define IO_IF       0x202
 #define IO_WAITCNT  0x204
