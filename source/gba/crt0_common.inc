@@ -73,8 +73,16 @@ FUNC_START32 __gba_start_mb, crt0
 	@ TODO: Clear EWRAM BSS
 #endif
 
-	@ TODO: Set up heap (fake_heap_start/end)
-	@ TODO: Call __libc_init_array
+	@ Set up heap
+	ldr  r0, =fake_heap_start
+	ldr  r1, =__heap_start
+	str  r1, [r0]
+	ldr  r0, =fake_heap_end
+	ldr  r1, =__heap_end
+	str  r1, [r0]
+
+	@ Call static ctors
+	bl   __libc_init_array
 
 	@ Call the main function
 	adr  lr, .Lreset
