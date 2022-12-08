@@ -10,7 +10,12 @@ extern u32 __sp_usr[];
 #endif
 
 static Thread s_mainThread, s_idleThread;
-static ThrListNode s_joinThreads;
+static ThrListNode s_joinThreads, s_sleepThreads;
+
+static void _threadTickTask(TickTask* task)
+{
+	threadUnblockAllByValue(&s_sleepThreads, (u32)task);
+}
 
 void _threadInit(void)
 {
@@ -151,4 +156,25 @@ void threadExit(int rc)
 	threadUnblock(&s_joinThreads, -1, ThrUnblockMode_ByValue, (u32)s_curThread);
 	s_curThread = threadFindRunnable(s_firstThread);
 	armContextLoad(&s_curThread->ctx);
+}
+
+void threadSleepTicks(u32 ticks)
+{
+	TickTask task;
+	ArmIrqState st = armIrqLockByPsr();
+	tickTaskStart(&task, _threadTickTask, ticks, 0);
+	threadBlock(&s_sleepThreads, (u32)&task);
+	armIrqUnlockByPsr(st);
+}
+
+void threadTimerStartTicks(TickTask* task, u32 period_ticks)
+{
+	tickTaskStart(task, _threadTickTask, period_ticks, period_ticks);
+}
+
+void threadTimerWait(TickTask* task)
+{
+	ArmIrqState st = armIrqLockByPsr();
+	threadBlock(&s_sleepThreads, (u32)task);
+	armIrqUnlockByPsr(st);
 }

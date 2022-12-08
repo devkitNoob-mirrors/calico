@@ -15,6 +15,9 @@
 #include "calico/arm/cp15.h"
 #endif
 
+// System bus frequency definition
+#include "calico/system/sysclock.h"
+
 // Memory map & IO register definitions
 #if defined(__GBA__)
 #include "calico/gba/mm.h"
@@ -30,6 +33,7 @@
 #if !__ASSEMBLER__
 
 #include "calico/system/irq.h"
+#include "calico/system/tick.h"
 #include "calico/system/thread.h"
 #include "calico/system/mutex.h"
 #include "calico/system/mailbox.h"
@@ -45,6 +49,7 @@
 #if defined(__NDS__)
 #include "calico/nds/system.h"
 #include "calico/nds/bios.h"
+#include "calico/nds/timer.h"
 #include "calico/nds/env.h"
 #include "calico/nds/pxi.h"
 

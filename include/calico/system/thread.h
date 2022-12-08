@@ -2,6 +2,7 @@
 #include "../types.h"
 #include "../arm/common.h"
 #include "irq.h"
+#include "tick.h"
 
 typedef struct Thread Thread;
 
@@ -87,6 +88,20 @@ MEOW_EXTERN32 void threadUnblockOneByValue(ThrListNode* queue, u32 ref);
 MEOW_EXTERN32 void threadUnblockOneByMask(ThrListNode* queue, u32 ref);
 MEOW_EXTERN32 void threadUnblockAllByValue(ThrListNode* queue, u32 ref);
 MEOW_EXTERN32 void threadUnblockAllByMask(ThrListNode* queue, u32 ref);
+
+void threadSleepTicks(u32 ticks);
+void threadTimerStartTicks(TickTask* task, u32 period_ticks);
+void threadTimerWait(TickTask* task);
+
+MEOW_INLINE void threadSleep(u32 usec)
+{
+	threadSleepTicks(ticksFromUsec(usec));
+}
+
+MEOW_INLINE void threadTimerStart(TickTask* task, u32 period_hz)
+{
+	threadTimerStartTicks(task, ticksFromHz(period_hz));
+}
 
 MEOW_INLINE Thread* threadGetSelf(void)
 {

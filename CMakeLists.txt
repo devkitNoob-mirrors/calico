@@ -53,6 +53,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_sources(${PROJECT_NAME} PRIVATE
 	source/system/irq.c
+	source/system/tick.c
 	source/system/thread_cold.c
 	source/system/thread_hot.32.c
 	source/system/mutex.c
