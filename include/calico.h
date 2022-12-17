@@ -55,6 +55,8 @@
 #include "calico/nds/system.h"
 #include "calico/nds/bios.h"
 #include "calico/nds/timer.h"
+#include "calico/nds/dma.h"
+#include "calico/nds/ndma.h"
 #include "calico/nds/env.h"
 #include "calico/nds/pxi.h"
 
