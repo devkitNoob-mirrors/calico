@@ -3,6 +3,9 @@
 #include <calico/arm/cache.h>
 #endif
 #include <calico/nds/mm.h>
+#include <calico/nds/dma.h>
+#include <calico/nds/ndma.h>
+#include <calico/nds/timer.h>
 #include <calico/nds/irq.h>
 #include <calico/nds/env.h>
 
@@ -121,6 +124,25 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 	Crt0Header _hdr = *hdr;
 	hdr = &_hdr;
 #endif
+
+	// Clear DMA and timers
+	for (unsigned i = 0; i < 4; i ++) {
+		REG_DMAxCNT_H(i) = 0;
+		REG_TMxCNT_H(i) = 0;
+	}
+
+	if (is_twl) {
+		// Initialize and clear New DMA
+		REG_NDMAGCNT = NDMA_G_ROUND_ROBIN |
+#if defined(ARM9)
+			NDMA_G_RR_CYCLES(32);
+#elif defined(ARM7)
+			NDMA_G_RR_CYCLES(16);
+#endif
+		for (unsigned i = 0; i < 4; i ++) {
+			REG_NDMAxCNT(i) = 0;
+		}
+	}
 
 #if defined(ARM7)
 	// Clear some memory
