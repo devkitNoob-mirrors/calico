@@ -75,8 +75,6 @@ static void _tickCountIsr(void)
 
 static void _tickTaskIsr(void)
 {
-	TickTask* origHead = s_firstTask;
-
 	while (s_firstTask && !_tickIsSequential32(tickGetCount(), s_firstTask->target)) {
 		TickTask* cur = s_firstTask;
 		s_firstTask = cur->next;
@@ -91,9 +89,7 @@ static void _tickTaskIsr(void)
 		}
 	}
 
-	if_likely (origHead != s_firstTask) {
-		_tickTaskSchedule(s_firstTask);
-	}
+	_tickTaskSchedule(s_firstTask);
 }
 
 void tickInit(void)
