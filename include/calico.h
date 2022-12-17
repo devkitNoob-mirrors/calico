@@ -11,7 +11,7 @@
 #include "calico/arm/psr.h"
 
 // arm9 (armv5) platforms: CP15 definitions
-#if __ARM_ARCH == 5
+#if __ARM_ARCH >= 5
 #include "calico/arm/cp15.h"
 #endif
 
@@ -31,6 +31,11 @@
 #endif
 
 #if !__ASSEMBLER__
+
+#include "calico/arm/common.h"
+#if __ARM_ARCH >= 5
+#include "calico/arm/cache.h"
+#endif
 
 #include "calico/system/irq.h"
 #include "calico/system/tick.h"

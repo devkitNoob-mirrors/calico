@@ -51,29 +51,3 @@ FUNC_START32 crt0SetupMPU
 	.word CP15_PU_ENABLE | ((5-1)<<1)
 
 FUNC_END
-
-FUNC_START32 crt0FlushCaches
-
-	@ Flush the data cache (store dirty lines + invalidate)
-	mov  r1, #0
-.Lclean_set:
-	mov  r0, #0
-.Lclean_line:
-	orr  r2, r1, r0
-	mcr  p15, 0, r2, c7, c14, 2
-	add  r0, r0, #ARM_CACHE_LINE_SZ
-	cmp  r0, #ARM_DCACHE_SZ/ARM_DCACHE_SETS
-	bne  .Lclean_line
-	adds r1, r1, #(1 << (32 - ARM_DCACHE_SETS_LOG2))
-	bne  .Lclean_set
-
-	@ Drain the write buffer
-	mcr  p15, 0, r1, c7, c10, 4
-
-	@ Invalidate the instruction cache
-	mcr  p15, 0, r1, c7, c5, 0
-
-	bx   lr
-
-FUNC_END
-

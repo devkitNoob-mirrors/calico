@@ -1,4 +1,7 @@
 #include <calico/types.h>
+#if defined(ARM9)
+#include <calico/arm/cache.h>
+#endif
 #include <calico/nds/mm.h>
 #include <calico/nds/irq.h>
 #include <calico/nds/env.h>
@@ -14,7 +17,6 @@ void _pxiInit(void);
 #if defined(ARM9)
 
 void crt0SetupMPU(bool is_twl);
-void crt0FlushCaches(void);
 
 extern char __heap_start_ntr[], __heap_start_twl[];
 
@@ -141,7 +143,8 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 
 #if defined(ARM9)
 	// Flush data cache and invalidate instruction cache
-	crt0FlushCaches();
+	armDCacheFlushAll();
+	armICacheInvalidateAll();
 #endif
 
 	// Back up DSi mode flag

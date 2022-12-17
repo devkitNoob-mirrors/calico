@@ -65,6 +65,12 @@ target_sources(${PROJECT_NAME} PRIVATE
 	source/arm/irq-lock.32.c
 )
 
+if(NOT ARM7)
+	target_sources(${PROJECT_NAME} PRIVATE
+		source/arm/arm-cache.32.s
+	)
+endif()
+
 if(NINTENDO_GBA)
 	target_sources(${PROJECT_NAME} PRIVATE
 		source/gba/rom_header.s
