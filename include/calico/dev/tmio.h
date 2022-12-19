@@ -44,6 +44,7 @@ struct TmioTx {
 	u16 _pad;
 
 	void (* xfer_isr)(TmioCtl* ctl, TmioTx* tx);
+	void* user;
 };
 
 MEOW_CONSTEXPR u16 tmioSelectClock(unsigned freq)
@@ -72,3 +73,6 @@ void tmioIrqHandler(TmioCtl* ctl);
 void tmioThreadMain(TmioCtl* ctl);
 
 bool tmioTransact(TmioCtl* ctl, TmioTx* tx);
+
+void tmioXferRecvByCpu(TmioCtl* ctl, TmioTx* tx);
+void tmioXferSendByCpu(TmioCtl* ctl, TmioTx* tx);

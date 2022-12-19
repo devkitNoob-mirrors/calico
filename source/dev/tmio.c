@@ -6,6 +6,8 @@
 
 #ifdef TMIO_DEBUG
 #include <calico/system/dietprint.h>
+#else
+#define dietPrint(...) ((void)0)
 #endif
 
 #define REG_TMIO(_type,_name) (*(_type volatile*)(ctl->reg_base + TMIO_##_name))
@@ -65,9 +67,7 @@ bool tmioInit(TmioCtl* ctl, uptr reg_base, uptr fifo_base, u32* mbox_slots, unsi
 	// Fast fail if the TMIO controller is either inaccessible
 	// (SCFG-blocked) or no ports are present
 	unsigned num_ports = TMIO_PORTSEL_NUMPORTS(REG_TMIO_PORTSEL);
-#ifdef TMIO_DEBUG
 	dietPrint("TMIO @ %#.8x - %u ports\n", reg_base, num_ports);
-#endif
 	if (num_ports == 0) {
 		return false;
 	}
@@ -129,9 +129,7 @@ void tmioIrqHandler(TmioCtl* ctl)
 
 void tmioThreadMain(TmioCtl* ctl)
 {
-#ifdef TMIO_DEBUG
 	dietPrint("TMIO thread start %p\n", ctl);
-#endif
 
 	// Disable interrupts in this thread
 	armIrqLockByPsr();
@@ -142,10 +140,7 @@ void tmioThreadMain(TmioCtl* ctl)
 		ctl->cur_tx = tx;
 
 		unsigned cmd_id = tx->type & 0x3f;
-
-#ifdef TMIO_DEBUG
-		dietPrint("TMIO cmd%u (%p)\n", cmd_id, tx);
-#endif
+		dietPrint("TMIO cmd%2u arg=%.8lx\n", cmd_id, tx->arg);
 
 		// Apply port number if changed
 		if (ctl->cur_port.num != tx->port.num) {
@@ -179,6 +174,7 @@ void tmioThreadMain(TmioCtl* ctl)
 		}
 
 		// Set up block transfer FIFO if needed
+		u32 isr_bits = 0;
 		if (tx->type & TMIO_CMD_TX) {
 			u16 stop = REG_TMIO_STOP &~ (TMIO_STOP_DO_STOP|TMIO_STOP_AUTO_STOP);
 			if (tx->type & TMIO_CMD_TX_MULTI) {
@@ -190,13 +186,12 @@ void tmioThreadMain(TmioCtl* ctl)
 			REG_TMIO_BLKCNT = tx->num_blocks;
 			REG_TMIO_BLKLEN32 = tx->block_size;
 			REG_TMIO_BLKCNT32 = tx->num_blocks; // this is purely informational
-		}
 
-		// Enable corresponding interrupt if block transfer callback is used
-		u32 isr_bits = 0;
-		if (tx->xfer_isr) {
-			isr_bits = (tx->type & TMIO_CMD_TX_READ) ? TMIO_CNT32_IE_RECV : TMIO_CNT32_IE_SEND;
-			REG_TMIO_CNT32 |= isr_bits;
+			// Enable corresponding interrupt if block transfer callback is used
+			if (tx->xfer_isr) {
+				isr_bits = (tx->type & TMIO_CMD_TX_READ) ? TMIO_CNT32_IE_RECV : TMIO_CNT32_IE_SEND;
+				REG_TMIO_CNT32 |= isr_bits;
+			}
 		}
 
 		// Enable transaction-related interrupts
@@ -257,7 +252,7 @@ void tmioThreadMain(TmioCtl* ctl)
 		REG_TMIO_MASK |= TX_IRQ_BITS;
 
 		// Disable interrupt if block transfer callback is used
-		if (tx->xfer_isr) {
+		if (isr_bits) {
 			REG_TMIO_CNT32 &= ~isr_bits;
 		}
 
@@ -272,7 +267,7 @@ bool tmioTransact(TmioCtl* ctl, TmioTx* tx)
 	ArmIrqState st = armIrqLockByPsr();
 
 	tx->status = TMIO_STAT_CMD_BUSY;
-	if_unlikely (!mailboxSend(&ctl->mbox, (u32)tx)) {
+	if_unlikely (!mailboxTrySend(&ctl->mbox, (u32)tx)) {
 		tx->status = TMIO_STAT_RX_OVERFLOW;
 		armIrqUnlockByPsr(st);
 		return false;
@@ -284,4 +279,28 @@ bool tmioTransact(TmioCtl* ctl, TmioTx* tx)
 
 	armIrqUnlockByPsr(st);
 	return tx->status == 0;
+}
+
+void tmioXferRecvByCpu(TmioCtl* ctl, TmioTx* tx)
+{
+	vu32* fifo = (vu32*)ctl->fifo_base;
+	u32* buf = (u32*)tx->user;
+
+	for (u32 i = 0; i < tx->block_size; i += 4) {
+		*buf++ = *fifo;
+	}
+
+	tx->user = buf;
+}
+
+void tmioXferSendByCpu(TmioCtl* ctl, TmioTx* tx)
+{
+	vu32* fifo = (vu32*)ctl->fifo_base;
+	u32* buf = (u32*)tx->user;
+
+	for (u32 i = 0; i < tx->block_size; i += 4) {
+		*fifo = *buf++;
+	}
+
+	tx->user = buf;
 }

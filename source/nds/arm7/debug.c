@@ -61,6 +61,7 @@ void debugOutput(const char* buf, size_t size)
 		}
 
 		s_debugBuf->size += this_size;
+		buf += this_size;
 		size -= this_size;
 
 		if (should_ping) {

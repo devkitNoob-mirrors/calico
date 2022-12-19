@@ -70,6 +70,7 @@
 #include "calico/nds/arm7/mcu.h"
 
 #include "calico/dev/tmio.h"
+#include "calico/dev/sdmmc.h"
 #endif
 
 #ifdef ARM9

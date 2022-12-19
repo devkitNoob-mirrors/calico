@@ -113,6 +113,7 @@ if(NINTENDO_DS)
 			source/nds/arm7/mcu.twl.c
 
 			source/nds/arm7/tmio.twl.32.c
+			source/nds/arm7/sdmmc.twl.32.c
 		)
 	endif()
 endif()
