@@ -239,9 +239,11 @@
 // Extended sound
 #define IO_SNDEXCNT   0x4700
 
-// Toshiba MMC/SD controllers (one for SD/eMMC, another for Atheros Wireless SDIO)
-#define IO_TMIO_BASE_SDMMC   0x4800
-#define IO_TMIO_BASE_ATHSDIO 0x4a00
+// Toshiba Mobile IO controllers (one for SD/eMMC, another for Atheros Wireless SDIO)
+#define IO_TMIO0_BASE 0x4800
+#define IO_TMIO0_FIFO 0x490c
+#define IO_TMIO1_BASE 0x4a00
+#define IO_TMIO1_FIFO 0x4b0c
 
 // GPIO - A bit of explanation:
 // - Bits 0..2 are GPIO18[0..2] (all lines seem fully unused?)
