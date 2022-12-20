@@ -52,13 +52,17 @@
 // Timer
 #define IO_TMxCNT(_x) (0x100 + 0x4*(_x))
 
-// Keypad input
+// General Purpose IO (GPIO), including keypad input
+#ifdef ARM7
+// XX: theoretical/vestigial SIO registers at 0x120..0x12f
+#endif
 #define IO_KEYINPUT 0x130
 #define IO_KEYCNT   0x132
 #ifdef ARM7
-#define IO_RCNT     0x134
-#define IO_EXKEYIN  0x136
-#define IO_RTC_CNT  0x138
+#define IO_RCNT     0x134 // Inherited from GBA (SC/SD/SI/SO lines). On DS only meaningful in GPIO mode (no SIO, no JOY). RTC IRQ is connected to SI.
+#define IO_RCNT_EXT 0x136 // 8 extra GPIO lines (input-only), added to above. X/Y buttons are connected here.
+#define IO_RCNT_RTC 0x138 // 8 more GPIO lines (input/output, bottom 3 of which are used to bitbang the RTC IC).
+// XX: theoretical/vestigial JOY registers at 0x140..0x15f (?)
 #endif
 
 // PXI
@@ -245,7 +249,7 @@
 #define IO_TMIO1_BASE 0x4a00
 #define IO_TMIO1_FIFO 0x4b0c
 
-// GPIO - A bit of explanation:
+// Extended GPIO - A bit of explanation:
 // - Bits 0..2 are GPIO18[0..2] (all lines seem fully unused?)
 // - Bits 4..7 are GPIO33[0..3], out of which:
 //   * GPIO33[0] seems unused
@@ -253,11 +257,9 @@
 //   * GPIO33[2] is connected to the MCU's interrupt output
 //   * GPIO33[3] is connected to sound enable output
 // These same bits correspond to the first 8 extended interrupts.
-#define IO_GPIO_DATA 0x4c00
-#define IO_GPIO_DIR  0x4c01
-#define IO_GPIO_EDGE 0x4c02
-#define IO_GPIO_IE   0x4c03
-#define IO_GPIO_WL   0x4c04
+#define IO_GPIO_CNT 0x4c00 // lsb: data, msb: direction
+#define IO_GPIO_IRQ 0x4c02 // lsb: edge, msb: enable
+#define IO_GPIO_WL  0x4c04 // lsb: /reset, msb: atheros/mitsumi switch
 
 // SoC one-time programmable memory
 #define IO_OTP_CID   0x4d00

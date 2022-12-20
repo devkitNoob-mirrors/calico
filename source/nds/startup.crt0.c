@@ -8,6 +8,9 @@
 #include <calico/nds/timer.h>
 #include <calico/nds/irq.h>
 #include <calico/nds/env.h>
+#if defined(ARM7)
+#include <calico/nds/arm7/gpio.h>
+#endif
 
 bool g_isTwlMode;
 
@@ -151,9 +154,16 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 	crt0FillMem32(MM_ENV_FREE_FBE0, 0, MM_ENV_FREE_FBE0_SZ);
 	crt0FillMem32(MM_ENV_FREE_FF60, 0, MM_ENV_FREE_FF60_SZ);
 
+	// Configure GBA/NDS GPIO (GPIO mode, SI (RTC) irq enable, pull-up on SI)
+	REG_RCNT = RCNT_MODE_GPIO | RCNT_SI_IRQ_ENABLE | RCNT_SI_DIR_OUT | RCNT_SI;
+
 	if (is_twl) {
 		// Ensure WRAM_A is mapped to the right location
 		MEOW_REG(u32, IO_MBK_MAP_A) = g_envAppTwlHeader->arm7_wram_setting[0];
+
+		// Configure DSi GPIO
+		REG_GPIO_CNT = GPIO_CNT_DIR_OUT(GPIO_PIN_SOUND_ENABLE) | GPIO_CNT_PIN(GPIO_PIN_SOUND_ENABLE);
+		REG_GPIO_IRQ = GPIO_IRQ_ENABLE(GPIO_PIN_MCUIRQ);
 	}
 #endif
 
