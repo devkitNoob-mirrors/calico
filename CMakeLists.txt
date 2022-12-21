@@ -108,6 +108,7 @@ if(NINTENDO_DS)
 			source/nds/bootstub_arm7.s
 
 			source/nds/arm7/debug.c
+			source/nds/arm7/rtc.c
 			source/nds/arm7/pmic.c
 			source/nds/arm7/i2c.twl.c
 			source/nds/arm7/mcu.twl.c

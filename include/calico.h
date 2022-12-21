@@ -64,6 +64,7 @@
 #include "calico/nds/arm7/debug.h"
 
 #include "calico/nds/arm7/gpio.h"
+#include "calico/nds/arm7/rtc.h"
 #include "calico/nds/arm7/spi.h"
 #include "calico/nds/arm7/pmic.h"
 

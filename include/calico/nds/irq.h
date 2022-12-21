@@ -44,7 +44,7 @@
 #ifdef ARM7
 #define MEOW_IRQ_NUM_HANDLERS 64
 
-#define IRQ_SERIAL       (1U << 7)
+#define IRQ_RTC          (1U << 7)
 #define IRQ_LID          (1U << 22)
 #define IRQ_SPI          (1U << 23)
 #define IRQ_WIFI         (1U << 24)
