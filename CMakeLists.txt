@@ -100,6 +100,7 @@ if(NINTENDO_DS)
 			source/nds/mpu_setup.crt0.s
 
 			source/nds/arm9/arm7_debug.c
+			source/nds/arm9/blk.c
 		)
 	endif()
 
@@ -115,6 +116,8 @@ if(NINTENDO_DS)
 
 			source/nds/arm7/tmio.twl.32.c
 			source/nds/arm7/sdmmc.twl.32.c
+
+			source/nds/arm7/blk.c
 		)
 	endif()
 endif()

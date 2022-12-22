@@ -28,4 +28,6 @@ typedef struct DebugBuffer {
 typedef struct TransferRegion {
 	u32 arm9_pxi_mask;
 	u32 arm7_pxi_mask;
+
+	u32 blkdev_sector_count[3];
 } TransferRegion;

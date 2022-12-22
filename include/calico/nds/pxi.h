@@ -50,8 +50,7 @@ typedef enum PxiChannel {
 	PxiChannel_System   = 2,
 	PxiChannel_Mitsumi  = 3,
 	PxiChannel_Atheros  = 4,
-	PxiChannel_DLDI     = 5,
-	PxiChannel_SDMMC    = 6,
+	PxiChannel_BlkDev   = 5,
 
 	PxiChannel_Reset    = 12,
 

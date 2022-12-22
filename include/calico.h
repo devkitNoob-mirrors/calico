@@ -60,6 +60,8 @@
 #include "calico/nds/env.h"
 #include "calico/nds/pxi.h"
 
+#include "calico/dev/blk.h"
+
 #ifdef ARM7
 #include "calico/nds/arm7/debug.h"
 
@@ -70,6 +72,8 @@
 
 #include "calico/nds/arm7/i2c.h"
 #include "calico/nds/arm7/mcu.h"
+
+#include "calico/nds/arm7/twlblk.h"
 
 #include "calico/dev/tmio.h"
 #include "calico/dev/sdmmc.h"
