@@ -99,7 +99,7 @@ MEOW_CONSTEXPR u32 pxiMakeExtPacket(PxiChannel ch, bool dir, unsigned num_words,
 
 MEOW_CONSTEXPR PxiChannel pxiExtPacketGetChannel(u32 packet)
 {
-	return (PxiChannel)((packet >> 11) & 0x1f);
+	return (PxiChannel)((packet >> 6) & 0x1f);
 }
 
 MEOW_CONSTEXPR unsigned pxiExtPacketGetNumWords(u32 packet)
