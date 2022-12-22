@@ -49,3 +49,4 @@ typedef struct SdmmcCard {
 
 bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc);
 bool sdmmcCardReadSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors);
+bool sdmmcCardWriteSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors);

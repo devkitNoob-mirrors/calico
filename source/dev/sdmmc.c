@@ -224,7 +224,7 @@ _error:
 
 static bool _sdmmcCardReadWriteSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors, u16 type)
 {
-	if (card->type == SdmmcType_Invalid || !_sdmmcCheckSectorRange(card->num_sectors, sector_id, num_sectors)) {
+	if (card->type == SdmmcType_Invalid || !num_sectors || !_sdmmcCheckSectorRange(card->num_sectors, sector_id, num_sectors)) {
 		tx->status = TMIO_STAT_ILL_ACCESS;
 		return false;
 	}
@@ -241,4 +241,9 @@ static bool _sdmmcCardReadWriteSectors(SdmmcCard* card, TmioTx* tx, u32 sector_i
 bool sdmmcCardReadSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors)
 {
 	return _sdmmcCardReadWriteSectors(card, tx, sector_id, num_sectors, SDMMC_CMD_READ_MULTIPLE_BLOCK);
+}
+
+bool sdmmcCardWriteSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors)
+{
+	return _sdmmcCardReadWriteSectors(card, tx, sector_id, num_sectors, SDMMC_CMD_WRITE_MULTIPLE_BLOCK);
 }
