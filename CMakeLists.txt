@@ -90,6 +90,7 @@ if(NINTENDO_DS)
 		source/nds/utils.crt0.s
 
 		source/nds/bios.s
+		source/nds/bios.twl.s
 		source/nds/irq_handler.32.s
 		source/nds/pxi.c
 	)
