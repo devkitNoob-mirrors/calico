@@ -27,6 +27,8 @@ struct TmioCtl {
 	TmioTx* cur_tx;
 
 	Mailbox mbox;
+
+	u16 num_pending_blocks;
 };
 
 struct TmioTx {

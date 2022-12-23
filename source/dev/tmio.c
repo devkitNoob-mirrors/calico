@@ -121,6 +121,7 @@ void tmioIrqHandler(TmioCtl* ctl)
 		fifostat &= fifostat>>3; // mask out if IRQs are disabled
 		if (fifostat & (TMIO_CNT32_STAT_RECV|TMIO_CNT32_STAT_NOT_SEND)) {
 			tx->xfer_isr(ctl, tx);
+			ctl->num_pending_blocks --;
 		}
 	}
 
@@ -194,9 +195,15 @@ void tmioThreadMain(TmioCtl* ctl)
 
 			// Enable corresponding interrupt if block transfer callback is used
 			if (tx->xfer_isr) {
+				ctl->num_pending_blocks = tx->num_blocks;
 				isr_bits = (tx->type & TMIO_CMD_TX_READ) ? TMIO_CNT32_IE_RECV : TMIO_CNT32_IE_SEND;
 				REG_TMIO_CNT32 |= isr_bits;
 			}
+		}
+
+		// Clear number of pending blocks if not using block transfer callback
+		if (!isr_bits) {
+			ctl->num_pending_blocks = 0;
 		}
 
 		// Enable transaction-related interrupts
@@ -217,7 +224,7 @@ void tmioThreadMain(TmioCtl* ctl)
 			// Update status
 			REG_TMIO_STAT = ~bits; // acknowledge bits (by writing 0)
 			tx->status |= bits;
-			if (!(stat & TMIO_STAT_CMD_BUSY)) {
+			if (!(stat & TMIO_STAT_CMD_BUSY) && !ctl->num_pending_blocks) {
 				// Command is done, clear bits in the transaction struct
 				tx->status &= ERROR_IRQ_BITS;
 			}
