@@ -35,7 +35,7 @@ FUNC_START32 armDCacheFlush
 0:	mcr  p15, 0, r0, c7, c14, 1 @ Clean+Invalidate DCache entry by MVA
 	add  r0, r0, #ARM_CACHE_LINE_SZ
 	cmp  r0, r1
-	bls  0b
+	bmi  0b
 
 	b    armDrainWriteBuffer
 
@@ -49,7 +49,7 @@ FUNC_START32 armDCacheInvalidate
 0:	mcr  p15, 0, r0, c7, c6, 1 @ Invalidate DCache entry by MVA
 	add  r0, r0, #ARM_CACHE_LINE_SZ
 	cmp  r0, r1
-	bls  0b
+	bmi  0b
 
 	bx   lr
 
