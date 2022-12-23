@@ -43,6 +43,7 @@ struct TmioTx {
 	u16 num_blocks;
 	u16 _pad;
 
+	void (* callback)(TmioCtl* ctl, TmioTx* tx);
 	void (* xfer_isr)(TmioCtl* ctl, TmioTx* tx);
 	void* user;
 };

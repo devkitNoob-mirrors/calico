@@ -142,6 +142,11 @@ void tmioThreadMain(TmioCtl* ctl)
 		unsigned cmd_id = tx->type & 0x3f;
 		dietPrint("TMIO cmd%2u arg=%.8lx\n", cmd_id, tx->arg);
 
+		// Invoke transaction callback if needed
+		if (tx->callback) {
+			tx->callback(ctl, tx);
+		}
+
 		// Apply port number if changed
 		if (ctl->cur_port.num != tx->port.num) {
 			ctl->cur_port.num = tx->port.num;
@@ -254,6 +259,11 @@ void tmioThreadMain(TmioCtl* ctl)
 		// Disable interrupt if block transfer callback is used
 		if (isr_bits) {
 			REG_TMIO_CNT32 &= ~isr_bits;
+		}
+
+		// Invoke transaction callback if needed
+		if (tx->callback) {
+			tx->callback(ctl, tx);
 		}
 
 		// Notify that we're done with this transaction

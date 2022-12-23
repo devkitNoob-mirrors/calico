@@ -74,6 +74,7 @@ bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc)
 	u32 ocr_arg = (1U<<20);
 
 	TmioTx tx;
+	tx.callback = NULL;
 	tx.xfer_isr = tmioXferRecvByCpu;
 
 	if (!_sdmmcTransact(card, &tx, SDMMC_CMD_GO_IDLE, 0)) {
