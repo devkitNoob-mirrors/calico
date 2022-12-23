@@ -1,7 +1,8 @@
 #pragma once
 #include "../types.h"
 
-#define BLK_SECTOR_SZ 512
+#define BLK_SECTOR_SZ       512
+#define BLK_SECTOR_SZ_WORDS (BLK_SECTOR_SZ/sizeof(u32))
 
 typedef enum BlkDevice {
 

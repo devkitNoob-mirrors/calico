@@ -2,7 +2,7 @@
 #include <calico/dev/tmio.h>
 #include <calico/dev/sdmmc.h>
 
-#define SDMMC_DEBUG
+//#define SDMMC_DEBUG
 
 #ifdef SDMMC_DEBUG
 #include <calico/system/dietprint.h>

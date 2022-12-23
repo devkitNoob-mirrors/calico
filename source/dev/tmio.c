@@ -2,7 +2,7 @@
 #include <calico/arm/common.h>
 #include <calico/dev/tmio.h>
 
-#define TMIO_DEBUG
+//#define TMIO_DEBUG
 
 #ifdef TMIO_DEBUG
 #include <calico/system/dietprint.h>
@@ -224,9 +224,21 @@ void tmioThreadMain(TmioCtl* ctl)
 			// Update status
 			REG_TMIO_STAT = ~bits; // acknowledge bits (by writing 0)
 			tx->status |= bits;
-			if (!(stat & TMIO_STAT_CMD_BUSY) && !ctl->num_pending_blocks) {
-				// Command is done, clear bits in the transaction struct
-				tx->status &= ERROR_IRQ_BITS;
+			if (!(stat & TMIO_STAT_CMD_BUSY)) {
+				// If errors occurred, cancel any pending block transfers
+				if (tx->status & ERROR_IRQ_BITS) {
+					ctl->num_pending_blocks = 0;
+					REG_TMIO_CNT32 |= TMIO_CNT32_FIFO_CLEAR;
+				}
+
+				// Even if TMIO is now idle, the FIFO may still have in-flight data.
+				// Wait for any pending blocks to be finished before concluding this transaction.
+				// Note that this is not applicable to pure DMA transfers - the user is
+				// responsible for waiting for DMA to finish after a successful transaction.
+				if (!ctl->num_pending_blocks) {
+					// Command is done, clear bits in the transaction struct
+					tx->status &= ERROR_IRQ_BITS;
+				}
 			}
 
 			// Read response if needed

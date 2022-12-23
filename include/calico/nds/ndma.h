@@ -8,6 +8,17 @@
 #error "This header file is only for DSi"
 #endif
 
+// Explanation of the three sizes that affect a NDMA operation:
+// 1) Block size (REG_NDMAxCNT.NDMA_BLK_WORDS(x)):
+//      Size of the atomic transfer unit in words. Usually corresponds to
+//      FIFO size (e.g. AES has 0x10 words, SDMMC has 512 bytes = 0x80 words)
+// 2) Single transfer size (REG_NDMAxWCNT):
+//      Size of a single transfer in words. Must be a multiple of block size.
+// 3) Total operation size (REG_NDMAxTCNT):
+//      Total desired size of the operation in words. Only used by NdmaTxMode_Timing.
+//      The operation is split up into multiple transfers. The last one
+//      may be smaller in order to copy the remaining data.
+
 #define REG_NDMAGCNT       MEOW_REG(u32, IO_NDMAGCNT)
 #define REG_NDMAxSAD(_x)   MEOW_REG(u32, IO_NDMAxSAD(_x))
 #define REG_NDMAxDAD(_x)   MEOW_REG(u32, IO_NDMAxDAD(_x))
