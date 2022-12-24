@@ -99,7 +99,7 @@ MEOW_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 #else
 	REG_DMAxSAD(id) = (u32)&value;
 #endif
-	REG_DMAxSAD(id) = (u32)dst;
+	REG_DMAxDAD(id) = (u32)dst;
 	REG_DMAxCNT_L(id) = size/4;
 	REG_DMAxCNT_H(id) =
 		DMA_MODE_DST(DmaMode_Increment) |
