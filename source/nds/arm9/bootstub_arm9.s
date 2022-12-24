@@ -5,7 +5,7 @@
 #include <calico/nds/mm_env.h>
 #include <calico/nds/io.h>
 
-#define COLOR_DEBUG
+//#define COLOR_DEBUG
 
 .section .vectors, "ax", %progbits
 .align 2

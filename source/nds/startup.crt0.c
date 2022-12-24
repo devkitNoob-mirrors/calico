@@ -23,6 +23,7 @@ void _pxiInit(void);
 #if defined(ARM9)
 
 void crt0SetupMPU(bool is_twl);
+void systemStartup(void);
 
 extern char __heap_start_ntr[], __heap_start_twl[];
 
@@ -212,6 +213,11 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 
 	// Initialize the inter-processor communication system
 	_pxiInit();
+
+#if defined(ARM9)
+	// Call pre-libc system startup routine
+	systemStartup();
+#endif
 
 	// Call global constructors
 	__libc_init_array();

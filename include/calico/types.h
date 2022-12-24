@@ -34,6 +34,7 @@ typedef volatile sptr vsptr; ///< Pointer-sized volatile signed integer.
 #define MEOW_NOINLINE   __attribute__((noinline))
 #define MEOW_NORETURN   __attribute__((noreturn))
 #define MEOW_PURE       __attribute__((pure))
+#define MEOW_WEAK       __attribute__((weak))
 #define MEOW_DUMMY(_x)  (void)(_x)
 
 #if __thumb__
