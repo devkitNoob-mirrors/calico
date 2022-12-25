@@ -3,11 +3,12 @@
 #include "thread.h"
 
 typedef struct Mailbox {
-	//ThrListNode queue;
 	u32* slots;
 	u8 num_slots;
 	u8 cur_slot;
 	u8 pending_slots;
+	u8 send_waiters : 4;
+	u8 recv_waiters : 4;
 } Mailbox;
 
 MEOW_INLINE void mailboxPrepare(Mailbox* mb, u32* slots, unsigned num_slots)
@@ -18,6 +19,6 @@ MEOW_INLINE void mailboxPrepare(Mailbox* mb, u32* slots, unsigned num_slots)
 	mb->pending_slots = 0;
 }
 
-bool mailboxSend(Mailbox* mb, u32 message);
+bool mailboxTrySend(Mailbox* mb, u32 message);
 
 u32 mailboxRecv(Mailbox* mb);

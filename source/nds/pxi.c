@@ -86,7 +86,7 @@ static void _pxiRecvIrqHandler(void)
 static void _pxiMailboxHandler(void* user, u32 data)
 {
 	Mailbox* mb = (Mailbox*) user;
-	mailboxSend(mb, data);
+	mailboxTrySend(mb, data);
 }
 
 void _pxiInit(void)

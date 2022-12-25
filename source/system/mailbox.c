@@ -3,9 +3,9 @@
 #include <calico/system/thread.h>
 #include <calico/system/mailbox.h>
 
-static ThrListNode s_mailboxQueue;
+static ThrListNode s_mailboxRecvQueue;
 
-bool mailboxSend(Mailbox* mb, u32 message)
+bool mailboxTrySend(Mailbox* mb, u32 message)
 {
 	ArmIrqState st = armIrqLockByPsr();
 
@@ -20,7 +20,10 @@ bool mailboxSend(Mailbox* mb, u32 message)
 	}
 
 	mb->slots[next_slot] = message;
-	threadUnblockOneByValue(&s_mailboxQueue, (u32)mb);
+	if_likely (mb->recv_waiters) {
+		mb->recv_waiters --;
+		threadUnblockOneByValue(&s_mailboxRecvQueue, (u32)mb);
+	}
 
 	armIrqUnlockByPsr(st);
 	return true;
@@ -30,8 +33,9 @@ u32 mailboxRecv(Mailbox* mb)
 {
 	ArmIrqState st = armIrqLockByPsr();
 
-	if (!mb->pending_slots) {
-		threadBlock(&s_mailboxQueue, (u32)mb);
+	if_unlikely (!mb->pending_slots) {
+		mb->recv_waiters ++;
+		threadBlock(&s_mailboxRecvQueue, (u32)mb);
 	}
 
 	u32 message = mb->slots[mb->cur_slot++];
