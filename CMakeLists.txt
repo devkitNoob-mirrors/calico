@@ -99,6 +99,7 @@ if(NINTENDO_DS)
 		target_sources(${PROJECT_NAME} PRIVATE
 			source/nds/arm9/bootstub_arm9.s
 			source/nds/arm9/mpu_setup.crt0.s
+			source/nds/arm9/sys_startup.c
 
 			source/nds/arm9/arm7_debug.c
 			source/nds/arm9/blk.c
