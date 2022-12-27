@@ -75,9 +75,12 @@
 
 #include "calico/nds/arm7/aes.h"
 #include "calico/nds/arm7/twlblk.h"
+#include "calico/nds/arm7/twlwifi.h"
 
 #include "calico/dev/tmio.h"
 #include "calico/dev/sdmmc.h"
+#include "calico/dev/sdio.h"
+#include "calico/dev/ar6k.h"
 #endif
 
 #ifdef ARM9
