@@ -10,20 +10,6 @@
 #define dietPrint(...) ((void)0)
 #endif
 
-MEOW_CONSTEXPR u32 _sdmmcGetMaxSpeed(u8 tran_speed)
-{
-	// https://android.googlesource.com/device/google/accessory/adk2012/+/e0f114ab1d645caeac2c30273d0b693d72063f54/MakefileBasedBuild/Atmel/sam3x/sam3x-ek/libraries/memories/sdmmc/sdmmc.c#212
-	static const u16 units[] = { 10, 100, 1000, 10000 }; // in 10Kb/s units
-	static const u8 multipliers[] = { 0, 10, 12, 13, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80 }; // in 1/10 units
-	u8 unit = tran_speed & 7;
-	u8 multiplier = (tran_speed >> 3) & 0xF;
-	if (unit < 4) {
-		return 1000*units[unit]*multipliers[multiplier];
-	}
-
-	return 0;
-}
-
 MEOW_CONSTEXPR u32 _sdmmcCalcNumSectors(TmioResp csd, bool ismmc)
 {
 	u32 c_size, c_blk;
@@ -162,9 +148,9 @@ bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc)
 	dietPrint("CSD: %.8lX %.8lX\n     %.8lX %.8lX\n", card->csd.value[0], card->csd.value[1], card->csd.value[2], card->csd.value[3]);
 	dietPrint("Num sectors: %#lx\n", card->num_sectors);
 
-	u32 max_speed = _sdmmcGetMaxSpeed(card->csd.value[3] & 0xff);
+	unsigned max_speed = tmioDecodeTranSpeed(card->csd.value[3] & 0xff);
 	card->port.clock = TMIO_CLKCTL_AUTO | tmioSelectClock(max_speed);
-	dietPrint("Speed: %lu b/sec (0x%.2x)\n", max_speed, card->port.clock & 0xff);
+	dietPrint("Speed: %u b/sec (0x%.2x)\n", max_speed, card->port.clock & 0xff);
 
 	if (!_sdmmcTransact(card, &tx, SDMMC_CMD_SELECT_CARD, card->rca << 16)) {
 		goto _error;

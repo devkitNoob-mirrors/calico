@@ -333,3 +333,17 @@ void tmioXferSendByCpu(TmioCtl* ctl, TmioTx* tx)
 
 	tx->user = buf;
 }
+
+unsigned tmioDecodeTranSpeed(u8 tran_speed)
+{
+	// https://android.googlesource.com/device/google/accessory/adk2012/+/e0f114ab1d645caeac2c30273d0b693d72063f54/MakefileBasedBuild/Atmel/sam3x/sam3x-ek/libraries/memories/sdmmc/sdmmc.c#212
+	static const u16 units[] = { 10, 100, 1000, 10000 }; // in 10Kb/s units
+	static const u8 multipliers[] = { 0, 10, 12, 13, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80 }; // in 1/10 units
+	u8 unit = tran_speed & 7;
+	u8 multiplier = (tran_speed >> 3) & 0xF;
+	if (unit < 4) {
+		return 1000*units[unit]*multipliers[multiplier];
+	}
+
+	return 0;
+}

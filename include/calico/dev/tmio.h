@@ -79,3 +79,5 @@ bool tmioTransact(TmioCtl* ctl, TmioTx* tx);
 
 void tmioXferRecvByCpu(TmioCtl* ctl, TmioTx* tx);
 void tmioXferSendByCpu(TmioCtl* ctl, TmioTx* tx);
+
+unsigned tmioDecodeTranSpeed(u8 tran_speed);
