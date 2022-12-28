@@ -116,7 +116,7 @@ bool tmioInit(TmioCtl* ctl, uptr reg_base, uptr fifo_base, u32* mbox_slots, unsi
 void tmioIrqHandler(TmioCtl* ctl)
 {
 	TmioTx* tx = ctl->cur_tx;
-	if (tx && tx->xfer_isr) {
+	if (tx && tx->xfer_isr && ctl->num_pending_blocks) {
 		u32 fifostat = REG_TMIO_CNT32 ^ TMIO_CNT32_STAT_NOT_SEND;
 		fifostat &= fifostat>>3; // mask out if IRQs are disabled
 		if (fifostat & (TMIO_CNT32_STAT_RECV|TMIO_CNT32_STAT_NOT_SEND)) {
