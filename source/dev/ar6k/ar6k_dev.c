@@ -63,12 +63,12 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 static bool _ar6kDevSetAddrWinReg(Ar6kDev* dev, u32 reg, u32 addr)
 {
 	// Write bytes 1,2,3 first
-	if (!sdioCardWriteDirect(dev->sdio, 1, reg+1, (u8*)&addr+1, 3)) {
+	if (!sdioCardWriteExtended(dev->sdio, 1, reg+1, (u8*)&addr+1, 3)) {
 		return false;
 	}
 
 	// Write LSB last to initiate the access cycle
-	if (!sdioCardWriteDirect(dev->sdio, 1, reg, (u8*)&addr, 1)) {
+	if (!sdioCardWriteExtended(dev->sdio, 1, reg, (u8*)&addr, 1)) {
 		return false;
 	}
 
@@ -81,7 +81,7 @@ bool ar6kDevReadRegDiag(Ar6kDev* dev, u32 addr, u32* out)
 		return false;
 	}
 
-	if (!sdioCardReadDirect(dev->sdio, 1, 0x00474, out, 4)) { // WINDOW_DATA
+	if (!sdioCardReadExtended(dev->sdio, 1, 0x00474, out, 4)) { // WINDOW_DATA
 		return false;
 	}
 
@@ -90,7 +90,7 @@ bool ar6kDevReadRegDiag(Ar6kDev* dev, u32 addr, u32* out)
 
 bool ar6kDevWriteRegDiag(Ar6kDev* dev, u32 addr, u32 value)
 {
-	if (!sdioCardWriteDirect(dev->sdio, 1, 0x00474, &value, 4)) { // WINDOW_DATA
+	if (!sdioCardWriteExtended(dev->sdio, 1, 0x00474, &value, 4)) { // WINDOW_DATA
 		return false;
 	}
 
