@@ -1,6 +1,18 @@
 #pragma once
 #include "../types.h"
 
+// ~ /!\ HARDWARE BUG WARNING /!\ ~
+// - 32-bit accesses to 32-bit (or larger) TMIO registers only works reliably
+//   for _reads_. On the other hand, _writes_ *MUST* be done as two separate
+//   16-bit accesses, otherwise corruption *CAN* and *HAS* been observed.
+//   This can be *CATASTROPHIC*, considering CMDARG (!), STAT/MASK are 32-bit.
+
+// ~ /!\ HARDWARE BUG WARNING /!\ ~
+// - The 32-bit FIFO does not work properly with small block sizes, and causes
+//   transactions to *HANG* (all data tx'd but no DATAEND received). Presently
+//   the smallest size that works reliably is not known. Exercise caution
+//   (probably >=0x80 works well, considering it's used by Atheros SDIO DMA).
+
 // Register offsets
 #define TMIO_CMD        0x000
 #define TMIO_PORTSEL    0x002

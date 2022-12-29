@@ -15,11 +15,17 @@
 #define REG_TMIO_CMD        REG_TMIO(u16, CMD)
 #define REG_TMIO_PORTSEL    REG_TMIO(u16, PORTSEL)
 #define REG_TMIO_CMDARG     REG_TMIO(u32, CMDARG)
+#define REG_TMIO_CMDARGLO   REG_TMIO(u16, CMDARG+0)
+#define REG_TMIO_CMDARGHI   REG_TMIO(u16, CMDARG+2)
 #define REG_TMIO_STOP       REG_TMIO(u16, STOP)
 #define REG_TMIO_BLKCNT     REG_TMIO(u16, BLKCNT)
 #define REG_TMIO_CMDRESP    REG_TMIO(TmioResp, CMDRESP)
 #define REG_TMIO_STAT       REG_TMIO(u32, STAT)
+#define REG_TMIO_STATLO     REG_TMIO(u16, STAT+0)
+#define REG_TMIO_STATHI     REG_TMIO(u16, STAT+2)
 #define REG_TMIO_MASK       REG_TMIO(u32, MASK)
+#define REG_TMIO_MASKLO     REG_TMIO(u16, MASK+0)
+#define REG_TMIO_MASKHI     REG_TMIO(u16, MASK+2)
 #define REG_TMIO_CLKCTL     REG_TMIO(u16, CLKCTL)
 #define REG_TMIO_BLKLEN     REG_TMIO(u16, BLKLEN)
 #define REG_TMIO_OPTION     REG_TMIO(u16, OPTION)
@@ -36,6 +42,8 @@
 #define REG_TMIO_EXT_WRPROT REG_TMIO(u16, EXT_WRPROT)
 #define REG_TMIO_EXT_STAT   REG_TMIO(u32, EXT_STAT)
 #define REG_TMIO_EXT_MASK   REG_TMIO(u32, EXT_MASK)
+#define REG_TMIO_EXT_MASKLO REG_TMIO(u16, EXT_MASK+0)
+#define REG_TMIO_EXT_MASKHI REG_TMIO(u16, EXT_MASK+2)
 #define REG_TMIO_CNT32      REG_TMIO(u16, CNT32)
 #define REG_TMIO_BLKLEN32   REG_TMIO(u16, BLKLEN32)
 #define REG_TMIO_BLKCNT32   REG_TMIO(u16, BLKCNT32)
@@ -95,13 +103,13 @@ bool tmioInit(TmioCtl* ctl, uptr reg_base, uptr fifo_base, u32* mbox_slots, unsi
 	REG_TMIO_RESET |= 1;
 
 	// Mask all interrupts
-	REG_TMIO_MASK = ~0;
+	REG_TMIO_MASKLO = ~0;
+	REG_TMIO_MASKHI = ~0;
 	REG_TMIO_SDIOCTL = 0; // port0 disable sdio
 	REG_TMIO_SDIO_MASK = ~0;
 	REG_TMIO_EXT_SDIO = 7<<8; // also: port1..3 disable sdio, acknowledge irqs
-	//REG_TMIO_EXT_MASK = ~0; // no$ barfs at this: "notyet32 write"
-	REG_TMIO(u16, EXT_MASK+0) = ~0;
-	REG_TMIO(u16, EXT_MASK+2) = ~0;
+	REG_TMIO_EXT_MASKLO = ~0;
+	REG_TMIO_EXT_MASKHI = ~0;
 
 	// Initialize 32-bit FIFO
 	REG_TMIO_CNT32 = TMIO_CNT32_ENABLE | TMIO_CNT32_FIFO_CLEAR;
@@ -115,11 +123,28 @@ bool tmioInit(TmioCtl* ctl, uptr reg_base, uptr fifo_base, u32* mbox_slots, unsi
 
 void tmioIrqHandler(TmioCtl* ctl)
 {
-	TmioTx* tx = ctl->cur_tx;
-	if (tx && tx->xfer_isr && ctl->num_pending_blocks) {
-		u32 fifostat = REG_TMIO_CNT32 ^ TMIO_CNT32_STAT_NOT_SEND;
-		fifostat &= fifostat>>3; // mask out if IRQs are disabled
-		if (fifostat & (TMIO_CNT32_STAT_RECV|TMIO_CNT32_STAT_NOT_SEND)) {
+	if (ctl->num_pending_blocks) {
+		bool need_xfer = false;
+
+		// Check for transfer IRQ according to the appropriate FIFO mode
+		u16 fifo16_bits = (~REG_TMIO_MASKHI) & ((TMIO_STAT_FIFO16_RECV|TMIO_STAT_FIFO16_SEND)>>16);
+		if_likely (fifo16_bits == 0) {
+			// Using 32-bit FIFO
+			u32 fifostat = REG_TMIO_CNT32 ^ TMIO_CNT32_STAT_NOT_SEND;
+			fifostat &= fifostat>>3; // mask out if IRQs are disabled
+			need_xfer = (fifostat & (TMIO_CNT32_STAT_RECV|TMIO_CNT32_STAT_NOT_SEND)) != 0;
+		} else {
+			// Using 16-bit FIFO
+			u32 fifostat = REG_TMIO_STATHI & fifo16_bits;
+			need_xfer = fifostat != 0;
+			if (need_xfer) {
+				REG_TMIO_STATHI = ~fifostat; // Acknowledge IRQs
+			}
+		}
+
+		// If above deemed it necessary, run the block transfer callback
+		if_likely (need_xfer) {
+			TmioTx* tx = ctl->cur_tx;
 			tx->xfer_isr(ctl, tx);
 			ctl->num_pending_blocks --;
 		}
@@ -181,6 +206,7 @@ void tmioThreadMain(TmioCtl* ctl)
 
 		// Set up block transfer FIFO if needed
 		u32 isr_bits = 0;
+		u16 fifo16_bits = 0;
 		if (tx->type & TMIO_CMD_TX) {
 			u16 stop = REG_TMIO_STOP &~ (TMIO_STOP_DO_STOP|TMIO_STOP_AUTO_STOP);
 			if (tx->type & TMIO_CMD_TX_MULTI) {
@@ -195,23 +221,42 @@ void tmioThreadMain(TmioCtl* ctl)
 
 			// Enable corresponding interrupt if block transfer callback is used
 			if (tx->xfer_isr) {
+				// Check if the transfer buffer/size are aligned
+				bool aligned = (((uptr)tx->user | tx->block_size) & 3) == 0;
+
+				// Select which FIFO to use
+				if_likely (tx->block_size >= 0x80 && aligned) {
+					// Use 32-bit FIFO
+					isr_bits = (tx->type & TMIO_CMD_TX_READ) ? TMIO_CNT32_IE_RECV : TMIO_CNT32_IE_SEND;
+					REG_TMIO_CNT32 |= isr_bits | TMIO_CNT32_FIFO_CLEAR;
+
+				} else {
+					// Use 16-bit FIFO (also for small transfers, see hardware bug #2 in tmio.h)
+					fifo16_bits = ((tx->type & TMIO_CMD_TX_READ) ? TMIO_STAT_FIFO16_RECV : TMIO_STAT_FIFO16_SEND)>>16;
+					REG_TMIO_CNT32 &= ~TMIO_CNT32_ENABLE;
+					REG_TMIO_FIFOCTL = 0;
+					REG_TMIO_STATHI = ~fifo16_bits;
+					REG_TMIO_MASKHI &= ~fifo16_bits;
+				}
+
 				ctl->num_pending_blocks = tx->num_blocks;
-				isr_bits = (tx->type & TMIO_CMD_TX_READ) ? TMIO_CNT32_IE_RECV : TMIO_CNT32_IE_SEND;
-				REG_TMIO_CNT32 |= isr_bits;
 			}
 		}
 
 		// Clear number of pending blocks if not using block transfer callback
-		if (!isr_bits) {
+		if (!isr_bits && !fifo16_bits) {
 			ctl->num_pending_blocks = 0;
 		}
 
 		// Enable transaction-related interrupts
-		REG_TMIO_STAT = ~TX_IRQ_BITS; // acknowledge them first just in case
-		REG_TMIO_MASK &= ~TX_IRQ_BITS;
+		REG_TMIO_STATLO = (u16)~TX_IRQ_BITS; // acknowledge them first just in case
+		REG_TMIO_STATHI = (~TX_IRQ_BITS)>>16;
+		REG_TMIO_MASKLO &= ~TX_IRQ_BITS;
+		REG_TMIO_MASKHI &= (~TX_IRQ_BITS)>>16;
 
 		// Feed command to the controller
-		REG_TMIO_CMDARG = tx->arg;
+		REG_TMIO_CMDARGLO = tx->arg;
+		REG_TMIO_CMDARGHI = tx->arg >> 16;
 		REG_TMIO_CMD = tx->type;
 
 		// Wait for the command to be done processing
@@ -222,7 +267,8 @@ void tmioThreadMain(TmioCtl* ctl)
 			u32 bits = stat & TX_IRQ_BITS;
 
 			// Update status
-			REG_TMIO_STAT = ~bits; // acknowledge bits (by writing 0)
+			REG_TMIO_STATLO = ~bits; // acknowledge bits (by writing 0)
+			REG_TMIO_STATHI = (~bits)>>16;
 			tx->status |= bits;
 			if (!(stat & TMIO_STAT_CMD_BUSY)) {
 				// If errors occurred, cancel any pending block transfers
@@ -273,11 +319,21 @@ void tmioThreadMain(TmioCtl* ctl)
 		} while (tx->status & TMIO_STAT_CMD_BUSY);
 
 		// Disable transaction-related interrupts
-		REG_TMIO_MASK |= TX_IRQ_BITS;
+		REG_TMIO_MASKLO |= TX_IRQ_BITS;
+		REG_TMIO_MASKHI |= TX_IRQ_BITS>>16;
 
 		// Disable interrupt if block transfer callback is used
 		if (isr_bits) {
-			REG_TMIO_CNT32 &= ~isr_bits;
+			// Disable 32-bit FIFO IRQs
+			REG_TMIO_CNT32 = (REG_TMIO_CNT32 &~ isr_bits) | TMIO_CNT32_FIFO_CLEAR;
+		} else if (fifo16_bits) {
+			// Disable 16-bit FIFO IRQs
+			REG_TMIO_STATHI = ~fifo16_bits;
+			REG_TMIO_MASKHI |= fifo16_bits;
+
+			// Reenable 32-bit FIFO
+			REG_TMIO_CNT32 |= TMIO_CNT32_ENABLE;
+			REG_TMIO_FIFOCTL = TMIO_FIFOCTL_MODE32;
 		}
 
 		// Invoke transaction callback if needed
@@ -310,28 +366,60 @@ bool tmioTransact(TmioCtl* ctl, TmioTx* tx)
 	return tx->status == 0;
 }
 
+typedef union _TmioXferBuf {
+	u32* buf32;
+	u8* buf8;
+	void* buf;
+} _TmioXferBuf;
+
 void tmioXferRecvByCpu(TmioCtl* ctl, TmioTx* tx)
 {
-	vu32* fifo = (vu32*)ctl->fifo_base;
-	u32* buf = (u32*)tx->user;
+	_TmioXferBuf u = { tx->user };
 
-	for (u32 i = 0; i < tx->block_size; i += 4) {
-		*buf++ = *fifo;
+	u16 fifo16_bits = (~REG_TMIO_MASKHI) & (TMIO_STAT_FIFO16_RECV>>16);
+	if_likely (fifo16_bits == 0) {
+		// 32-bit FIFO ("fast" path)
+		vu32* fifo = (vu32*)ctl->fifo_base;
+		for (u32 i = 0; i < tx->block_size; i += 4) {
+			*u.buf32++ = *fifo;
+		}
+	} else {
+		// 16-bit FIFO (slow path)
+		for (u32 i = 0; i < tx->block_size; i += 2) {
+			u16 data = REG_TMIO_FIFO16;
+			*u.buf8++ = data & 0xff;
+			if ((i+1) < tx->block_size) {
+				*u.buf8++ = (data >> 8);
+			}
+		}
 	}
 
-	tx->user = buf;
+	tx->user = u.buf;
 }
 
 void tmioXferSendByCpu(TmioCtl* ctl, TmioTx* tx)
 {
-	vu32* fifo = (vu32*)ctl->fifo_base;
-	u32* buf = (u32*)tx->user;
+	_TmioXferBuf u = { tx->user };
 
-	for (u32 i = 0; i < tx->block_size; i += 4) {
-		*fifo = *buf++;
+	u16 fifo16_bits = (~REG_TMIO_MASKHI) & (TMIO_STAT_FIFO16_SEND>>16);
+	if_likely (fifo16_bits == 0) {
+		// 32-bit FIFO ("fast" path)
+		vu32* fifo = (vu32*)ctl->fifo_base;
+		for (u32 i = 0; i < tx->block_size; i += 4) {
+			*fifo = *u.buf32++;
+		}
+	} else {
+		// 16-bit FIFO (slow path)
+		for (u32 i = 0; i < tx->block_size; i += 2) {
+			u16 data = *u.buf8++;
+			if ((i+1) < tx->block_size) {
+				data |= (*u.buf8++) << 8;
+			}
+			REG_TMIO_FIFO16 = data;
+		}
 	}
 
-	tx->user = buf;
+	tx->user = u.buf;
 }
 
 unsigned tmioDecodeTranSpeed(u8 tran_speed)
