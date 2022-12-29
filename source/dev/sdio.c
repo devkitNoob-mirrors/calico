@@ -15,7 +15,11 @@ static bool _sdioTransact(SdioCard* card, TmioTx* tx, u16 type, u32 arg)
 	tx->port = card->port;
 	tx->type = type;
 	tx->arg = arg;
-	return tmioTransact(card->ctl, tx);
+	bool rc = tmioTransact(card->ctl, tx);
+	if (!rc) {
+		dietPrint("sdio fail @ type=%.4X (cmd%.2d)\n arg=%.8lX stat=%.8lX\n", type, type&0x3f, arg, tx->status);
+	}
+	return rc;
 }
 
 static bool _sdioCardBootup(SdioCard* card)
@@ -23,6 +27,8 @@ static bool _sdioCardBootup(SdioCard* card)
 	TmioTx tx;
 	tx.callback = NULL;
 	tx.xfer_isr = NULL;
+
+	dietPrint("Doing SDIO bootup\n");
 
 	// XX: GO_IDLE is not intended to be necessary for SDIO cards operating in
 	// SD mode (as opposed to SPI mode). Yet, the card does not reply to commands
@@ -66,13 +72,13 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 	*card = (SdioCard){0};
 	card->ctl = ctl;
 	card->port.clock = tmioSelectClock(400000); // 400kHz is the standard identification clock
-	// XX: Official code uses HCLK/256 aka 131kHz here. Figure out which clock should we use
+	// XX: Official code uses HCLK/256 (0x40) aka 131kHz here. Figure out which clock should we use
 	card->port.num = port;
 	card->port.width = 1;
 
 	// Try to read a SDIO register (Int Enable), and if that fails, try to perform initial bootup.
-	u8 dummy = 0;
-	if (!sdioCardReadDirect(card, 0, 0x00004, &dummy, 1) && !_sdioCardBootup(card)) {
+	u8 irq_enable = 0;
+	if (!sdioCardReadDirect(card, 0, 0x00004, &irq_enable, 1) && !_sdioCardBootup(card)) {
 		return false;
 	}
 
@@ -235,8 +241,8 @@ bool sdioCardReadDirect(SdioCard* card, unsigned func, unsigned addr, void* out,
 			return false;
 		}
 		u32 ret = tx.resp.value[0];
-		//dietPrint(" sdio ret %.8lX\n", ret);
 		if ((ret >> 8) & 0xcf) {
+			dietPrint("sdio rd %X:%.5X fail %.8lX\n", func, addr, ret);
 			return false;
 		}
 		buf[i] = ret & 0xff;
@@ -258,8 +264,77 @@ bool sdioCardWriteDirect(SdioCard* card, unsigned func, unsigned addr, const voi
 		}
 		u32 ret = tx.resp.value[0];
 		if ((ret >> 8) & 0xcf) {
+			dietPrint("sdio wr %X:%.5X fail %.8lX\n", func, addr, ret);
 			return false;
 		}
 	}
 	return true;
+}
+
+static bool _sdioCardReadWriteExtended(SdioCard* card, TmioTx* tx, u32 arg, size_t size)
+{
+	bool isAligned = (((uptr)tx->user | size) & 3) == 0;
+	bool isWrite = (arg & SDIO_RW_EXTENDED_WRITE) != 0;
+	u16 type = SDIO_CMD_RW_EXTENDED;
+	if (isWrite) {
+		type |= TMIO_CMD_TX_WRITE;
+	} else {
+		type |= TMIO_CMD_TX_READ;
+	}
+
+	// Detect block mode
+	if (size <= SDIO_BLOCK_SZ) {
+		tx->block_size = size;
+		tx->num_blocks = 1;
+		tx->callback = NULL;
+		tx->xfer_isr = isWrite ? tmioXferSendByCpu : tmioXferRecvByCpu;
+
+		arg |= SDIO_RW_EXTENDED_BYTES | SDIO_RW_EXTENDED_COUNT(size);
+	} else {
+		if ((size & (SDIO_BLOCK_SZ-1)) || !isAligned) {
+			return false; // Bad alignment
+		}
+
+		tx->block_size = SDIO_BLOCK_SZ;
+		tx->num_blocks = size / SDIO_BLOCK_SZ;
+		tx->callback = NULL; // TODO: DMA callback
+		tx->xfer_isr = isWrite ? tmioXferSendByCpu : tmioXferRecvByCpu;
+
+		arg |= SDIO_RW_EXTENDED_BLOCKS | SDIO_RW_EXTENDED_COUNT(tx->num_blocks);
+	}
+
+	if (tx->num_blocks > 1) {
+		type |= TMIO_CMD_TX_MULTI;
+	}
+
+	if (!_sdioTransact(card, tx, type, arg)) {
+		return false;
+	}
+
+	u32 ret = tx->resp.value[0];
+	if ((ret >> 8) & 0xcf) {
+		return false;
+	}
+
+	return true;
+}
+
+bool sdioCardReadExtended(SdioCard* card, unsigned func, unsigned addr, void* out, size_t size)
+{
+	TmioTx tx;
+	tx.user = out;
+
+	return _sdioCardReadWriteExtended(card, &tx,
+		SDIO_RW_EXTENDED_ADDR(addr) | SDIO_RW_EXTENDED_INCR | SDIO_RW_EXTENDED_FUNC(func) | SDIO_RW_EXTENDED_READ,
+		size);
+}
+
+bool sdioCardWriteExtended(SdioCard* card, unsigned func, unsigned addr, const void* in, size_t size)
+{
+	TmioTx tx;
+	tx.user = (void*)in;
+
+	return _sdioCardReadWriteExtended(card, &tx,
+		SDIO_RW_EXTENDED_ADDR(addr) | SDIO_RW_EXTENDED_INCR | SDIO_RW_EXTENDED_FUNC(func) | SDIO_RW_EXTENDED_WRITE,
+		size);
 }
