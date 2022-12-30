@@ -4,6 +4,7 @@
 
 typedef struct Ar6kDev {
 	SdioCard* sdio;
+	u32 chip_id;
 	u32 hia_addr;
 } Ar6kDev;
 
