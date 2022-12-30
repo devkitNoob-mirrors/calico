@@ -28,4 +28,14 @@ typedef struct Ar6kBmiTargetInfo {
 bool ar6kBmiBufferSend(Ar6kDev* dev, const void* buf, size_t len);
 bool ar6kBmiBufferRecv(Ar6kDev* dev, void* buf, size_t len);
 
+bool ar6kBmiDone(Ar6kDev* dev);
+bool ar6kBmiReadMemory(Ar6kDev* dev, u32 addr, void* buf, size_t len);
+bool ar6kBmiWriteMemory(Ar6kDev* dev, u32 addr, const void* buf, size_t len);
+bool ar6kBmiReadSocReg(Ar6kDev* dev, u32 addr, u32* out);
+bool ar6kBmiWriteSocReg(Ar6kDev* dev, u32 addr, u32 value);
 bool ar6kBmiGetTargetInfo(Ar6kDev* dev, Ar6kBmiTargetInfo* info);
+
+MEOW_INLINE bool ar6kBmiWriteMemoryWord(Ar6kDev* dev, u32 addr, u32 value)
+{
+	return ar6kBmiWriteMemory(dev, addr, &value, sizeof(u32));
+}

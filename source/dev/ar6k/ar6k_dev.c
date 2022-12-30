@@ -1,5 +1,7 @@
 #include "common.h"
 
+#define AR6K_BOARD_INIT_TIMEOUT 2000
+
 static bool _ar6kDevReset(Ar6kDev* dev)
 {
 	// Soft reset the device
@@ -61,7 +63,7 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 			return false;
 	}
 
-	// Read board initialized flag from HIA
+	// Read board data initialized flag from HIA
 	u32 hi_board_data_initialized = 0;
 	if (!ar6kDevReadRegDiag(dev, dev->hia_addr+0x58, &hi_board_data_initialized)) {
 		return false;
@@ -97,11 +99,72 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 	// is useless to us anyway (we don't actually have the means to connect UART to
 	// the Atheros hardware, nor do we probably have a debugging build of the FW).
 
-	// TODO: more
+	// Set hi_app_host_interest. Unknown what this does, this is normally a pointer.
+	if (!ar6kBmiWriteMemoryWord(dev, dev->hia_addr+0x00, 2)) {
+		return false;
+	}
+
+	// Set WLAN_CLOCK_CONTROL
+	if (!ar6kBmiWriteSocReg(dev, 0x4028, 5)) {
+		dietPrint("[AR6K] WLAN_CLOCK_CONTROL fail\n");
+		return false;
+	}
+
+	// Set WLAN_CPU_CLOCK
+	if (!ar6kBmiWriteSocReg(dev, 0x4020, 0)) {
+		dietPrint("[AR6K] WLAN_CPU_CLOCK fail\n");
+		return false;
+	}
+
+	// XX: Firmware upload happens here.
+
+	// Set hi_mbox_io_block_sz
+	if (!ar6kBmiWriteMemoryWord(dev, dev->hia_addr+0x6c, SDIO_BLOCK_SZ)) {
+		return false;
+	}
+
+	// Set hi_mbox_isr_yield_limit. Unknown what this does.
+	if (!ar6kBmiWriteMemoryWord(dev, dev->hia_addr+0x74, 0x63)) {
+		return false;
+	}
+
+	// Launch the firmware!
+	dietPrint("[AR6K] Prep done, exiting BMI\n");
+	if (!ar6kBmiDone(dev)) {
+		return false;
+	}
+
+	// Wait for the board data to be initialized
+	unsigned attempt;
+	for (attempt = 0; attempt < AR6K_BOARD_INIT_TIMEOUT; attempt ++) {
+		if (!ar6kDevReadRegDiag(dev, dev->hia_addr+0x58, &hi_board_data_initialized)) {
+			dietPrint("[AR6K] Bad HIA read\n");
+			return false;
+		}
+
+		if (hi_board_data_initialized) {
+			break;
+		}
+
+		threadSleep(1000);
+	}
+
+	if (attempt == AR6K_BOARD_INIT_TIMEOUT) {
+		dietPrint("[AR6K] Board init timed out\n");
+		return false;
+	} else {
+		dietPrint("[AR6K] Init OK, %u attempts\n", attempt+1);
+	}
+
+	// XX: Here, hi_board_data would be read, which now points to a buffer
+	// containing data read from an EEPROM chip. This chip contains settings
+	// such as the firmware (?) version, country flags, as well as the MAC.
+	// Even though official software does this, the data is only used to
+	// verify that the MSB of the version number is 0x60 and nothing else.
+	// This doesn't seem necessary, and the MAC can be obtained from NVRAM
+	// (which is needed anyway for Mitsumi). So, we opt to not bother.
 
 	// TODO: HTC, WMI bringup
-
-	dietPrint("[AR6K] done\n");
 
 	return true;
 }
