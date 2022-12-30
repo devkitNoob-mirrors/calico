@@ -71,8 +71,10 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 {
 	*card = (SdioCard){0};
 	card->ctl = ctl;
+
+	// Initialize port settings
+	// XX: Official code uses HCLK/256 (0x40) aka 131kHz here, which is not quite correct.
 	card->port.clock = tmioSelectClock(400000); // 400kHz is the standard identification clock
-	// XX: Official code uses HCLK/256 (0x40) aka 131kHz here. Figure out which clock should we use
 	card->port.num = port;
 	card->port.width = 1;
 
@@ -80,6 +82,20 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 	u8 irq_enable = 0;
 	if (!sdioCardReadDirect(card, 0, 0x00004, &irq_enable, 1) && !_sdioCardBootup(card)) {
 		return false;
+	}
+
+	// XX: Official code has a 2ms wait after initial warmboot probe/bootup. This wait
+	// seems neither necessary, nor is it present in Atheros' original vendor code
+	// (sdio_bus_misc.c SDInitializeCard).
+	//threadSleep(2000);
+
+	// In case we are warmbooting the card and IRQs were enabled previously, disable them
+	if (irq_enable != 0) {
+		irq_enable = 0;
+		if (!sdioCardWriteDirect(card, 0, 0x00004, &irq_enable, 1)) {
+			dietPrint("[SDIO] Unable to disable irqs\n");
+			return false;
+		}
 	}
 
 	// Retrieve CCCR/SDIO revision
@@ -109,27 +125,6 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 	}
 	dietPrint("SDIO caps: 0x%.2X\n", card->caps);
 
-	// Bus interface control
-	{
-		// Disable card detect pull-up resistor
-		u8 bus_iface_ctl = 0x80;
-
-		// Switch to 4-bit mode if supported (i.e. not a slow card, or a slow card
-		// that supports 4-bit mode)
-		bool can_do_4bit = (card->caps & 0xc0) != 0x40;
-		if (can_do_4bit) {
-			bus_iface_ctl |= 2;
-		}
-
-		if (!sdioCardWriteDirect(card, 0, 0x00007, &bus_iface_ctl, 1)) {
-			return false;
-		}
-
-		if (can_do_4bit) {
-			card->port.width = 4;
-		}
-	}
-
 	// Retrieve the pointer to CIS0
 	u32 cis0_ptr = 0;
 	if (!sdioCardReadDirect(card, 0, 0x00009, &cis0_ptr, 3)) {
@@ -139,8 +134,8 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 	dietPrint("CIS0 at 0x%.6lX\n", cis0_ptr);
 
 	// Process CIS0 tuples
-	u32 cis0_tuple_mask = 0;
-	while (cis0_tuple_mask != 3) {
+	unsigned max_speed = 0;
+	for (;;) {
 		struct { u8 id, len; } cis_tuple;
 		if (!sdioCardReadDirect(card, 0, cis0_ptr, &cis_tuple, sizeof(cis_tuple))) {
 			return false;
@@ -159,7 +154,6 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 					return false;
 				}
 				dietPrint(" MANFID code=%.4X id=%.4X\n", card->manfid.code, card->manfid.id);
-				cis0_tuple_mask |= 1U<<0;
 				break;
 			}
 			case 0x22: { // FUNCE
@@ -171,10 +165,8 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 					break;
 				}
 
-				unsigned max_speed = tmioDecodeTranSpeed(funce.max_tran_speed);
-				card->port.clock = tmioSelectClock(max_speed);
-				dietPrint(" Speed: %u b/sec (0x%.2x)\n", max_speed, card->port.clock & 0xff);
-				cis0_tuple_mask |= 1U<<1;
+				max_speed = tmioDecodeTranSpeed(funce.max_tran_speed);
+				dietPrint(" Max speed: %u b/sec\n", max_speed);
 				break;
 			}
 		}
@@ -182,8 +174,41 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 		cis0_ptr += cis_tuple.len;
 	}
 
-	if (cis0_tuple_mask != 3) {
-		dietPrint("SDIO missing CIS0 tuples\n");
+	// Determine appropriate bus width for the card
+	if (card->caps & 0x40) {
+		// Low Speed Card
+		max_speed = 400000;
+		if (card->caps & 0x80) {
+			card->port.width = 4;
+		} else {
+			card->port.width = 1;
+		}
+	} else {
+		// Normal cards always capable of 4-bit
+		card->port.width = 4;
+	}
+
+	// Determine appropriate clock speed for the card
+	if (!max_speed) {
+		dietPrint("SDIO: unknown card speed\n");
+		return false;
+	}
+	card->port.clock = tmioSelectClock(max_speed);
+
+	// Bus interface control
+	{
+		u8 bus_iface_ctl = 0x80; // disable card detect pull-up resistor
+		if (card->port.width == 4) {
+			bus_iface_ctl |= 0x02; // switch to 4-bit mode
+		}
+		if (!sdioCardWriteDirect(card, 0, 0x00007, &bus_iface_ctl, 1)) {
+			return false;
+		}
+	}
+
+	// Ensure 4-bit block gap interrupt (not supported by TMIO) is disabled
+	card->caps &= ~0x20;
+	if (!sdioCardWriteDirect(card, 0, 0x00008, &card->caps, 1)) {
 		return false;
 	}
 
