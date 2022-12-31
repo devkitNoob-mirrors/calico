@@ -308,7 +308,7 @@ static bool _sdioCardReadWriteExtended(SdioCard* card, TmioTx* tx, u32 arg, size
 	}
 
 	// Detect block mode
-	if (size <= SDIO_BLOCK_SZ) {
+	if (size < SDIO_BLOCK_SZ) {
 		tx->block_size = size;
 		tx->num_blocks = 1;
 		tx->callback = NULL;

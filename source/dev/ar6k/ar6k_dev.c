@@ -34,8 +34,8 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 
 	// In case we are warmbooting the card and IRQs were enabled previously, disable them
 	{
-		u32 value = 0;
-		if (!sdioCardWriteExtended(dev->sdio, 1, 0x000418, &value, 4)) {
+		Ar6kIrqEnableRegs regs = { 0 };
+		if (!sdioCardWriteExtended(dev->sdio, 1, 0x000418, &regs, sizeof(regs))) {
 			dietPrint("[AR6K] Unable to disable irqs\n");
 			return false;
 		}
@@ -164,7 +164,47 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 	// This doesn't seem necessary, and the MAC can be obtained from NVRAM
 	// (which is needed anyway for Mitsumi). So, we opt to not bother.
 
-	// TODO: HTC, WMI bringup
+	// Perform initial HTC handshake
+	if (!ar6kHtcInit(dev)) {
+		dietPrint("[AR6K] HTC init failed\n");
+		return false;
+	}
+
+	// Connect WMI control service
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiControl, 0, NULL)) {
+		return false;
+	}
+
+	// Connect WMI data services. There are four QoS levels
+	const u16 datasrv_flags = AR6K_HTC_CONN_FLAG_REDUCE_CREDIT_DRIBBLE | AR6K_HTC_CONN_FLAG_THRESHOLD_0_5;
+
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataBe, datasrv_flags, NULL)) {
+		return false;
+	}
+
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataBk, datasrv_flags, NULL)) {
+		return false;
+	}
+
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataVi, datasrv_flags, NULL)) {
+		return false;
+	}
+
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataVo, datasrv_flags, NULL)) {
+		return false;
+	}
+
+	// XX: Credit distribution setup would be handled here.
+
+	// Inform HTC that we are done with setup
+	if (!ar6kHtcSetupComplete(dev)) {
+		dietPrint("[AR6K] HTC setup fail\n");
+		return false;
+	}
+
+	dietPrint("[AR6K] HTC setup complete!\n");
+
+	// TODO: enable SDIO interrupt, rx handler
 
 	return true;
 }
@@ -208,4 +248,50 @@ bool ar6kDevWriteRegDiag(Ar6kDev* dev, u32 addr, u32 value)
 	}
 
 	return true;
+}
+
+bool _ar6kDevPollMboxMsgRecv(Ar6kDev* dev, u32* lookahead, unsigned attempts)
+{
+	Ar6kIrqProcRegs regs;
+	unsigned attempt;
+
+	for (attempt = 0; attempt < attempts; attempt ++) {
+		if (!sdioCardReadExtended(dev->sdio, 1, 0x00400, &regs, sizeof(regs))) {
+			return false;
+		}
+
+		if ((regs.host_int_status & 1) && (regs.rx_lookahead_valid & 1)) {
+			break;
+		}
+
+		threadSleep(10000);
+	}
+
+	if (attempt == attempts) {
+		dietPrint("[AR6K] mbox poll failed\n");
+		return false;
+	}
+
+	*lookahead = regs.rx_lookahead[0];
+	return true;
+}
+
+bool _ar6kDevSendPacket(Ar6kDev* dev, const void* pktmem, size_t pktsize)
+{
+	pktsize = (pktsize + SDIO_BLOCK_SZ - 1) &~ (SDIO_BLOCK_SZ - 1);
+	bool ret = sdioCardWriteExtended(dev->sdio, 1, 0x000800 + 0x800 - pktsize, pktmem, pktsize);
+	if (!ret) {
+		dietPrint("[AR6K] DevSendPacket fail\n");
+	}
+	return ret;
+}
+
+bool _ar6kDevRecvPacket(Ar6kDev* dev, void* pktmem, size_t pktsize)
+{
+	pktsize = (pktsize + SDIO_BLOCK_SZ - 1) &~ (SDIO_BLOCK_SZ - 1);
+	bool ret = sdioCardReadExtended(dev->sdio, 1, 0x000800 + 0x800 - pktsize, pktmem, pktsize);
+	if (!ret) {
+		dietPrint("[AR6K] DevRecvPacket fail\n");
+	}
+	return ret;
 }
