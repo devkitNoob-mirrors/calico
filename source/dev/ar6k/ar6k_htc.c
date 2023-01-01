@@ -15,6 +15,60 @@ MEOW_CONSTEXPR u16 _ar6kHtcLookaheadGetPayloadLen(u32 lookahead)
 	return lookahead >> 16;
 }
 
+static bool _ar6kHtcProcessTrailer(Ar6kDev* dev, void* trailer, size_t size)
+{
+	while (size) {
+		// Ensure the record header fits
+		if (size < sizeof(Ar6kHtcRecordHdr)) {
+			dietPrint("[AR6K] bad trailer record hdr\n");
+			return false;
+		}
+
+		// Retrieve record header
+		Ar6kHtcRecordHdr* hdr = (Ar6kHtcRecordHdr*)trailer;
+		trailer = hdr+1;
+		size -= sizeof(Ar6kHtcRecordHdr);
+
+		// Ensure the record data fits
+		if (size < hdr->length) {
+			dietPrint("[AR6K] bad trailer record size\n");
+			return false;
+		}
+
+		// Retrieve record data
+		void* data = trailer;
+		trailer = (u8*)data + hdr->length;
+		size -= hdr->length;
+
+		// Process record
+		switch (hdr->record_id) {
+			default: {
+				dietPrint("[AR6K] unk record id: %.2X\n", hdr->record_id);
+				break; // ignore (without failing)
+			}
+
+			case Ar6kHtcRecordId_Null:
+				break; // nop
+
+			case Ar6kHtcRecordId_Credit: {
+				// TODO: handle
+				break;
+			}
+
+			case Ar6kHtcRecordId_Lookahead: {
+				Ar6kHtcLookaheadReport* rep = (Ar6kHtcLookaheadReport*)data;
+				if ((rep->pre_valid ^ rep->post_valid) == 0xff) {
+					// This report is valid - update lookahead
+					memcpy(&dev->lookahead, rep->lookahead, sizeof(u32));
+				}
+				break;
+			}
+		}
+	}
+
+	return true;
+}
+
 static bool _ar6kHtcWaitforControlMessage(Ar6kDev* dev, _Ar6kHtcCtrlPktMem* mem)
 {
 	u32 lookahead = 0;
@@ -37,6 +91,59 @@ static bool _ar6kHtcWaitforControlMessage(Ar6kDev* dev, _Ar6kHtcCtrlPktMem* mem)
 		dietPrint("[AR6K] Lookahead mismatch\n");
 		return false;
 	}
+
+	return true;
+}
+
+// TODO: Do this right with netbuf stuff
+alignas(4) static u8 s_tempRxBuf[AR6K_HTC_MAX_PACKET_SZ];
+
+bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
+{
+	do {
+		// Grab lookahead
+		u32 lookahead = dev->lookahead;
+		dev->lookahead = 0;
+
+		// Retrieve and validate endpoint ID
+		Ar6kHtcEndpointId epid = _ar6kHtcLookaheadGetEndpointId(lookahead);
+		if (epid >= Ar6kHtcEndpointId_Last) {
+			dietPrint("[AR6K] RX invalid epid = %u\n", epid);
+			return false;
+		}
+
+		// Retrieve and validate packet length
+		size_t len = sizeof(Ar6kHtcFrameHdr) + _ar6kHtcLookaheadGetPayloadLen(lookahead);
+		if (len > AR6K_HTC_MAX_PACKET_SZ) {
+			dietPrint("[AR6K] RX pkt too big = %zu\n", len);
+			return false;
+		}
+
+		// Read packet!
+		if (!_ar6kDevRecvPacket(dev, s_tempRxBuf, len)) {
+			dietPrint("[AR6K] RX pkt fail\n");
+			return false;
+		}
+
+		// Validate packet against lookahead
+		if (*(u32*)&s_tempRxBuf[0] != lookahead) {
+			dietPrint("[AR6K] RX lookahead mismatch\n");
+			return false;
+		}
+
+		// Handle trailer
+		Ar6kHtcFrameHdr* htchdr = (Ar6kHtcFrameHdr*)s_tempRxBuf;
+		if (htchdr->flags & AR6K_HTC_FLAG_RECV_TRAILER) {
+			htchdr->payload_len -= htchdr->recv_trailer_len;
+			if (!_ar6kHtcProcessTrailer(dev, (u8*)(htchdr+1) + htchdr->payload_len, htchdr->recv_trailer_len)) {
+				return false;
+			}
+		}
+
+		// TODO: actually handle packet
+		dietPrint("[AR6K] RX epid%u len%u\n", htchdr->endpoint_id, htchdr->payload_len);
+
+	} while (dev->lookahead != 0);
 
 	return true;
 }

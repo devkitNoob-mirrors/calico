@@ -22,6 +22,8 @@ static TmioCtl s_sdioCtl;
 static u32 s_sdioCtlBuf[2];
 static Thread s_sdioThread;
 alignas(8) static u8 s_sdioThreadStack[1024];
+static Thread s_sdioIrqThread;
+alignas(8) static u8 s_sdioIrqThreadStack[2048];
 
 static SdioCard s_sdioCard;
 static Ar6kDev s_ar6kDev;
@@ -102,6 +104,10 @@ bool twlwifiInit(void)
 		dietPrint("[TWLWIFI] AR6K init failed\n");
 		return false;
 	}
+
+	// Start the Atheros interrupt thread
+	threadPrepare(&s_sdioIrqThread, (ThreadFunc)ar6kDevThreadMain, &s_ar6kDev, &s_sdioIrqThreadStack[sizeof(s_sdioIrqThreadStack)], 0x11);
+	threadStart(&s_sdioIrqThread);
 
 	return true;
 }

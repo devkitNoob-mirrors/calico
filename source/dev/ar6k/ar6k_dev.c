@@ -22,6 +22,12 @@ static bool _ar6kDevReset(Ar6kDev* dev)
 	return true;
 }
 
+static void _ar6kCardIrqHandler(TmioCtl* ctl, unsigned port)
+{
+	Ar6kDev* dev = (Ar6kDev*)tmioGetPortUserData(ctl, port);
+	mailboxTrySend(&dev->irq_mbox, 1);
+}
+
 bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 {
 	*dev = (Ar6kDev){0};
@@ -33,12 +39,8 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 	}
 
 	// In case we are warmbooting the card and IRQs were enabled previously, disable them
-	{
-		Ar6kIrqEnableRegs regs = { 0 };
-		if (!sdioCardWriteExtended(dev->sdio, 1, 0x000418, &regs, sizeof(regs))) {
-			dietPrint("[AR6K] Unable to disable irqs\n");
-			return false;
-		}
+	if (!_ar6kDevSetIrqEnable(dev, false)) {
+		return false;
 	}
 
 	// Read chip ID
@@ -204,9 +206,76 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 
 	dietPrint("[AR6K] HTC setup complete!\n");
 
-	// TODO: enable SDIO interrupt, rx handler
+	// Enable Atheros interrupts
+	if (!_ar6kDevSetIrqEnable(dev, true)) {
+		return false;
+	}
+
+	// Enable SDIO function1 interrupt
+	if (!sdioCardSetIrqEnable(dev->sdio, 1, true)) {
+		dietPrint("[AR6K] SDIO irq enable failed\n");
+		return false;
+	}
+
+	// Set up interrupt handler
+	// XX: We are bypassing SdioCard abstractions in favor of directly registering
+	// a TMIO card interrupt handler. This is fine (and more "efficient") because
+	// ar6k is a single-function device. Other SDIO device drivers may want to use
+	// a more abstracted API (which does not exist right now in SdioCard).
+	mailboxPrepare(&dev->irq_mbox, &dev->irq_flag, 1);
+	tmioSetPortUserData(dev->sdio->ctl, dev->sdio->port.num, dev);
+	tmioSetPortCardIrqHandler(dev->sdio->ctl, dev->sdio->port.num, _ar6kCardIrqHandler);
 
 	return true;
+}
+
+int ar6kDevThreadMain(Ar6kDev* dev)
+{
+	for (;;) {
+		u32 irq_flag = mailboxRecv(&dev->irq_mbox);
+		if (!irq_flag) {
+			break;
+		}
+
+		// XX: We do not bother reading func0 int_pending (0x05) because
+		// ar6k is a single-function device. See explanation in ar6kDevInit.
+
+		// Read interrupt status
+		Ar6kIrqProcRegs regs;
+		if (!sdioCardReadExtended(dev->sdio, 1, 0x00400, &regs, sizeof(regs))) {
+			dietPrint("[AR6K] IRQ status read fail\n");
+			continue; // skip acknowledgement
+		}
+		unsigned int_status = regs.host_int_status & dev->irq_regs.int_status_enable;
+
+		// Handle mbox0 irq
+		if (int_status & (1U<<0)) {
+			int_status &= ~(1U<<0); // Remove mbox0 irq
+			if (regs.rx_lookahead_valid & (1U<<0)) {
+				dev->lookahead = regs.rx_lookahead[0];
+				if (dev->lookahead == 0) {
+					dietPrint("[AR6K] Invalid packet received\n");
+					continue; // skip acknowledgement
+				}
+			}
+		}
+
+		// Handle other IRQs (which usually indicate error conditions)
+		if (int_status) {
+			dietPrint("[AR6K] Bad IRQ: 0x%.2X\n", int_status);
+			continue; // skip acknowledgement
+		}
+
+		// Process RX packets
+		if (dev->lookahead && !_ar6kHtcRecvMessagePendingHandler(dev)) {
+			continue; // skip acknowledgement
+		}
+
+		// Finally, acknowledge the IRQ
+		tmioAckPortCardIrq(dev->sdio->ctl, dev->sdio->port.num);
+	}
+
+	return 0;
 }
 
 static bool _ar6kDevSetAddrWinReg(Ar6kDev* dev, u32 reg, u32 addr)
@@ -248,6 +317,31 @@ bool ar6kDevWriteRegDiag(Ar6kDev* dev, u32 addr, u32 value)
 	}
 
 	return true;
+}
+
+bool _ar6kDevSetIrqEnable(Ar6kDev* dev, bool enable)
+{
+	Ar6kIrqEnableRegs regs = { 0 };
+	if (enable) {
+		// bit7: enable_error
+		// bit6: enable_cpu
+		// bit4: enable_counter
+		// bit0: enable_mbox_data (for mbox0)
+		regs.int_status_enable = (1U<<7) | (1U<<6) | (1U<<4) | (1U<<0);
+		// bit1: enable_rx_underflow
+		// bit0: enable_tx_overflow
+		regs.error_status_enable = (1U<<1) | (1U<<0);
+		// bit0: enable (for debug interrupt)
+		regs.counter_int_status_enable = (1U<<0);
+	}
+
+	bool rc = sdioCardWriteExtended(dev->sdio, 1, 0x000418, &regs, sizeof(regs));
+	if (rc) {
+		dev->irq_regs = regs;
+	} else {
+		dietPrint("[AR6K] ar6k irq %s failed\n", enable ? "enable" : "disable");
+	}
+	return rc;
 }
 
 bool _ar6kDevPollMboxMsgRecv(Ar6kDev* dev, u32* lookahead, unsigned attempts)

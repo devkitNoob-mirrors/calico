@@ -22,14 +22,10 @@ typedef struct Ar6kIrqProcRegs {
 	u32 rx_lookahead[2];
 } Ar6kIrqProcRegs;
 
-typedef struct Ar6kIrqEnableRegs {
-	u8 int_status_enable;
-	u8 cpu_int_status_enable;
-	u8 error_status_enable;
-	u8 counter_int_status_enable;
-} Ar6kIrqEnableRegs;
-
 // Internal API
+bool _ar6kDevSetIrqEnable(Ar6kDev* dev, bool enable);
 bool _ar6kDevPollMboxMsgRecv(Ar6kDev* dev, u32* lookahead, unsigned attempts);
 bool _ar6kDevSendPacket(Ar6kDev* dev, const void* pktmem, size_t pktsize);
 bool _ar6kDevRecvPacket(Ar6kDev* dev, void* pktmem, size_t pktsize);
+
+bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev);

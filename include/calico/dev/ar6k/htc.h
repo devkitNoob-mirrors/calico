@@ -13,6 +13,8 @@
 //   [Trailer] (hdr.recv_trailer_len), containing one or more records:
 //     [Ar6kHtcRecordHdr] + {data} with size rechdr.length
 
+#define AR6K_HTC_MAX_PACKET_SZ 2048
+
 #define AR6K_HTC_FLAG_NEED_CREDIT_UPDATE (1U<<0)
 #define AR6K_HTC_FLAG_RECV_TRAILER       (1U<<1)
 
