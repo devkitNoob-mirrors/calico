@@ -63,6 +63,8 @@
 	TMIO_STAT_CMD_DATAEND | \
 	ERROR_IRQ_BITS )
 
+#define PORT0_INSREM_BITS (TMIO_STAT_PORT0_REMOVE|TMIO_STAT_PORT0_INSERT)
+
 static ThrListNode s_tmioIrqQueue;
 static ThrListNode s_tmioTxEndQueue;
 
@@ -121,8 +123,79 @@ bool tmioInit(TmioCtl* ctl, uptr reg_base, uptr fifo_base, u32* mbox_slots, unsi
 	return true;
 }
 
+MEOW_INLINE void _tmioSetPort0CardIrqEnable(TmioCtl* ctl, bool enable)
+{
+	if (enable) {
+		REG_TMIO_SDIO_MASK &= ~1;
+		REG_TMIO_SDIOCTL |= 1;
+	} else {
+		REG_TMIO_SDIO_MASK |= 1;
+		REG_TMIO_SDIOCTL &= ~1;
+	}
+}
+
+void tmioSetPortInsRemHandler(TmioCtl* ctl, unsigned port, TmioInsRemHandler isr)
+{
+	if (port != 0) return;
+	ArmIrqState st = armIrqLockByPsr();
+
+	ctl->port_isr[0].insrem = isr;
+	if (isr) {
+		REG_TMIO_MASKLO &= ~PORT0_INSREM_BITS;
+	} else {
+		REG_TMIO_MASKLO |= PORT0_INSREM_BITS;
+	}
+	REG_TMIO_STATLO = (u16)~PORT0_INSREM_BITS;
+
+	armIrqUnlockByPsr(st);
+}
+
+void tmioSetPortCardIrqHandler(TmioCtl* ctl, unsigned port, TmioCardIrqHandler isr)
+{
+	if (port != 0) return;
+	ArmIrqState st = armIrqLockByPsr();
+
+	ctl->port_isr[0].cardirq = isr;
+	if (!ctl->cardirq_deferred) {
+		_tmioSetPort0CardIrqEnable(ctl, isr != NULL);
+	}
+
+	armIrqUnlockByPsr(st);
+}
+
+void tmioAckPortCardIrq(TmioCtl* ctl, unsigned port)
+{
+	if (port != 0) return;
+	ArmIrqState st = armIrqLockByPsr();
+
+	if (ctl->cardirq_deferred) {
+		ctl->cardirq_deferred = false;
+		if (ctl->port_isr[0].cardirq != NULL) {
+			REG_TMIO_SDIO_STAT = ~1;
+			_tmioSetPort0CardIrqEnable(ctl, true);
+		}
+	}
+
+	armIrqUnlockByPsr(st);
+}
+
 void tmioIrqHandler(TmioCtl* ctl)
 {
+	// Handle port0 card irq
+	u16 sdiostat = ((~REG_TMIO_SDIO_MASK) & REG_TMIO_SDIO_STAT) & 1;
+	if (sdiostat) {
+		ctl->cardirq_deferred = true;
+		_tmioSetPort0CardIrqEnable(ctl, false);
+		ctl->port_isr[0].cardirq(ctl, 0);
+	}
+
+	// Handle port0 insert/remove irq
+	u16 insremstat = ((~REG_TMIO_MASKLO) & REG_TMIO_STATLO) & PORT0_INSREM_BITS;
+	if (insremstat) {
+		REG_TMIO_STATLO = ~insremstat;
+		ctl->port_isr[0].insrem(ctl, 0, (insremstat & TMIO_STAT_PORT0_INSERT) != 0);
+	}
+
 	if (ctl->num_pending_blocks) {
 		bool need_xfer = false;
 
@@ -171,6 +244,12 @@ void tmioThreadMain(TmioCtl* ctl)
 		// Invoke transaction callback if needed
 		if (tx->callback) {
 			tx->callback(ctl, tx);
+		}
+
+		// Mask SDIO card interrupt if needed
+		bool has_cardirq = tx->port.num == 0 && !ctl->cardirq_deferred && ctl->port_isr[0].cardirq != NULL;
+		if (has_cardirq) {
+			_tmioSetPort0CardIrqEnable(ctl, false);
 		}
 
 		// Apply port number if changed
@@ -334,6 +413,11 @@ void tmioThreadMain(TmioCtl* ctl)
 			// Reenable 32-bit FIFO
 			REG_TMIO_CNT32 |= TMIO_CNT32_ENABLE;
 			REG_TMIO_FIFOCTL = TMIO_FIFOCTL_MODE32;
+		}
+
+		// Unmask SDIO card interrupt if needed
+		if (has_cardirq) {
+			_tmioSetPort0CardIrqEnable(ctl, true);
 		}
 
 		// Invoke transaction callback if needed

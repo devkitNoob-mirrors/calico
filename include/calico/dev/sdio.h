@@ -44,6 +44,7 @@ typedef struct SdioCard {
 } SdioCard;
 
 bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port);
+bool sdioCardSetIrqEnable(SdioCard* card, unsigned func, bool enable);
 bool sdioCardReadDirect(SdioCard* card, unsigned func, unsigned addr, void* out, size_t size);
 bool sdioCardWriteDirect(SdioCard* card, unsigned func, unsigned addr, const void* in, size_t size);
 bool sdioCardReadExtended(SdioCard* card, unsigned func, unsigned addr, void* out, size_t size);

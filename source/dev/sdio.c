@@ -253,6 +253,34 @@ bool sdioCardInit(SdioCard* card, TmioCtl* ctl, unsigned port)
 	return true;
 }
 
+bool sdioCardSetIrqEnable(SdioCard* card, unsigned func, bool enable)
+{
+	// Sanity check
+	if (func == 0 || func >= 8) {
+		return false;
+	}
+
+	// Read IRQ enable register
+	u8 irq_enable = 0;
+	if (!sdioCardReadDirect(card, 0, 0x00004, &irq_enable, 1)) {
+		return false;
+	}
+
+	// Update register value
+	u8 irq_mask = 1U<<func;
+	if (enable) {
+		irq_enable |= (irq_mask | 1); // also set master enable
+	} else {
+		irq_enable &= ~irq_mask;
+		if (irq_enable == 1) { // clear master enable if no more irqs enabled
+			irq_enable = 0;
+		}
+	}
+
+	// Write IRQ enable register
+	return sdioCardWriteDirect(card, 0, 0x00004, &irq_enable, 1);
+}
+
 bool sdioCardReadDirect(SdioCard* card, unsigned func, unsigned addr, void* out, size_t size)
 {
 	TmioTx tx;

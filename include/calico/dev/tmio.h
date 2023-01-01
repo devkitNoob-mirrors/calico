@@ -9,6 +9,9 @@ typedef struct TmioResp TmioResp;
 typedef struct TmioCtl  TmioCtl;
 typedef struct TmioTx   TmioTx;
 
+typedef void (* TmioInsRemHandler)(TmioCtl* ctl, unsigned port, bool inserted);
+typedef void (* TmioCardIrqHandler)(TmioCtl* ctl, unsigned port);
+
 struct TmioPort {
 	u16 clock;
 	u8  num;
@@ -18,6 +21,7 @@ struct TmioPort {
 struct TmioResp {
 	u32 value[4];
 };
+
 
 struct TmioCtl {
 	uptr reg_base;
@@ -29,6 +33,13 @@ struct TmioCtl {
 	Mailbox mbox;
 
 	u16 num_pending_blocks;
+	bool cardirq_deferred;
+
+	struct {
+		TmioInsRemHandler insrem;
+		TmioCardIrqHandler cardirq;
+		void* user;
+	} port_isr[1];
 };
 
 struct TmioTx {
@@ -71,7 +82,21 @@ MEOW_CONSTEXPR u16 tmioSelectClock(unsigned freq)
 	return 0x00; // HCLK/2
 }
 
+MEOW_INLINE void* tmioGetPortUserData(TmioCtl* ctl, unsigned port)
+{
+	return ctl->port_isr[port].user;
+}
+
+MEOW_INLINE void tmioSetPortUserData(TmioCtl* ctl, unsigned port, void* data)
+{
+	ctl->port_isr[port].user = data;
+}
+
 bool tmioInit(TmioCtl* ctl, uptr reg_base, uptr fifo_base, u32* mbox_slots, unsigned num_mbox_slots);
+void tmioSetPortInsRemHandler(TmioCtl* ctl, unsigned port, TmioInsRemHandler isr);
+void tmioSetPortCardIrqHandler(TmioCtl* ctl, unsigned port, TmioCardIrqHandler isr);
+void tmioAckPortCardIrq(TmioCtl* ctl, unsigned port);
+
 void tmioIrqHandler(TmioCtl* ctl);
 void tmioThreadMain(TmioCtl* ctl);
 
