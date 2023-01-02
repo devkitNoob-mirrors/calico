@@ -38,6 +38,7 @@ struct Ar6kDev {
 	u8 macaddr[6];
 	Ar6kHtcEndpointId wmi_ctrl_epid;
 	Ar6kHtcEndpointId wmi_data_epids[4];
+	u16 wmi_channel_mask;
 };
 
 bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio);

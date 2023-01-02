@@ -110,7 +110,10 @@ bool twlwifiInit(void)
 	threadStart(&s_sdioIrqThread);
 
 	// Wait for WMI to be ready
-	ar6kWmiWaitReady(&s_ar6kDev);
+	if (!ar6kWmiStartup(&s_ar6kDev)) {
+		dietPrint("[TWLWIFI] AR6K WMI startup fail\n");
+		return false;
+	}
 
 	return true;
 }
