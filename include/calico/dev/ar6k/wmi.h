@@ -2,6 +2,8 @@
 #include "base.h"
 #include "htc.h"
 
+#define AR6K_WMI_PROTOCOL_VER 2
+
 typedef enum Ar6kWmiEventId {
 	Ar6kWmiEventId_Ready = 0x1001,
 } Ar6kWmiEventId;

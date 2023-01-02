@@ -27,6 +27,20 @@ void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 				break;
 			}
 
+			// Retrieve address to app host interest area
+			u32 hi_app_host_interest = 0;
+			if (!ar6kDevReadRegDiag(dev, dev->hia_addr+0x00, &hi_app_host_interest)) {
+				dietPrint("[AR6K] cannot get AHI area\n");
+				break;
+			}
+
+			// Set WMI protocol version
+			if (!ar6kDevWriteRegDiag(dev, hi_app_host_interest, AR6K_WMI_PROTOCOL_VER)) {
+				dietPrint("[AR6K] cannot set WMI ver\n");
+				break;
+			}
+
+			// WMI is now ready for use!
 			memcpy(dev->macaddr, evt->macaddr, 6);
 			dev->wmi_ready = true;
 			break;

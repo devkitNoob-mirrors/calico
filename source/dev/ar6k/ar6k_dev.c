@@ -101,8 +101,8 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 	// is useless to us anyway (we don't actually have the means to connect UART to
 	// the Atheros hardware, nor do we probably have a debugging build of the FW).
 
-	// Set hi_app_host_interest. Unknown what this does, this is normally a pointer.
-	if (!ar6kBmiWriteMemoryWord(dev, dev->hia_addr+0x00, 2)) {
+	// Set hi_app_host_interest to the requested WMI protocol version
+	if (!ar6kBmiWriteMemoryWord(dev, dev->hia_addr+0x00, AR6K_WMI_PROTOCOL_VER)) {
 		return false;
 	}
 
@@ -260,9 +260,28 @@ int ar6kDevThreadMain(Ar6kDev* dev)
 			}
 		}
 
+#ifdef AR6K_DEBUG
+		// Handle counter irq
+		if (int_status & (1U<<4)) {
+			int_status &= ~(1U<<4); // Remove counter irq
+			unsigned counter_irq_status = regs.counter_int_status & dev->irq_regs.counter_int_status_enable;
+
+			// Handle debug counter irq
+			if (counter_irq_status & (1U<<0)) {
+				counter_irq_status &= ~(1U<<0);
+				dietPrint("[AR6K] Target assertion fail\n");
+
+				// Clear interrupt by reading the counter
+				u32 dummy;
+				sdioCardReadExtended(dev->sdio, 1, 0x000440, &dummy, sizeof(dummy)); // COUNT_DEC_ADDRESS
+			}
+		}
+#endif
+
 		// Handle other IRQs (which usually indicate error conditions)
 		if (int_status) {
-			dietPrint("[AR6K] Bad IRQ: 0x%.2X\n", int_status);
+			dietPrint("[AR6K] Bad IRQ %.2X %.2X %.2X %.2X\n",
+				int_status, regs.cpu_int_status, regs.error_int_status, regs.counter_int_status);
 			continue; // skip acknowledgement
 		}
 
