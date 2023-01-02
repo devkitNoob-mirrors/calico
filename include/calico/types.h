@@ -59,3 +59,5 @@ typedef volatile sptr vsptr; ///< Pointer-sized volatile signed integer.
 
 #define if_likely(_expr)   if(__builtin_expect(!!(_expr), 1))
 #define if_unlikely(_expr) if(__builtin_expect(!!(_expr), 0))
+
+#define MEOW_ASSUME(_expr) do { if (!(_expr)) __builtin_unreachable(); } while (0)

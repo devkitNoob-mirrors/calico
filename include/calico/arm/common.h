@@ -13,6 +13,11 @@ typedef struct ArmContext {
 
 typedef unsigned ArmIrqState;
 
+MEOW_INLINE void armSoftBreakpoint(void)
+{
+	__asm__ __volatile__ ("mov r11, r11");
+}
+
 #if !__thumb__
 
 MEOW_INLINE u32 armGetCpsr(void)
