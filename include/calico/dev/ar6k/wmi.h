@@ -28,7 +28,6 @@ typedef struct Ar6kWmiDataHdr {
 //-----------------------------------------------------------------------------
 
 typedef struct Ar6kWmiEvtReady {
-	Ar6kWmiCtrlHdr hdr;
 	u8 macaddr[6];
 	u8 phy_capability;
 } Ar6kWmiEvtReady;

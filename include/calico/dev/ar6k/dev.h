@@ -36,6 +36,8 @@ struct Ar6kDev {
 	// WMI
 	bool wmi_ready;
 	u8 macaddr[6];
+	Ar6kHtcEndpointId wmi_ctrl_epid;
+	Ar6kHtcEndpointId wmi_data_epids[4];
 };
 
 bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio);

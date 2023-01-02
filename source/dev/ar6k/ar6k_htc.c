@@ -95,11 +95,15 @@ static bool _ar6kHtcWaitforControlMessage(Ar6kDev* dev, _Ar6kHtcCtrlPktMem* mem)
 	return true;
 }
 
-// TODO: Do this right with netbuf stuff
-alignas(4) static u8 s_tempRxBuf[AR6K_HTC_MAX_PACKET_SZ];
+// TODO: Temporarily using static storage for received packets
+alignas(4) static u8 s_tempRxBuf[sizeof(NetBuf) + AR6K_HTC_MAX_PACKET_SZ];
 
 bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 {
+	// TODO: this should really be a parameter
+	NetBuf* pPacket = (NetBuf*)s_tempRxBuf;
+	pPacket->capacity = AR6K_HTC_MAX_PACKET_SZ;
+
 	do {
 		// Grab lookahead
 		u32 lookahead = dev->lookahead;
@@ -129,29 +133,36 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 			return false;
 		}
 
+		// XX: always using statically allocated netbuf
+		pPacket->pos = 0;
+		pPacket->len = len;
+
 		// Read packet!
-		if (!_ar6kDevRecvPacket(dev, s_tempRxBuf, len)) {
+		if (!_ar6kDevRecvPacket(dev, netbufGet(pPacket), len)) {
 			dietPrint("[AR6K] RX pkt fail\n");
 			return false;
 		}
 
+		// Compiler optimization
+		MEOW_ASSUME(pPacket->pos == 0 && pPacket->len == len);
+
 		// Validate packet against lookahead
-		if (*(u32*)&s_tempRxBuf[0] != lookahead) {
+		if (*(u32*)netbufGet(pPacket) != lookahead) {
 			dietPrint("[AR6K] RX lookahead mismatch\n");
 			return false;
 		}
 
 		// Handle trailer
-		Ar6kHtcFrameHdr* htchdr = (Ar6kHtcFrameHdr*)s_tempRxBuf;
+		Ar6kHtcFrameHdr* htchdr = netbufPopHeaderType(pPacket, Ar6kHtcFrameHdr);
 		if (htchdr->flags & AR6K_HTC_FLAG_RECV_TRAILER) {
-			htchdr->payload_len -= htchdr->recv_trailer_len;
-			if (!_ar6kHtcProcessTrailer(dev, (u8*)(htchdr+1) + htchdr->payload_len, htchdr->recv_trailer_len)) {
+			void* trailer = netbufPopTrailer(pPacket, htchdr->recv_trailer_len);
+			if (!trailer || !_ar6kHtcProcessTrailer(dev, trailer, htchdr->recv_trailer_len)) {
 				return false;
 			}
 		}
 
 		// Drop the packet if it's empty
-		if (htchdr->payload_len == 0) {
+		if (pPacket->len == 0) {
 			continue;
 		}
 
@@ -164,12 +175,12 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 			}
 
 			case Ar6kHtcSrvId_WmiControl: {
-				_ar6kWmiEventRx(dev, htchdr+1, htchdr->payload_len);
+				_ar6kWmiEventRx(dev, pPacket);
 				break;
 			}
 
 			default: /* Ar6kHtcSrvId_WmiDataXX */ {
-				dietPrint("[AR6K] RX data srv%.4X len%u\n", srvid, htchdr->payload_len);
+				dietPrint("[AR6K] RX data srv%.4X len%u\n", srvid, pPacket->len);
 				// TODO: do something with data packet...
 				break;
 			}
@@ -258,7 +269,6 @@ Ar6kHtcSrvStatus ar6kHtcConnectService(Ar6kDev* dev, Ar6kHtcSrvId service_id, u1
 		return Ar6kHtcSrvStatus_Failed;
 	}
 
-	dietPrint("[AR6K] srv%.4X -> ep%u\n", service_id, u.resp.endpoint_id);
 	if (out_ep) {
 		*out_ep = (Ar6kHtcEndpointId)u.resp.endpoint_id;
 	}

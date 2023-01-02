@@ -173,26 +173,26 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 	}
 
 	// Connect WMI control service
-	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiControl, 0, NULL)) {
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiControl, 0, &dev->wmi_ctrl_epid)) {
 		return false;
 	}
 
 	// Connect WMI data services. There are four QoS levels
 	const u16 datasrv_flags = AR6K_HTC_CONN_FLAG_REDUCE_CREDIT_DRIBBLE | AR6K_HTC_CONN_FLAG_THRESHOLD_0_5;
 
-	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataBe, datasrv_flags, NULL)) {
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataBe, datasrv_flags, &dev->wmi_data_epids[2])) {
 		return false;
 	}
 
-	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataBk, datasrv_flags, NULL)) {
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataBk, datasrv_flags, &dev->wmi_data_epids[3])) {
 		return false;
 	}
 
-	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataVi, datasrv_flags, NULL)) {
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataVi, datasrv_flags, &dev->wmi_data_epids[1])) {
 		return false;
 	}
 
-	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataVo, datasrv_flags, NULL)) {
+	if (ar6kHtcConnectService(dev, Ar6kHtcSrvId_WmiDataVo, datasrv_flags, &dev->wmi_data_epids[0])) {
 		return false;
 	}
 

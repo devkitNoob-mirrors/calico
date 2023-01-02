@@ -1,17 +1,17 @@
 #include "common.h"
 #include <string.h>
 
-void _ar6kWmiEventRx(Ar6kDev* dev, void* pkt, size_t pktsize)
+void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 {
-	if (pktsize < sizeof(Ar6kWmiCtrlHdr)) {
+	Ar6kWmiCtrlHdr* evthdr = netbufPopHeaderType(pPacket, Ar6kWmiCtrlHdr);
+	if (!evthdr) {
 		dietPrint("[AR6K] WMI event RX too small\n");
 		return;
 	}
 
-	Ar6kWmiCtrlHdr* evthdr = (Ar6kWmiCtrlHdr*)pkt;
 	switch (evthdr->id) {
 		default: {
-			dietPrint("[AR6K] WMI unkevt %.4X (%u)\n", evthdr->id, pktsize);
+			dietPrint("[AR6K] WMI unkevt %.4X (%u)\n", evthdr->id, pPacket->len);
 			break;
 		}
 
@@ -21,7 +21,12 @@ void _ar6kWmiEventRx(Ar6kDev* dev, void* pkt, size_t pktsize)
 				break;
 			}
 
-			Ar6kWmiEvtReady* evt = (Ar6kWmiEvtReady*)pkt;
+			Ar6kWmiEvtReady* evt = netbufPopHeaderType(pPacket, Ar6kWmiEvtReady);
+			if (!evt) {
+				dietPrint("[AR6K] invalid WMI event size\n");
+				break;
+			}
+
 			memcpy(dev->macaddr, evt->macaddr, 6);
 			dev->wmi_ready = true;
 			break;
