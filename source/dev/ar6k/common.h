@@ -29,4 +29,6 @@ bool _ar6kDevSendPacket(Ar6kDev* dev, const void* pktmem, size_t pktsize);
 bool _ar6kDevRecvPacket(Ar6kDev* dev, void* pktmem, size_t pktsize);
 
 bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev);
+bool _ar6kHtcSendPacket(Ar6kDev* dev, Ar6kHtcEndpointId epid, NetBuf* pPacket);
+
 void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket);

@@ -52,6 +52,7 @@ static bool _ar6kHtcProcessTrailer(Ar6kDev* dev, void* trailer, size_t size)
 
 			case Ar6kHtcRecordId_Credit: {
 				// TODO: handle
+				dietPrint("[AR6K] received credits\n");
 				break;
 			}
 
@@ -189,6 +190,46 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 	} while (dev->lookahead != 0);
 
 	return true;
+}
+
+bool _ar6kHtcSendPacket(Ar6kDev* dev, Ar6kHtcEndpointId epid, NetBuf* pPacket)
+{
+	if (epid == Ar6kHtcEndpointId_Control) {
+		dietPrint("[AR6K] TX attempt on HTC ctrl\n");
+		return false;
+	}
+
+	Ar6kEndpoint* ep = &dev->endpoints[epid-1];
+	if (!ep->service_id) {
+		dietPrint("[AR6K] TX attempt on unconn ep\n");
+		return false;
+	}
+
+	u16 payload_len = pPacket->len;
+	Ar6kHtcFrameHdr* htchdr = netbufPushHeaderType(pPacket, Ar6kHtcFrameHdr);
+	if (!htchdr) {
+		dietPrint("[AR6K] TX insufficient headroom\n");
+		return false;
+	}
+
+	// Fill in HTC frame header
+	htchdr->endpoint_id = epid;
+	htchdr->flags = AR6K_HTC_FLAG_NEED_CREDIT_UPDATE; // TODO: smarter logic
+	htchdr->payload_len = payload_len;
+
+	// XX: Check we actually have credits
+
+#if 0
+	// XX: Dump packet
+	dietPrint("[AR6K] TX");
+	for (unsigned i = 0; i < pPacket->len; i ++) {
+		dietPrint(" %.2X", ((u8*)netbufGet(pPacket))[i]);
+	}
+	dietPrint("\n");
+#endif
+
+	// Send the packet!
+	return _ar6kDevSendPacket(dev, netbufGet(pPacket), pPacket->len);
 }
 
 bool ar6kHtcInit(Ar6kDev* dev)
