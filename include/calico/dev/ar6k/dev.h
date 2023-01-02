@@ -3,6 +3,7 @@
 #include "../../system/mailbox.h"
 #include "../sdio.h"
 #include "base.h"
+#include "htc.h"
 
 typedef struct Ar6kEndpoint {
 	u16 service_id;
@@ -30,6 +31,11 @@ struct Ar6kDev {
 	u32 lookahead;
 	u16 credit_size;
 	u16 credit_count;
+	Ar6kEndpoint endpoints[Ar6kHtcEndpointId_Count-1];
+
+	// WMI
+	bool wmi_ready;
+	u8 macaddr[6];
 };
 
 bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio);

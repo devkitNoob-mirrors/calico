@@ -109,5 +109,8 @@ bool twlwifiInit(void)
 	threadPrepare(&s_sdioIrqThread, (ThreadFunc)ar6kDevThreadMain, &s_ar6kDev, &s_sdioIrqThreadStack[sizeof(s_sdioIrqThreadStack)], 0x11);
 	threadStart(&s_sdioIrqThread);
 
+	// Wait for WMI to be ready
+	ar6kWmiWaitReady(&s_ar6kDev);
+
 	return true;
 }

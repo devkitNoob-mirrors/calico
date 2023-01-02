@@ -112,6 +112,16 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 			return false;
 		}
 
+		// Retrieve service ID
+		Ar6kHtcSrvId srvid = Ar6kHtcSrvId_HtcControl;
+		if (epid != Ar6kHtcEndpointId_Control) {
+			srvid = dev->endpoints[epid-1].service_id;
+			if (!srvid) {
+				dietPrint("[AR6K] RX unconnected epid = %u\n", epid);
+				return false;
+			}
+		}
+
 		// Retrieve and validate packet length
 		size_t len = sizeof(Ar6kHtcFrameHdr) + _ar6kHtcLookaheadGetPayloadLen(lookahead);
 		if (len > AR6K_HTC_MAX_PACKET_SZ) {
@@ -140,8 +150,30 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 			}
 		}
 
-		// TODO: actually handle packet
-		dietPrint("[AR6K] RX epid%u len%u\n", htchdr->endpoint_id, htchdr->payload_len);
+		// Drop the packet if it's empty
+		if (htchdr->payload_len == 0) {
+			continue;
+		}
+
+		// Handle packet!
+		switch (srvid) {
+			case Ar6kHtcSrvId_HtcControl: {
+				dietPrint("[AR6K] Unexpected HTC ctrl pkt\n");
+				// Ignore the packet
+				break;
+			}
+
+			case Ar6kHtcSrvId_WmiControl: {
+				_ar6kWmiEventRx(dev, htchdr+1, htchdr->payload_len);
+				break;
+			}
+
+			default: /* Ar6kHtcSrvId_WmiDataXX */ {
+				dietPrint("[AR6K] RX data srv%.4X len%u\n", srvid, htchdr->payload_len);
+				// TODO: do something with data packet...
+				break;
+			}
+		}
 
 	} while (dev->lookahead != 0);
 
@@ -221,10 +253,19 @@ Ar6kHtcSrvStatus ar6kHtcConnectService(Ar6kDev* dev, Ar6kHtcSrvId service_id, u1
 		return (Ar6kHtcSrvStatus)u.resp.status;
 	}
 
+	if (u.resp.endpoint_id == Ar6kHtcEndpointId_Control || u.resp.endpoint_id > Ar6kHtcEndpointId_Last) {
+		dietPrint("[AR6K] srv%.4X bad ep (%u)\n", service_id, u.resp.endpoint_id);
+		return Ar6kHtcSrvStatus_Failed;
+	}
+
 	dietPrint("[AR6K] srv%.4X -> ep%u\n", service_id, u.resp.endpoint_id);
 	if (out_ep) {
 		*out_ep = (Ar6kHtcEndpointId)u.resp.endpoint_id;
 	}
+
+	Ar6kEndpoint* ep = &dev->endpoints[u.resp.endpoint_id-1];
+	ep->service_id = service_id;
+	ep->max_msg_size = u.resp.max_msg_size;
 
 	return Ar6kHtcSrvStatus_Success;
 }

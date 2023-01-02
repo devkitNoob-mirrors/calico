@@ -163,8 +163,8 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 	// such as the firmware (?) version, country flags, as well as the MAC.
 	// Even though official software does this, the data is only used to
 	// verify that the MSB of the version number is 0x60 and nothing else.
-	// This doesn't seem necessary, and the MAC can be obtained from NVRAM
-	// (which is needed anyway for Mitsumi). So, we opt to not bother.
+	// This doesn't seem necessary, and the MAC is obtained later through
+	// the WMI Ready event. So, we opt to not bother reading/parsing EEPROM.
 
 	// Perform initial HTC handshake
 	if (!ar6kHtcInit(dev)) {
