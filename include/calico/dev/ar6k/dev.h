@@ -2,6 +2,7 @@
 #include "../../types.h"
 #include "../../system/mailbox.h"
 #include "../sdio.h"
+#include "base.h"
 
 typedef struct Ar6kEndpoint {
 	u16 service_id;
@@ -15,7 +16,7 @@ typedef struct Ar6kIrqEnableRegs {
 	u8 counter_int_status_enable;
 } Ar6kIrqEnableRegs;
 
-typedef struct Ar6kDev {
+struct Ar6kDev {
 	SdioCard* sdio;
 	u32 chip_id;
 	u32 hia_addr;
@@ -29,7 +30,7 @@ typedef struct Ar6kDev {
 	u32 lookahead;
 	u16 credit_size;
 	u16 credit_count;
-} Ar6kDev;
+};
 
 bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio);
 int ar6kDevThreadMain(Ar6kDev* dev);

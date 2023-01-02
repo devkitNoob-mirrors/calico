@@ -1,5 +1,5 @@
 #pragma once
-#include "dev.h"
+#include "base.h"
 
 // *** HTC - probably standing for Host-Target Communication ***
 // This is the main encapsulation format used by Atheros firmware.

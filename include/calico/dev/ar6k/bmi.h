@@ -1,5 +1,5 @@
 #pragma once
-#include "dev.h"
+#include "base.h"
 
 typedef enum Ar6kBmiCommand {
 	Ar6kBmiCmd_NoCommand          = 0,
