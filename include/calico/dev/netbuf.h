@@ -47,6 +47,11 @@ MEOW_INLINE void* netbufGet(NetBuf* nb) {
 	return (u8*)(nb+1) + nb->pos;
 }
 
+#define netbufPushHeaderType(_nb, _type)  ((_type*)netbufPushHeader ((_nb), sizeof(_type)))
+#define netbufPopHeaderType(_nb, _type)   ((_type*)netbufPopHeader  ((_nb), sizeof(_type)))
+#define netbufPushTrailerType(_nb, _type) ((_type*)netbufPushTrailer((_nb), sizeof(_type)))
+#define netbufPopTrailerType(_nb, _type)  ((_type*)netbufPopTrailer ((_nb), sizeof(_type)))
+
 MEOW_INLINE void* netbufPushHeader(NetBuf* nb, unsigned size) {
 	if (nb->pos < size) {
 		return NULL;
@@ -57,8 +62,6 @@ MEOW_INLINE void* netbufPushHeader(NetBuf* nb, unsigned size) {
 	}
 }
 
-#define netbufPopHeaderType(_nb, _type) ((_type*)netbufPopHeader((_nb), sizeof(_type)))
-
 MEOW_INLINE void* netbufPopHeader(NetBuf* nb, unsigned size) {
 	void* hdr = NULL;
 	if (nb->len >= size) {
@@ -67,6 +70,15 @@ MEOW_INLINE void* netbufPopHeader(NetBuf* nb, unsigned size) {
 		nb->len -= size;
 	}
 	return hdr;
+}
+
+MEOW_INLINE void* netbufPushTrailer(NetBuf* nb, unsigned size) {
+	void* trailer = NULL;
+	if (nb->pos + nb->len + size <= nb->capacity) {
+		trailer = (u8*)netbufGet(nb) + nb->len;
+		nb->len += size;
+	}
+	return trailer;
 }
 
 MEOW_INLINE void* netbufPopTrailer(NetBuf* nb, unsigned size) {
