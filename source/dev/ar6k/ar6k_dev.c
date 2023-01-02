@@ -101,8 +101,8 @@ bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
 	// is useless to us anyway (we don't actually have the means to connect UART to
 	// the Atheros hardware, nor do we probably have a debugging build of the FW).
 
-	// Set hi_app_host_interest to the requested WMI protocol version
-	if (!ar6kBmiWriteMemoryWord(dev, dev->hia_addr+0x00, AR6K_WMI_PROTOCOL_VER)) {
+	// Set hi_app_host_interest to the requested HTC protocol version
+	if (!ar6kBmiWriteMemoryWord(dev, dev->hia_addr+0x00, AR6K_HTC_PROTOCOL_VER)) {
 		return false;
 	}
 
