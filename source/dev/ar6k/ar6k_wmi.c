@@ -117,6 +117,12 @@ bool ar6kWmiStartup(Ar6kDev* dev)
 		return false;
 	}
 
+	// Shut up! :p
+	if (!ar6kWmixConfigDebugModuleCmd(dev, UINT32_MAX, 0)) {
+		dietPrint("[AR6K] can't set dbglog mask\n");
+		return false;
+	}
+
 	// Retrieve channel list
 	if (!ar6kWmiGetChannelList(dev)) {
 		dietPrint("[AR6K] can't get chnlist\n");
@@ -240,4 +246,14 @@ bool ar6kWmiSetChannelParams(Ar6kDev* dev, u8 scan_param, u32 chan_mask)
 	}
 
 	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_SetChannelParams, pPacket);
+}
+
+bool ar6kWmixConfigDebugModuleCmd(Ar6kDev* dev, u32 cfgmask, u32 config)
+{
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	netbufPushTrailerType(pPacket, Ar6kWmiGeneric32)->value = Ar6kWmixCmdId_DbgLogCfgModule;
+	Ar6kWmixDbgLogCfgModule* cmd = netbufPushTrailerType(pPacket, Ar6kWmixDbgLogCfgModule);
+	cmd->cfgvalid = cfgmask;
+	cmd->dbglog_config = config;
+	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_Extension, pPacket);
 }

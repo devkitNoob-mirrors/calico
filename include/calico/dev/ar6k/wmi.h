@@ -12,7 +12,12 @@ typedef enum Ar6kWmiCmdId {
 	Ar6kWmiCmdId_GetChannelList           = 0x000e,
 	Ar6kWmiCmdId_SetChannelParams         = 0x0011,
 	Ar6kWmiCmdId_TargetErrorReportBitmask = 0x0022,
+	Ar6kWmiCmdId_Extension                = 0x002e,
 } Ar6kWmiCmdId;
+
+typedef enum Ar6kWmixCmdId {
+	Ar6kWmixCmdId_DbgLogCfgModule         = 0x2009,
+} Ar6kWmixCmdId;
 
 typedef enum Ar6kWmiEventId {
 	Ar6kWmiEventId_GetChannelListReply    = 0x000e,
@@ -144,6 +149,11 @@ typedef struct Ar6kWmiChannelParams {
 	u16 channel_mhz[];
 } Ar6kWmiChannelParams;
 
+typedef struct Ar6kWmixDbgLogCfgModule {
+	u32 cfgvalid;
+	u32 dbglog_config;
+} Ar6kWmixDbgLogCfgModule;
+
 //-----------------------------------------------------------------------------
 // WMI events
 //-----------------------------------------------------------------------------
@@ -192,6 +202,8 @@ bool ar6kWmiSetScanParams(Ar6kDev* dev, Ar6kWmiScanParams const* params);
 bool ar6kWmiSetBssFilter(Ar6kDev* dev, Ar6kWmiBssFilter filter, u32 ie_mask);
 bool ar6kWmiSetProbedSsid(Ar6kDev* dev, Ar6kWmiProbedSsid const* probed_ssid);
 bool ar6kWmiSetChannelParams(Ar6kDev* dev, u8 scan_param, u32 chan_mask);
+
+bool ar6kWmixConfigDebugModuleCmd(Ar6kDev* dev, u32 cfgmask, u32 config);
 
 MEOW_INLINE bool ar6kWmiGetChannelList(Ar6kDev* dev)
 {
