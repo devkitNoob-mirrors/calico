@@ -4,6 +4,7 @@
 #include "../sdio.h"
 #include "base.h"
 #include "htc.h"
+#include "wmi.h"
 
 typedef struct Ar6kEndpoint {
 	u16 service_id;
@@ -38,7 +39,11 @@ struct Ar6kDev {
 	u8 macaddr[6];
 	Ar6kHtcEndpointId wmi_ctrl_epid;
 	Ar6kHtcEndpointId wmi_data_epids[4];
-	u16 wmi_channel_mask;
+	u32 wmi_channel_mask;
+
+	// Callbacks
+	void (* cb_onBssInfo)(Ar6kDev* dev, Ar6kWmiBssInfoHdr* bssInfo, NetBuf* pPacket);
+	void (* cb_onScanComplete)(Ar6kDev* dev, int status);
 };
 
 bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio);

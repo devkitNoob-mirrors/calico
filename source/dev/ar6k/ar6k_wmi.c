@@ -1,6 +1,27 @@
 #include "common.h"
 #include <string.h>
 
+static void _ar6kWmixEventRx(Ar6kDev* dev, NetBuf* pPacket)
+{
+	Ar6kWmiGeneric32* evthdr = netbufPopHeaderType(pPacket, Ar6kWmiGeneric32);
+	if (!evthdr) {
+		dietPrint("[AR6K] WMIX event RX too small\n");
+		return;
+	}
+
+	switch (evthdr->value) {
+		default: {
+			dietPrint("[AR6K] WMIX unkevt %.lX (%u)\n", evthdr->value, pPacket->len);
+			break;
+		}
+
+		case Ar6kWmixEventId_DbgLog: {
+			dietPrint("[AR6K] WMIX dbglog size=%u\n", pPacket->len);
+			break;
+		}
+	}
+}
+
 void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 {
 	Ar6kWmiCtrlHdr* evthdr = netbufPopHeaderType(pPacket, Ar6kWmiCtrlHdr);
@@ -12,6 +33,11 @@ void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 	switch (evthdr->id) {
 		default: {
 			dietPrint("[AR6K] WMI unkevt %.4X (%u)\n", evthdr->id, pPacket->len);
+			break;
+		}
+
+		case Ar6kWmiEventId_Extension: {
+			_ar6kWmixEventRx(dev, pPacket);
 			break;
 		}
 
@@ -48,11 +74,27 @@ void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 
 		case Ar6kWmiEventId_GetChannelListReply: {
 			Ar6kWmiChannelList* list = (Ar6kWmiChannelList*)netbufGet(pPacket);
-			u16 mask = 0;
+			u32 mask = 0;
 			for (unsigned i = 0; i < list->num_channels; i ++) {
 				mask |= 1U << wlanFreqToChannel(list->channel_mhz[i]);
 			}
 			dev->wmi_channel_mask = mask;
+			break;
+		}
+
+		case Ar6kWmiEventId_BssInfo: {
+			Ar6kWmiBssInfoHdr* hdr = netbufPopHeaderType(pPacket, Ar6kWmiBssInfoHdr);
+			if (hdr && dev->cb_onBssInfo) {
+				dev->cb_onBssInfo(dev, hdr, pPacket);
+			}
+			break;
+		}
+
+		case Ar6kWmiEventId_ScanComplete: {
+			Ar6kWmiGeneric32* hdr = netbufPopHeaderType(pPacket, Ar6kWmiGeneric32);
+			if (hdr && dev->cb_onScanComplete) {
+				dev->cb_onScanComplete(dev, hdr->value);
+			}
 			break;
 		}
 	}
@@ -86,7 +128,7 @@ bool ar6kWmiStartup(Ar6kDev* dev)
 		threadSleep(1000);
 	}
 
-	dietPrint("[AR6K] channel mask %.4X\n", dev->wmi_channel_mask);
+	dietPrint("[AR6K] channel mask %.8lX\n", dev->wmi_channel_mask);
 
 	return true;
 }
@@ -127,4 +169,75 @@ bool ar6kWmiSimpleCmdWithParam32(Ar6kDev* dev, Ar6kWmiCmdId cmdid, u32 param)
 	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
 	netbufPushTrailerType(pPacket, Ar6kWmiGeneric32)->value = param;
 	return _ar6kWmiSendCmdPacket(dev, cmdid, pPacket);
+}
+
+bool ar6kWmiStartScan(Ar6kDev* dev, Ar6kWmiScanType type, u32 home_dwell_time_ms)
+{
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	Ar6kWmiCmdStartScan* cmd = netbufPushTrailerType(pPacket, Ar6kWmiCmdStartScan);
+	// XX: maybe make some more of these configurable?
+	cmd->force_bg_scan = 0;
+	cmd->is_legacy = 0;
+	cmd->home_dwell_time_ms = home_dwell_time_ms;
+	cmd->force_scan_interval_ms = 0;
+	cmd->scan_type = type;
+	cmd->num_channels = 0;
+	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_StartScan, pPacket);
+}
+
+bool ar6kWmiSetScanParams(Ar6kDev* dev, Ar6kWmiScanParams const* params)
+{
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	*netbufPushTrailerType(pPacket, Ar6kWmiScanParams) = *params;
+	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_SetScanParams, pPacket);
+}
+
+bool ar6kWmiSetBssFilter(Ar6kDev* dev, Ar6kWmiBssFilter filter, u32 ie_mask)
+{
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	Ar6kWmiCmdBssFilter* cmd = netbufPushTrailerType(pPacket, Ar6kWmiCmdBssFilter);
+	cmd->bss_filter = filter;
+	cmd->ie_mask = ie_mask;
+	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_SetBssFilter, pPacket);
+}
+
+bool ar6kWmiSetProbedSsid(Ar6kDev* dev, Ar6kWmiProbedSsid const* probed_ssid)
+{
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	*netbufPushTrailerType(pPacket, Ar6kWmiProbedSsid) = *probed_ssid;
+	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_SetProbedSsid, pPacket);
+}
+
+bool ar6kWmiSetChannelParams(Ar6kDev* dev, u8 scan_param, u32 chan_mask)
+{
+	static const u32 chan_mask_a = 0x7fc000; // Channels 14..22
+	static const u32 chan_mask_g = 0x003fff; // Channels  0..13
+	chan_mask &= chan_mask_a|chan_mask_g;
+
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	u16 num_channels = __builtin_popcount(chan_mask);
+	Ar6kWmiChannelParams* cmd = (Ar6kWmiChannelParams*)netbufPushTrailer(pPacket, sizeof(Ar6kWmiChannelParams) + num_channels*sizeof(u16));
+
+	cmd->scan_param = scan_param;
+	cmd->num_channels = num_channels;
+
+	if (chan_mask) {
+		if (chan_mask & chan_mask_g) {
+			if (cmd->phy_mode & chan_mask_a) {
+				cmd->phy_mode = Ar6kWmiPhyMode_11AG;
+			} else {
+				cmd->phy_mode = Ar6kWmiPhyMode_11G;
+			}
+		} else /* if (chan_mask & chan_mask_a) */ {
+			cmd->phy_mode = Ar6kWmiPhyMode_11A;
+		}
+
+		for (unsigned i = 0, j = 0; j < 23; j ++) {
+			if (chan_mask & (1U << j)) {
+				cmd->channel_mhz[i++] = wlanChannelToFreq(j);
+			}
+		}
+	}
+
+	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_SetChannelParams, pPacket);
 }
