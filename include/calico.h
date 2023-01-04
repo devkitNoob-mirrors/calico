@@ -61,6 +61,7 @@
 #include "calico/nds/pxi.h"
 
 #include "calico/dev/blk.h"
+#include "calico/dev/wlan.h"
 
 #ifdef ARM7
 #include "calico/nds/arm7/debug.h"

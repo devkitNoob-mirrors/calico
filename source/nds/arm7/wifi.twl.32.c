@@ -9,6 +9,8 @@
 #include <calico/nds/arm7/gpio.h>
 #include <calico/nds/arm7/i2c.h>
 #include <calico/nds/arm7/mcu.h>
+#include <calico/nds/arm7/twlwifi.h>
+#include <string.h>
 
 #define TWLWIFI_DEBUG
 
@@ -27,6 +29,17 @@ alignas(8) static u8 s_sdioIrqThreadStack[2048];
 
 static SdioCard s_sdioCard;
 static Ar6kDev s_ar6kDev;
+
+static const u8 s_macAny[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+
+static struct {
+	WlanBssDesc* bssTable;
+	unsigned bssCount;
+	bool has_bssid_filter;
+	u8 bssid_filter[6];
+	TwlWifiScanCompleteFn cb;
+	void* user;
+} s_scanVars;
 
 static void _sdioIrqHandler(void)
 {
@@ -65,6 +78,42 @@ static void _twlwifiSetWifiCompatMode(bool compat)
 	}
 	REG_GPIO_WL = reg;
 	dietPrint("GPIO_WL: %.4X -> %.4X\n", oldreg, reg);
+}
+
+static void _twlwifiOnBssInfo(Ar6kDev* dev, Ar6kWmiBssInfoHdr* bssInfo, NetBuf* pPacket)
+{
+	if (!s_scanVars.bssTable) {
+		return;
+	}
+
+	if (s_scanVars.has_bssid_filter && memcmp(bssInfo->bssid, s_scanVars.bssid_filter, 6) != 0) {
+		return;
+	}
+
+	// Add new entry or find existing entry to overwrite
+	WlanBssDesc* desc = wlanFindOrAddBss(s_scanVars.bssTable, &s_scanVars.bssCount, bssInfo->bssid, bssInfo->rssi);
+	if (!desc) {
+		return;
+	}
+
+	// Parse the beacon
+	wlanParseBeacon(desc, pPacket);
+	memcpy(desc->bssid, bssInfo->bssid, 6);
+	desc->rssi = bssInfo->snr;
+	desc->channel = wlanFreqToChannel(bssInfo->channel_mhz);
+}
+
+static void _twlwifiOnScanComplete(Ar6kDev* dev, int status)
+{
+	dietPrint("[TWLWIFI] Scan complete (%d)\n", status);
+
+	WlanBssDesc* bss_table = s_scanVars.bssTable;
+	if (bss_table) {
+		s_scanVars.bssTable = NULL;
+		if (s_scanVars.cb) {
+			s_scanVars.cb(s_scanVars.user, bss_table, s_scanVars.bssCount);
+		}
+	}
 }
 
 bool twlwifiInit(void)
@@ -115,5 +164,87 @@ bool twlwifiInit(void)
 		return false;
 	}
 
+	dietPrint("[TWLWIFI] Init complete\n");
+
+	// Set callbacks
+	s_ar6kDev.cb_onBssInfo = _twlwifiOnBssInfo;
+	s_ar6kDev.cb_onScanComplete = _twlwifiOnScanComplete;
+
 	return true;
+}
+
+bool twlwifiStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter, TwlWifiScanCompleteFn cb, void* user)
+{
+	u32 channel_mask = s_ar6kDev.wmi_channel_mask;
+	bool is_active = false;
+	bool has_bssid_filter = false;
+
+	if (s_scanVars.bssTable) {
+		return false; // already scanning
+	}
+
+	// Validate filter if specified
+	if (filter) {
+		channel_mask &= filter->channel_mask;
+		if (!channel_mask || filter->target_ssid_len > WLAN_MAX_SSID_LEN) {
+			return false;
+		}
+		if (memcmp(filter->target_bssid, s_macAny, 6) != 0) {
+			has_bssid_filter = true;
+		}
+	}
+
+	Ar6kWmiProbedSsid probed_ssid = { 0 };
+	if (filter && filter->target_ssid_len) {
+		is_active = true;
+		probed_ssid.mode = Ar6kWmiSsidProbeMode_Specific;
+		probed_ssid.ssid_len = filter->target_ssid_len;
+		memcpy(probed_ssid.ssid, filter->target_ssid, filter->target_ssid_len);
+	}
+	if (!ar6kWmiSetProbedSsid(&s_ar6kDev, &probed_ssid)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetChannelParams(&s_ar6kDev, 0, channel_mask)) {
+		return false;
+	}
+
+	Ar6kWmiScanParams scan_params = { 0 };
+	u32 dwell_time_ms = is_active ? 30 : 105; // shorter scan time for active scans
+	scan_params.fg_start_period_secs = UINT16_MAX;
+	scan_params.fg_end_period_secs = UINT16_MAX;
+	scan_params.bg_period_secs = UINT16_MAX;
+	scan_params.minact_chdwell_time_ms = dwell_time_ms;
+	scan_params.maxact_chdwell_time_ms = dwell_time_ms;
+	scan_params.pas_chdwell_time_ms = dwell_time_ms;
+	//scan_params.short_scan_ratio = 0;
+	scan_params.scan_ctrl_flags = AR6K_WMI_SCAN_CONNECT | (is_active ? AR6K_WMI_SCAN_ACTIVE : 0);
+	if (!ar6kWmiSetScanParams(&s_ar6kDev, &scan_params)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetBssFilter(&s_ar6kDev, is_active ? Ar6kWmiBssFilter_ProbedSsid : Ar6kWmiBssFilter_All, 0)) {
+		return false;
+	}
+
+	s_scanVars.bssTable = out_table;
+	s_scanVars.bssCount = 0;
+	s_scanVars.has_bssid_filter = has_bssid_filter;
+	s_scanVars.cb = cb;
+	s_scanVars.user = user;
+	if (has_bssid_filter) {
+		memcpy(s_scanVars.bssid_filter, filter->target_bssid, 6);
+	}
+
+	if (!ar6kWmiStartScan(&s_ar6kDev, Ar6kWmiScanType_Long, 20)) {
+		s_scanVars.bssTable = NULL;
+		return false;
+	}
+
+	return true;
+}
+
+bool twlwifiIsScanning(void)
+{
+	return s_scanVars.bssTable != NULL;
 }
