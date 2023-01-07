@@ -5,14 +5,22 @@
 #define AR6K_WMI_PROTOCOL_VER 2
 
 typedef enum Ar6kWmiCmdId {
+	Ar6kWmiCmdId_Connect                  = 0x0001,
+	Ar6kWmiCmdId_CreatePstream            = 0x0005,
 	Ar6kWmiCmdId_StartScan                = 0x0007,
 	Ar6kWmiCmdId_SetScanParams            = 0x0008,
 	Ar6kWmiCmdId_SetBssFilter             = 0x0009,
 	Ar6kWmiCmdId_SetProbedSsid            = 0x000a,
+	Ar6kWmiCmdId_SetDiscTimeout           = 0x000d,
 	Ar6kWmiCmdId_GetChannelList           = 0x000e,
 	Ar6kWmiCmdId_SetChannelParams         = 0x0011,
+	Ar6kWmiCmdId_SetPowerMode             = 0x0012,
+	Ar6kWmiCmdId_AddCipherKey             = 0x0016,
 	Ar6kWmiCmdId_TargetErrorReportBitmask = 0x0022,
 	Ar6kWmiCmdId_Extension                = 0x002e,
+	Ar6kWmiCmdId_SetWscStatus             = 0x0041,
+	Ar6kWmiCmdId_SetFrameRate             = 0x0048,
+	Ar6kWmiCmdId_SetBitRate               = 0xf000,
 } Ar6kWmiCmdId;
 
 typedef enum Ar6kWmixCmdId {
@@ -22,6 +30,8 @@ typedef enum Ar6kWmixCmdId {
 typedef enum Ar6kWmiEventId {
 	Ar6kWmiEventId_GetChannelListReply    = 0x000e,
 	Ar6kWmiEventId_Ready                  = 0x1001,
+	Ar6kWmiEventId_Connected              = 0x1002,
+	Ar6kWmiEventId_Disconnected           = 0x1003,
 	Ar6kWmiEventId_BssInfo                = 0x1004,
 	Ar6kWmiEventId_ScanComplete           = 0x100a,
 	Ar6kWmiEventId_Extension              = 0x1010,
@@ -72,9 +82,108 @@ typedef enum Ar6kWmiPhyMode {
 	Ar6kWmiPhyMode_11Gonly = 5,
 } Ar6kWmiPhyMode;
 
+typedef enum Ar6kWmiPowerMode {
+	Ar6kWmiPowerMode_Recommended    = 1,
+	Ar6kWmiPowerMode_MaxPerformance = 2,
+} Ar6kWmiPowerMode;
+
+typedef enum Ar6kWmiTrafficDir {
+	Ar6kWmiTrafficDir_Uplink   = 0,
+	Ar6kWmiTrafficDir_Downlink = 1,
+	Ar6kWmiTrafficDir_Bidir    = 2,
+} Ar6kWmiTrafficDir;
+
+typedef enum Ar6kWmiTrafficType {
+	Ar6kWmiTrafficType_Aperiodic = 0,
+	Ar6kWmiTrafficType_Periodic  = 1,
+} Ar6kWmiTrafficType;
+
+typedef enum Ar6kWmiVoicePSCap {
+	Ar6kWmiVoicePSCap_DisableForThisAC = 0,
+	Ar6kWmiVoicePSCap_EnableForThisAC  = 1,
+	Ar6kWmiVoicePSCap_EnableForAllAC   = 2,
+} Ar6kWmiVoicePSCap;
+
+typedef enum Ar6kWmiNetworkType {
+	Ar6kWmiNetworkType_Infrastructure = 0x01,
+	Ar6kWmiNetworkType_Adhoc          = 0x02,
+	Ar6kWmiNetworkType_AdhocCreator   = 0x04,
+	Ar6kWmiNetworkType_Opt            = 0x08,
+	Ar6kWmiNetworkType_AccessPoint    = 0x10,
+} Ar6kWmiNetworkType;
+
+typedef enum Ar6kWmiAuthModeIeee {
+	Ar6kWmiAuthModeIeee_Open   = 0x01,
+	Ar6kWmiAuthModeIeee_Shared = 0x02,
+	Ar6kWmiAuthModeIeee_Leap   = 0x04, // not actually IEEE_AUTH_MODE
+} Ar6kWmiAuthModeIeee;
+
+typedef enum Ar6kWmiAuthMode {
+	Ar6kWmiAuthMode_Open          = 1,
+	Ar6kWmiAuthType_WPA           = 2, // i.e. Enterprise (RADIUS)
+	Ar6kWmiAuthType_WPA_PSK       = 3,
+	Ar6kWmiAuthType_WPA2          = 4, // i.e. Enterprise (RADIUS)
+	Ar6kWmiAuthType_WPA2_PSK      = 5,
+	Ar6kWmiAuthType_WPA_CCKM      = 6, // Related to Cisco/LEAP
+	Ar6kWmiAuthType_WPA2_CCKM     = 7, // As above
+} Ar6kWmiAuthMode;
+
+typedef enum Ar6kWmiCipherType {
+	Ar6kWmiCipherType_None = 1,
+	Ar6kWmiCipherType_WEP  = 2,
+	Ar6kWmiCipherType_TKIP = 3,
+	Ar6kWmiCipherType_AES  = 4,
+	Ar6kWmiCipherType_CCKM = 5,
+} Ar6kWmiCipherType;
+
+#define AR6K_WMI_CIPHER_USAGE_PAIRWISE (0U<<0)
+#define AR6K_WMI_CIPHER_USAGE_GROUP    (1U<<0)
+#define AR6K_WMI_CIPHER_USAGE_TX       (1U<<1)
+
 //-----------------------------------------------------------------------------
 // WMI commands
 //-----------------------------------------------------------------------------
+
+typedef struct Ar6kWmiConnectParams {
+	u8   network_type;         // Ar6kWmiNetworkType
+	u8   auth_mode_ieee;       // Ar6kWmiAuthModeIeee
+	u8   auth_mode;            // Ar6kWmiAuthMode
+	u8   pairwise_cipher_type; // Ar6kWmiCipherType
+	u8   pairwise_key_len;
+	u8   group_cipher_type;    // Ar6kWmiCipherType
+	u8   group_key_len;
+	u8   ssid_len;
+	char ssid[32];
+	u16  channel_mhz;
+	u8   bssid[6];
+	u32  ctrl_flags;
+} Ar6kWmiConnectParams;
+
+typedef struct Ar6kWmiPstreamConfig {
+	u32 min_service_int_msec;
+	u32 max_service_int_msec;
+	u32 inactivity_int_msec;
+	u32 suspension_int_msec;
+	u32 srv_start_time;
+	u32 min_data_rate_bps;
+	u32 mean_data_rate_bps;
+	u32 peak_data_rate_bps;
+	u32 max_burst_size;
+	u32 delay_bound;
+	u32 min_phy_rate_bps;
+	u32 sba;
+	u32 medium_time;
+	u16 nominal_msdu;
+	u16 max_msdu;
+	u8  traffic_class;
+	u8  traffic_dir;   // Ar6kWmiTrafficDir
+	u8  rx_queue_num;
+	u8  traffic_type;  // Ar6kWmiTrafficType
+	u8  voice_ps_cap;  // Ar6kWmiVoicePSCap
+	u8  tsid;
+	u8  user_prio;     // "802.1d user priority"
+	// no padding
+} Ar6kWmiPstreamConfig;
 
 typedef enum Ar6kWmiScanType {
 	Ar6kWmiScanType_Long  = 0,
@@ -149,6 +258,49 @@ typedef struct Ar6kWmiChannelParams {
 	u16 channel_mhz[];
 } Ar6kWmiChannelParams;
 
+#define AR6K_WMI_KEY_OP_INIT_TSC (1U<<0)
+#define AR6K_WMI_KEY_OP_INIT_RSC (1U<<1)
+
+typedef struct Ar6kWmiCipherKey {
+	u8 index;
+	u8 type;    // Ar6kWmiCipherType
+	u8 usage;   // bitmask of AR6K_WMI_CIPHER_USAGE_*
+	u8 length;
+	u8 rsc[8];  // replay sequence counter
+	u8 key[32];
+	u8 op_ctrl; // bitmask of AR6K_WMI_KEY_OP_*
+	u8 macaddr[6];
+} Ar6kWmiCipherKey;
+
+typedef enum Ar6kWmiBitRate {
+	Ar6kWmiBitRate_Auto    = -1,
+	Ar6kWmiBitRate_1Mbps   = 0,
+	Ar6kWmiBitRate_2Mbps   = 1,
+	Ar6kWmiBitRate_5_5Mbps = 2,
+	Ar6kWmiBitRate_11Mbps  = 3,
+	Ar6kWmiBitRate_6Mbps   = 4,
+	Ar6kWmiBitRate_9Mbps   = 5,
+	Ar6kWmiBitRate_12Mbps  = 6,
+	Ar6kWmiBitRate_18Mbps  = 7,
+	Ar6kWmiBitRate_24Mbps  = 8,
+	Ar6kWmiBitRate_36Mbps  = 9,
+	Ar6kWmiBitRate_48Mbps  = 10,
+	Ar6kWmiBitRate_54Mbps  = 11,
+} Ar6kWmiBitRate;
+
+typedef struct Ar6kWmiCmdSetFrameRate {
+	u8 enable_frame_mask; // bool
+	u8 frame_type    : 4; // 802.11 frame type (bit0..3) (only 0=mgmt 4=ctrl allowed)
+	u8 frame_subtype : 4; // 802.11 frame subtype (bit4..7)
+	u16 frame_rate_mask;  // one bit per Ar6kWmiBitRate enum member (except -1)
+} Ar6kWmiCmdSetFrameRate;
+
+typedef struct Ar6kWmiCmdSetBitRate {
+	s8 data_rate_idx; // Ar6kWmiBitRate
+	s8 mgmt_rate_idx; // Ar6kWmiBitRate
+	s8 ctrl_rate_idx; // Ar6kWmiBitRate
+} Ar6kWmiCmdSetBitRate;
+
 typedef struct Ar6kWmixDbgLogCfgModule {
 	u32 cfgvalid;
 	u32 dbglog_config;
@@ -162,6 +314,14 @@ typedef struct Ar6kWmiEvtReady {
 	u8 macaddr[6];
 	u8 phy_capability;
 } Ar6kWmiEvtReady;
+
+typedef struct Ar6kWmiEvtDisconnected {
+	u16 reason_ieee;
+	u8 bssid[6];
+	u8 reason;
+	u8 assoc_resp_len;
+	u8 assoc_resp[];
+} Ar6kWmiEvtDisconnected;
 
 typedef struct Ar6kWmiChannelList {
 	u8  reserved;
@@ -195,19 +355,40 @@ typedef struct Ar6kWmiBssInfoHdr {
 bool ar6kWmiStartup(Ar6kDev* dev);
 
 bool ar6kWmiSimpleCmd(Ar6kDev* dev, Ar6kWmiCmdId cmdid);
+bool ar6kWmiSimpleCmdWithParam8(Ar6kDev* dev, Ar6kWmiCmdId cmdid, u8 param);
 bool ar6kWmiSimpleCmdWithParam32(Ar6kDev* dev, Ar6kWmiCmdId cmdid, u32 param);
 
+bool ar6kWmiConnect(Ar6kDev* dev, Ar6kWmiConnectParams const* params);
+bool ar6kWmiCreatePstream(Ar6kDev* dev, Ar6kWmiPstreamConfig const* config);
 bool ar6kWmiStartScan(Ar6kDev* dev, Ar6kWmiScanType type, u32 home_dwell_time_ms);
 bool ar6kWmiSetScanParams(Ar6kDev* dev, Ar6kWmiScanParams const* params);
 bool ar6kWmiSetBssFilter(Ar6kDev* dev, Ar6kWmiBssFilter filter, u32 ie_mask);
 bool ar6kWmiSetProbedSsid(Ar6kDev* dev, Ar6kWmiProbedSsid const* probed_ssid);
 bool ar6kWmiSetChannelParams(Ar6kDev* dev, u8 scan_param, u32 chan_mask);
+bool ar6kWmiAddCipherKey(Ar6kDev* dev, Ar6kWmiCipherKey const* key);
+bool ar6kWmiSetFrameRate(Ar6kDev* dev, unsigned ieee_frame_type, unsigned ieee_frame_subtype, unsigned rate_mask);
+bool ar6kWmiSetBitRate(Ar6kDev* dev, Ar6kWmiBitRate data_rate, Ar6kWmiBitRate mgmt_rate, Ar6kWmiBitRate ctrl_rate);
 
 bool ar6kWmixConfigDebugModuleCmd(Ar6kDev* dev, u32 cfgmask, u32 config);
+
+MEOW_INLINE bool ar6kWmiSetDiscTimeout(Ar6kDev* dev, u8 timeout)
+{
+	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetDiscTimeout, timeout);
+}
 
 MEOW_INLINE bool ar6kWmiGetChannelList(Ar6kDev* dev)
 {
 	return ar6kWmiSimpleCmd(dev, Ar6kWmiCmdId_GetChannelList);
+}
+
+MEOW_INLINE bool ar6kWmiSetPowerMode(Ar6kDev* dev, Ar6kWmiPowerMode mode)
+{
+	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetPowerMode, mode);
+}
+
+MEOW_INLINE bool ar6kWmiSetWscStatus(Ar6kDev* dev, bool enable)
+{
+	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetWscStatus, enable?1:0);
 }
 
 MEOW_INLINE bool ar6kWmiSetErrorReportBitmask(Ar6kDev* dev, u32 bitmask)

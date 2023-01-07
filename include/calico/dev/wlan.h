@@ -3,6 +3,10 @@
 
 #define WLAN_MAX_BSS_ENTRIES 32
 #define WLAN_MAX_SSID_LEN    32
+#define WLAN_WEP_40_LEN      5
+#define WLAN_WEP_104_LEN     13
+#define WLAN_WEP_128_LEN     16
+#define WLAN_WPA_PSK_LEN     32
 
 typedef enum WlanBeaconEid {
 	WlanBeaconEid_SSID             = 0,
@@ -54,6 +58,11 @@ typedef struct WlanBssScanFilter {
 	u16 target_ssid_len;
 	char target_ssid[WLAN_MAX_SSID_LEN];
 } WlanBssScanFilter;
+
+typedef union WlanAuthData {
+	u8 wpa_psk[WLAN_WPA_PSK_LEN];
+	u8 wep_key[WLAN_WEP_128_LEN];
+} WlanAuthData;
 
 MEOW_CONSTEXPR unsigned wlanFreqToChannel(unsigned freq_mhz)
 {

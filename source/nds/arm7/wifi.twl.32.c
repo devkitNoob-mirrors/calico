@@ -248,3 +248,163 @@ bool twlwifiIsScanning(void)
 {
 	return s_scanVars.bssTable != NULL;
 }
+
+bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
+{
+	static const Ar6kWmiProbedSsid dummy_probed_ssid = { 0 };
+	static const Ar6kWmiScanParams dummy_scan_params = {
+		.fg_start_period_secs = UINT16_MAX,
+		.fg_end_period_secs = UINT16_MAX,
+		.bg_period_secs = UINT16_MAX,
+		.maxact_chdwell_time_ms = 200,
+		.pas_chdwell_time_ms = 200,
+		.short_scan_ratio = 0,
+		.scan_ctrl_flags = AR6K_WMI_SCAN_CONNECT | AR6K_WMI_SCAN_ACTIVE,
+		.minact_chdwell_time_ms = 200,
+		._pad = 0,
+		.max_dfsch_act_time_ms = 0,
+	};
+
+	static const Ar6kWmiPstreamConfig pstream_params = {
+		.min_service_int_msec = 20,
+		.max_service_int_msec = 20,
+		.inactivity_int_msec  = 9999999,
+		.suspension_int_msec  = (u32)-1,
+		.srv_start_time       = 0,
+		.min_data_rate_bps    = 83200,
+		.mean_data_rate_bps   = 83200,
+		.peak_data_rate_bps   = 83200,
+		.max_burst_size       = 0,
+		.delay_bound          = 0,
+		.min_phy_rate_bps     = 6000000,
+		.sba                  = 0x2000,
+		.medium_time          = 0,
+		.nominal_msdu         = 0x80d0,
+		.max_msdu             = 0xd0,
+		.traffic_class        = 0,
+		.traffic_dir          = Ar6kWmiTrafficDir_Bidir,
+		.rx_queue_num         = 0,
+		.traffic_type         = Ar6kWmiTrafficType_Periodic,
+		.voice_ps_cap         = Ar6kWmiVoicePSCap_DisableForThisAC,
+		.tsid                 = 5,
+		.user_prio            = 0,
+	};
+
+	if (bss->auth_type != WlanBssAuthType_Open && !auth) {
+		return false;
+	}
+
+	if (!ar6kWmiSetBssFilter(&s_ar6kDev, Ar6kWmiBssFilter_None, 0)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetProbedSsid(&s_ar6kDev, &dummy_probed_ssid)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetScanParams(&s_ar6kDev, &dummy_scan_params)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetChannelParams(&s_ar6kDev, 0, 1U << bss->channel)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetBitRate(&s_ar6kDev, Ar6kWmiBitRate_Auto, Ar6kWmiBitRate_1Mbps, Ar6kWmiBitRate_1Mbps)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetFrameRate(&s_ar6kDev, 4, 10, ~(1U<<Ar6kWmiBitRate_11Mbps))) { // PS-Poll
+		return false;
+	}
+
+	if (!ar6kWmiSetPowerMode(&s_ar6kDev, Ar6kWmiPowerMode_Recommended)) {
+		return false;
+	}
+
+	if (!ar6kWmiCreatePstream(&s_ar6kDev, &pstream_params)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetWscStatus(&s_ar6kDev, false)) { // WPS related?
+		return false;
+	}
+
+	if (!ar6kWmiSetDiscTimeout(&s_ar6kDev, 2)) {
+		return false;
+	}
+
+	Ar6kWmiConnectParams conn_params = { 0 };
+	conn_params.network_type = Ar6kWmiNetworkType_Infrastructure;
+	conn_params.ssid_len = bss->ssid_len;
+	memcpy(conn_params.ssid, bss->ssid, bss->ssid_len);
+	conn_params.channel_mhz = wlanChannelToFreq(bss->channel);
+	memcpy(conn_params.bssid, bss->bssid, 6);
+
+	switch (bss->auth_type) {
+		default:
+		case WlanBssAuthType_Open: {
+			// Set params
+			conn_params.auth_mode_ieee = Ar6kWmiAuthModeIeee_Open;
+			conn_params.auth_mode = Ar6kWmiAuthMode_Open;
+			conn_params.pairwise_cipher_type = Ar6kWmiCipherType_None;
+			conn_params.group_cipher_type = Ar6kWmiCipherType_None;
+			break;
+		}
+
+		case WlanBssAuthType_WEP_40:
+		case WlanBssAuthType_WEP_104:
+		case WlanBssAuthType_WEP_128: {
+			// Install WEP key (slot 0)
+			static const u8 key_length[] = { WLAN_WEP_40_LEN, WLAN_WEP_104_LEN, WLAN_WEP_128_LEN };
+			Ar6kWmiCipherKey key = { 0 };
+			key.type = Ar6kWmiCipherType_WEP;
+			key.usage = AR6K_WMI_CIPHER_USAGE_GROUP | AR6K_WMI_CIPHER_USAGE_TX;
+			key.length = key_length[bss->auth_type-WlanBssAuthType_WEP_40];
+			memcpy(key.key, auth->wep_key, key.length);
+			key.op_ctrl = AR6K_WMI_KEY_OP_INIT_TSC | AR6K_WMI_KEY_OP_INIT_RSC;
+			if (!ar6kWmiAddCipherKey(&s_ar6kDev, &key)) {
+				return false;
+			}
+
+			// Install dummy WEP keys (slots 1..3)
+			key.usage = AR6K_WMI_CIPHER_USAGE_GROUP;
+			memset(key.key, 0, key.length);
+			for (unsigned i = 1; i < 4; i ++) {
+				key.index = i;
+				if (!ar6kWmiAddCipherKey(&s_ar6kDev, &key)) {
+					return false;
+				}
+			}
+
+			// Set params
+			conn_params.auth_mode_ieee = Ar6kWmiAuthModeIeee_Shared;
+			conn_params.auth_mode = Ar6kWmiAuthMode_Open;
+			conn_params.pairwise_cipher_type = Ar6kWmiCipherType_WEP;
+			conn_params.pairwise_key_len = key.length;
+			conn_params.group_cipher_type = Ar6kWmiCipherType_WEP;
+			conn_params.group_key_len = key.length;
+			break;
+		}
+
+		case WlanBssAuthType_WPA_PSK_TKIP:
+		case WlanBssAuthType_WPA2_PSK_TKIP:
+		case WlanBssAuthType_WPA_PSK_AES:
+		case WlanBssAuthType_WPA2_PSK_AES: {
+			static const u8 auth[] = { Ar6kWmiAuthType_WPA_PSK, Ar6kWmiAuthType_WPA2_PSK, Ar6kWmiAuthType_WPA_PSK, Ar6kWmiAuthType_WPA2_PSK };
+			static const u8 cipher[] = { Ar6kWmiCipherType_TKIP, Ar6kWmiCipherType_TKIP, Ar6kWmiCipherType_AES, Ar6kWmiCipherType_AES };
+
+			conn_params.auth_mode_ieee = Ar6kWmiAuthModeIeee_Open;
+			conn_params.auth_mode = auth[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
+			conn_params.pairwise_cipher_type = cipher[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
+			conn_params.group_cipher_type = cipher[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
+			break;
+		}
+	}
+
+	if (!ar6kWmiConnect(&s_ar6kDev, &conn_params)) {
+		return false;
+	}
+
+	return true;
+}
