@@ -181,8 +181,7 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 			}
 
 			default: /* Ar6kHtcSrvId_WmiDataXX */ {
-				dietPrint("[AR6K] RX data srv%.4X len%u\n", srvid, pPacket->len);
-				// TODO: do something with data packet...
+				_ar6kWmiDataRx(dev, srvid, pPacket);
 				break;
 			}
 		}

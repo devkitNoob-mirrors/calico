@@ -116,6 +116,13 @@ static void _twlwifiOnScanComplete(Ar6kDev* dev, int status)
 	}
 }
 
+static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
+{
+	NetMacHdr* machdr = (NetMacHdr*)netbufGet(pPacket);
+
+	dietPrint("[RX:%2d] eth=%.4X len=%u\n", rssi, __builtin_bswap16(machdr->len_or_ethertype_be), pPacket->len);
+}
+
 bool twlwifiInit(void)
 {
 	// XX: Below sequence does a full reset of the Atheros hardware, clearing
@@ -169,6 +176,7 @@ bool twlwifiInit(void)
 	// Set callbacks
 	s_ar6kDev.cb_onBssInfo = _twlwifiOnBssInfo;
 	s_ar6kDev.cb_onScanComplete = _twlwifiOnScanComplete;
+	s_ar6kDev.cb_rx = _twlwifiRx;
 
 	return true;
 }

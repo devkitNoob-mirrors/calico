@@ -115,6 +115,42 @@ void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 	}
 }
 
+void _ar6kWmiDataRx(Ar6kDev* dev, Ar6kHtcSrvId srvid, NetBuf* pPacket)
+{
+	Ar6kWmiDataHdr* datahdr = netbufPopHeaderType(pPacket, Ar6kWmiDataHdr);
+	if (!datahdr) {
+		dietPrint("[AR6K] WMI data RX too small\n");
+		return;
+	}
+
+	if (pPacket->len < sizeof(NetMacHdr)) {
+		dietPrint("[AR6K] WMI RX missing MAC hdr\n");
+		return;
+	}
+
+	NetMacHdr* machdr = (NetMacHdr*)netbufGet(pPacket);
+	if (__builtin_bswap16(machdr->len_or_ethertype_be) < NetEtherType_First) {
+		// LLC-SNAP header follows - back up MAC header and remove both headers
+		NetMacHdr machdrdata = *netbufPopHeaderType(pPacket, NetMacHdr);
+		NetLlcSnapHdr* llcsnaphdr = netbufPopHeaderType(pPacket, NetLlcSnapHdr);
+		if (!llcsnaphdr) {
+			dietPrint("[AR6K] WMI RX missing LLC SNAP\n");
+			return;
+		}
+
+		// Convert MAC+LLC-SNAP to DIX (i.e. regular Ethernet II frame)
+		// XX: Not validating LLC-SNAP header
+		MEOW_ASSUME(pPacket->pos > sizeof(NetMacHdr));
+		machdr = netbufPushHeaderType(pPacket, NetMacHdr);
+		machdrdata.len_or_ethertype_be = llcsnaphdr->ethertype_be;
+		memcpy(machdr, &machdrdata, sizeof(NetMacHdr));
+	}
+
+	if (dev->cb_rx) {
+		dev->cb_rx(dev, datahdr->rssi, pPacket);
+	}
+}
+
 bool ar6kWmiStartup(Ar6kDev* dev)
 {
 	// Wait for WMI to be ready
