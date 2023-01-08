@@ -4,6 +4,7 @@
 #include <calico/dev/tmio.h>
 #include <calico/dev/sdio.h>
 #include <calico/dev/ar6k.h>
+#include <calico/dev/wpa.h>
 #include <calico/nds/bios.h>
 #include <calico/nds/ndma.h>
 #include <calico/nds/arm7/gpio.h>
@@ -26,9 +27,12 @@ static Thread s_sdioThread;
 alignas(8) static u8 s_sdioThreadStack[1024];
 static Thread s_sdioIrqThread;
 alignas(8) static u8 s_sdioIrqThreadStack[2048];
+static Thread s_wpaSupplicantThread;
+alignas(8) static u8 s_wpaSupplicantThreadStack[2048];
 
 static SdioCard s_sdioCard;
 static Ar6kDev s_ar6kDev;
+static WpaState s_wpaState;
 
 static const u8 s_macAny[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -119,8 +123,22 @@ static void _twlwifiOnScanComplete(Ar6kDev* dev, int status)
 static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
 {
 	NetMacHdr* machdr = (NetMacHdr*)netbufGet(pPacket);
+	unsigned ethertype = __builtin_bswap16(machdr->len_or_ethertype_be);
 
-	dietPrint("[RX:%2d] eth=%.4X len=%u\n", rssi, __builtin_bswap16(machdr->len_or_ethertype_be), pPacket->len);
+	if (ethertype == NetEtherType_EAPOL) {
+		// EAPOL -> forward package to WPA supplicant
+		if (!wpaEapolRx(&s_wpaState, pPacket)) {
+			dietPrint("[RX] WPA busy, dropping packet\n");
+		}
+	} else {
+		// Regular packet -> TODO: callback
+		dietPrint("[RX:%2d] eth=%.4X len=%u\n", rssi, ethertype, pPacket->len);
+	}
+}
+
+static void _twlwifiWpaTx(WpaState* st, NetBuf* pPacket)
+{
+	// XX: TODO
 }
 
 bool twlwifiInit(void)
@@ -171,12 +189,19 @@ bool twlwifiInit(void)
 		return false;
 	}
 
+	// Prepare and start the WPA supplicant thread
+	wpaPrepare(&s_wpaState);
+	threadPrepare(&s_wpaSupplicantThread, (ThreadFunc)wpaSupplicantThreadMain, &s_wpaState,
+		&s_wpaSupplicantThreadStack[sizeof(s_wpaSupplicantThreadStack)], MAIN_THREAD_PRIO+0x10);
+	threadStart(&s_wpaSupplicantThread);
+
 	dietPrint("[TWLWIFI] Init complete\n");
 
 	// Set callbacks
 	s_ar6kDev.cb_onBssInfo = _twlwifiOnBssInfo;
 	s_ar6kDev.cb_onScanComplete = _twlwifiOnScanComplete;
 	s_ar6kDev.cb_rx = _twlwifiRx;
+	s_wpaState.cb_tx = _twlwifiWpaTx;
 
 	return true;
 }
@@ -399,13 +424,17 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 		case WlanBssAuthType_WPA2_PSK_TKIP:
 		case WlanBssAuthType_WPA_PSK_AES:
 		case WlanBssAuthType_WPA2_PSK_AES: {
-			static const u8 auth[] = { Ar6kWmiAuthType_WPA_PSK, Ar6kWmiAuthType_WPA2_PSK, Ar6kWmiAuthType_WPA_PSK, Ar6kWmiAuthType_WPA2_PSK };
+			static const u8 authtype[] = { Ar6kWmiAuthType_WPA_PSK, Ar6kWmiAuthType_WPA2_PSK, Ar6kWmiAuthType_WPA_PSK, Ar6kWmiAuthType_WPA2_PSK };
 			static const u8 cipher[] = { Ar6kWmiCipherType_TKIP, Ar6kWmiCipherType_TKIP, Ar6kWmiCipherType_AES, Ar6kWmiCipherType_AES };
 
+			// Set params
 			conn_params.auth_mode_ieee = Ar6kWmiAuthModeIeee_Open;
-			conn_params.auth_mode = auth[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
+			conn_params.auth_mode = authtype[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
 			conn_params.pairwise_cipher_type = cipher[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
 			conn_params.group_cipher_type = cipher[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
+
+			// Copy PMK into WPA supplicant state
+			memcpy(s_wpaState.pmk, auth->wpa_psk, WLAN_WPA_PSK_LEN);
 			break;
 		}
 	}

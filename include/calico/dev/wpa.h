@@ -1,0 +1,79 @@
+#pragma once
+#include "../system/mailbox.h"
+#include "netbuf.h"
+#include "wlan.h"
+
+typedef struct WpaState WpaState;
+
+typedef enum WpaEapolDescrType {
+	WpaEapolDescrType_RSN = 0x02,
+	WpaEapolDescrType_WPA = 0xfe,
+} WpaEapolDescrType;
+
+#define WPA_EAPOL_DESCR_VER(_x)     ((_x)&7)
+#define WPA_EAPOL_KEY_TYPE_MASK     (1U<<3)
+#define WPA_EAPOL_KEY_TYPE_GROUP    (0U<<3)
+#define WPA_EAPOL_KEY_TYPE_PAIRWISE (1U<<3)
+#define WPA_EAPOL_KEY_INSTALL       (1U<<6)
+#define WPA_EAPOL_KEY_ACK           (1U<<7)
+#define WPA_EAPOL_KEY_MIC           (1U<<8)
+#define WPA_EAPOL_SECURE            (1U<<9)
+#define WPA_EAPOL_ERROR             (1U<<10)
+#define WPA_EAPOL_REQUEST           (1U<<11)
+#define WPA_EAPOL_ENCRYPTED         (1U<<12)
+
+typedef struct WpaEapolHdr {
+	u8 protocol_version;
+	u8 packet_type;
+	u16 packet_body_len_be;
+} WpaEapolHdr;
+
+typedef struct __attribute__((packed)) WpaEapolKeyHdr {
+	u8 descr_type; // WpaEapolDescrType
+	u16 key_info_be;
+	u16 key_len_be;
+	u64 key_replay_cnt_be;
+	u8 key_nonce[32];
+	u8 key_iv[16];
+	u8 key_rsc[8];
+	u8 reserved[8];
+
+	u8 mic[16];
+	u16 key_data_len_be;
+} WpaEapolKeyHdr;
+
+typedef struct WpaKey {
+	u8 main[8]; // Used for both TKIP and AES-CCMP
+	u8 tx[8];   // Used only for TKIP
+	u8 rx[8];   // Used only for TKIP
+} WpaKey;
+
+typedef struct WpaPtk {
+	u8 kck[0x10]; // Key Confirmation Key (for MIC calculation)
+	u8 kek[0x10]; // Key Encryption Key (for key data decryption)
+	WpaKey tk;    // Temporal Key (for data packets)
+} WpaPtk;
+
+struct WpaState {
+	Mailbox mbox;
+	u32 mbox_storage;
+
+	void (* cb_tx)(WpaState* st, NetBuf* pPacket);
+
+	u8 pmk[WLAN_WPA_PSK_LEN]; // Pairwise Master Key
+	WpaPtk ptk; // Pairwise Transient Key
+	WpaKey gtk; // Group Transient Key
+};
+
+void wpaPrepare(WpaState* st);
+int wpaSupplicantThreadMain(WpaState* st);
+
+MEOW_INLINE bool wpaEapolRx(WpaState* st, NetBuf* pPacket)
+{
+	return mailboxTrySend(&st->mbox, (u32)pPacket);
+}
+
+MEOW_INLINE bool wpaFinalize(WpaState* st)
+{
+	return mailboxTrySend(&st->mbox, 0);
+}
