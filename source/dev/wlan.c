@@ -29,6 +29,34 @@ WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, vo
 	return &desc_table[i];
 }
 
+WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len)
+{
+	u8* pos = (u8*)rawdata;
+	WlanIeHdr* wpa = NULL;
+	while (rawdata_len > sizeof(WlanIeHdr)) {
+		WlanIeHdr* ie = (WlanIeHdr*)pos;
+		pos += 2;
+		rawdata_len -= 2;
+
+		if (ie->len <= rawdata_len) {
+			pos += ie->len;
+			rawdata_len -= ie->len;
+		} else {
+			break;
+		}
+
+		if (ie->id == WlanEid_RSN) {
+			return ie;
+		}
+
+		if (ie->id == WlanEid_Vendor && ie->len >= 4 && ie->data[0] == 0x00 && ie->data[1] == 0x50 && ie->data[2] == 0xf2 && ie->data[3] == 0x01) {
+			wpa = ie;
+		}
+	}
+
+	return wpa;
+}
+
 void wlanParseBeacon(WlanBssDesc* desc, NetBuf* pPacket)
 {
 	WlanBeaconHdr* hdr = netbufPopHeaderType(pPacket, WlanBeaconHdr);
@@ -41,7 +69,7 @@ void wlanParseBeacon(WlanBssDesc* desc, NetBuf* pPacket)
 	desc->ieee_caps = hdr->capabilities;
 
 	while (pPacket->len) {
-		WlanBeaconIeHdr* elhdr = netbufPopHeaderType(pPacket, WlanBeaconIeHdr);
+		WlanIeHdr* elhdr = netbufPopHeaderType(pPacket, WlanIeHdr);
 		if (!elhdr) {
 			break;
 		}
@@ -57,7 +85,7 @@ void wlanParseBeacon(WlanBssDesc* desc, NetBuf* pPacket)
 				break;
 			}
 
-			case WlanBeaconEid_SSID: {
+			case WlanEid_SSID: {
 				if (elhdr->len <= WLAN_MAX_SSID_LEN) {
 					desc->ssid_len = elhdr->len;
 					memcpy(desc->ssid, data, elhdr->len);

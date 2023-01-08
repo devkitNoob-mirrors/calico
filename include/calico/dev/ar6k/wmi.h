@@ -315,6 +315,18 @@ typedef struct Ar6kWmiEvtReady {
 	u8 phy_capability;
 } Ar6kWmiEvtReady;
 
+typedef struct __attribute__((packed)) Ar6kWmiEvtConnected {
+	u16 channel_mhz;
+	u8 bssid[6];
+	u16 listen_interval;
+	u16 beacon_interval;
+	u32 network_type; // Ar6kWmiNetworkType
+	u8 beacon_ie_len;
+	u8 assoc_req_len;
+	u8 assoc_resp_len;
+	u8 assoc_info[]; // beacon_ie + assoc_req + assoc_resp
+} Ar6kWmiEvtConnected;
+
 typedef struct Ar6kWmiEvtDisconnected {
 	u16 reason_ieee;
 	u8 bssid[6];

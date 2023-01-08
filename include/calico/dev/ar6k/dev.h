@@ -44,6 +44,8 @@ struct Ar6kDev {
 	// Callbacks
 	void (* cb_onBssInfo)(Ar6kDev* dev, Ar6kWmiBssInfoHdr* bssInfo, NetBuf* pPacket);
 	void (* cb_onScanComplete)(Ar6kDev* dev, int status);
+	void (* cb_onAssoc)(Ar6kDev* dev, Ar6kWmiEvtConnected* info);
+	void (* cb_onDeassoc)(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info);
 	void (* cb_rx)(Ar6kDev* dev, int rssi, NetBuf* pPacket);
 };
 

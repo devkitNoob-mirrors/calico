@@ -8,26 +8,39 @@
 #define WLAN_WEP_128_LEN     16
 #define WLAN_WPA_PSK_LEN     32
 
-typedef enum WlanBeaconEid {
-	WlanBeaconEid_SSID             = 0,
-	WlanBeaconEid_SupportedRates   = 1,
-	WlanBeaconEid_RSN              = 48,
-	WlanBeaconEid_SupportedRatesEx = 50,
-	WlanBeaconEid_Vendor           = 221, // also used for NN-specific data
-} WlanBeaconEid;
+typedef enum WlanEid {
+	WlanEid_SSID             = 0,
+	WlanEid_SupportedRates   = 1,
+	WlanEid_RSN              = 48,
+	WlanEid_SupportedRatesEx = 50,
+	WlanEid_Vendor           = 221, // also used for NN-specific data
+} WlanEid;
 
 typedef struct WlanBeaconHdr {
 	u32 timestamp[2];
 	u16 interval;
 	u16 capabilities;
-	// Information elements follow: WlanBeaconIeHdr[]
+	// Information elements follow: WlanIeHdr[]
 } WlanBeaconHdr;
 
-typedef struct WlanBeaconIeHdr {
+typedef struct WlanAssocReqHdr {
+	u16 capabilities;
+	u16 interval;
+	// Information elements follow: WlanIeHdr[]
+} WlanAssocReqHdr;
+
+typedef struct WlanAssocRespHdr {
+	u16 capabilities;
+	u16 interval;
+	u16 aid;
+	// Information elements follow: WlanIeHdr[]
+} WlanAssocRespHdr;
+
+typedef struct WlanIeHdr {
 	u8 id;
 	u8 len;
-	// Data follows
-} WlanBeaconIeHdr;
+	u8 data[];
+} WlanIeHdr;
 
 typedef enum WlanBssAuthType {
 	WlanBssAuthType_Open          = 0,
@@ -91,4 +104,5 @@ MEOW_CONSTEXPR unsigned wlanChannelToFreq(unsigned ch)
 }
 
 WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, void* bssid, int rssi);
+WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len);
 void wlanParseBeacon(WlanBssDesc* desc, NetBuf* pPacket);

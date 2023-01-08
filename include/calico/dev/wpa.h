@@ -60,6 +60,10 @@ struct WpaState {
 
 	void (* cb_tx)(WpaState* st, NetBuf* pPacket);
 
+	// Information element (RSN or WPA)
+	void* ie_data;
+	unsigned ie_len;
+
 	u8 pmk[WLAN_WPA_PSK_LEN]; // Pairwise Master Key
 	WpaPtk ptk; // Pairwise Transient Key
 	WpaKey gtk; // Group Transient Key

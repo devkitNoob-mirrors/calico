@@ -33,6 +33,7 @@ alignas(8) static u8 s_wpaSupplicantThreadStack[2048];
 static SdioCard s_sdioCard;
 static Ar6kDev s_ar6kDev;
 static WpaState s_wpaState;
+static u8 s_wpaIeBuf[0x20];
 
 static const u8 s_macAny[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -120,6 +121,30 @@ static void _twlwifiOnScanComplete(Ar6kDev* dev, int status)
 	}
 }
 
+static void _twlwifiOnAssoc(Ar6kDev* dev, Ar6kWmiEvtConnected* info)
+{
+	dietPrint("[TWLWIFI] Associated\n");
+
+	u8* ie_data = info->assoc_info + info->beacon_ie_len + 4;
+	unsigned remsize = info->assoc_req_len - 4;
+
+	WlanIeHdr* ie = wlanFindRsnOrWpaIe(ie_data, remsize);
+	unsigned ie_len;
+	if (ie && (ie_len = sizeof(WlanIeHdr) + ie->len) <= sizeof(s_wpaIeBuf)) {
+		memcpy(s_wpaIeBuf, ie, ie_len);
+		s_wpaState.ie_len = ie_len;
+	} else {
+		s_wpaState.ie_len = 0;
+	}
+}
+
+static void _twlwifiOnDeassoc(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info)
+{
+	dietPrint("[TWLWIFI] Deassociated\n");
+	dietPrint("  IEEE reason = %u\n", info->reason_ieee);
+	dietPrint("  Reason = %u\n", info->reason);
+}
+
 static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
 {
 	NetMacHdr* machdr = (NetMacHdr*)netbufGet(pPacket);
@@ -200,8 +225,11 @@ bool twlwifiInit(void)
 	// Set callbacks
 	s_ar6kDev.cb_onBssInfo = _twlwifiOnBssInfo;
 	s_ar6kDev.cb_onScanComplete = _twlwifiOnScanComplete;
+	s_ar6kDev.cb_onAssoc = _twlwifiOnAssoc;
+	s_ar6kDev.cb_onDeassoc = _twlwifiOnDeassoc;
 	s_ar6kDev.cb_rx = _twlwifiRx;
 	s_wpaState.cb_tx = _twlwifiWpaTx;
+	s_wpaState.ie_data = s_wpaIeBuf;
 
 	return true;
 }

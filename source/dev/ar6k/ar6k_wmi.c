@@ -99,16 +99,17 @@ void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 		}
 
 		case Ar6kWmiEventId_Connected: {
-			dietPrint("[AR6K] Associated!!!!\n");
+			Ar6kWmiEvtConnected* hdr = netbufPopHeaderType(pPacket, Ar6kWmiEvtConnected);
+			if (hdr && dev->cb_onAssoc) {
+				dev->cb_onAssoc(dev, hdr);
+			}
 			break;
 		}
 
 		case Ar6kWmiEventId_Disconnected: {
-			dietPrint("[AR6K] Deassociated\n");
 			Ar6kWmiEvtDisconnected* hdr = netbufPopHeaderType(pPacket, Ar6kWmiEvtDisconnected);
-			if (hdr) {
-				dietPrint("IEEE reason = %u\n", hdr->reason_ieee);
-				dietPrint("Reason = %u\n", hdr->reason);
+			if (hdr && dev->cb_onDeassoc) {
+				dev->cb_onDeassoc(dev, hdr);
 			}
 			break;
 		}
