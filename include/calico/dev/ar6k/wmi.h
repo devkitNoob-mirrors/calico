@@ -366,6 +366,8 @@ typedef struct Ar6kWmiBssInfoHdr {
 
 bool ar6kWmiStartup(Ar6kDev* dev);
 
+bool ar6kWmiTx(Ar6kDev* dev, NetBuf* pPacket);
+
 bool ar6kWmiSimpleCmd(Ar6kDev* dev, Ar6kWmiCmdId cmdid);
 bool ar6kWmiSimpleCmdWithParam8(Ar6kDev* dev, Ar6kWmiCmdId cmdid, u8 param);
 bool ar6kWmiSimpleCmdWithParam32(Ar6kDev* dev, Ar6kWmiCmdId cmdid, u32 param);

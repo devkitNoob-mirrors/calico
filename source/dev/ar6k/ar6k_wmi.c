@@ -116,6 +116,11 @@ void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 	}
 }
 
+MEOW_CONSTEXPR bool _ar6kWmiIsLlcSnapPacket(NetMacHdr* machdr)
+{
+	return __builtin_bswap16(machdr->len_or_ethertype_be) < NetEtherType_First;
+}
+
 void _ar6kWmiDataRx(Ar6kDev* dev, Ar6kHtcSrvId srvid, NetBuf* pPacket)
 {
 	Ar6kWmiDataHdr* datahdr = netbufPopHeaderType(pPacket, Ar6kWmiDataHdr);
@@ -130,7 +135,7 @@ void _ar6kWmiDataRx(Ar6kDev* dev, Ar6kHtcSrvId srvid, NetBuf* pPacket)
 	}
 
 	NetMacHdr* machdr = (NetMacHdr*)netbufGet(pPacket);
-	if (__builtin_bswap16(machdr->len_or_ethertype_be) < NetEtherType_First) {
+	if (_ar6kWmiIsLlcSnapPacket(machdr)) {
 		// LLC-SNAP header follows - back up MAC header and remove both headers
 		NetMacHdr machdrdata = *netbufPopHeaderType(pPacket, NetMacHdr);
 		NetLlcSnapHdr* llcsnaphdr = netbufPopHeaderType(pPacket, NetLlcSnapHdr);
@@ -189,6 +194,61 @@ bool ar6kWmiStartup(Ar6kDev* dev)
 	dietPrint("[AR6K] channel mask %.8lX\n", dev->wmi_channel_mask);
 
 	return true;
+}
+
+bool ar6kWmiTx(Ar6kDev* dev, NetBuf* pPacket)
+{
+	if (pPacket->len < sizeof(NetMacHdr)) {
+		dietPrint("[AR6K] WMI bad TX packet\n");
+		return false;
+	}
+
+	NetMacHdr* machdr = (NetMacHdr*)netbufGet(pPacket);
+	if (!_ar6kWmiIsLlcSnapPacket(machdr)) {
+		// Convert packet to LLC-SNAP
+		NetMacHdr machdrdata = *netbufPopHeaderType(pPacket, NetMacHdr);
+		NetLlcSnapHdr* llcsnaphdr = netbufPushHeaderType(pPacket, NetLlcSnapHdr);
+		if (!llcsnaphdr) {
+			dietPrint("[AR6K] WMI TX LLC SNAP fail\n");
+			return false;
+		}
+
+		// Fill in LLC-SNAP header
+		llcsnaphdr->dsap = 0xaa;
+		llcsnaphdr->ssap = 0xaa;
+		llcsnaphdr->control = 0x03;
+		llcsnaphdr->oui[0] = 0;
+		llcsnaphdr->oui[1] = 0;
+		llcsnaphdr->oui[2] = 0;
+		llcsnaphdr->ethertype_be = machdrdata.len_or_ethertype_be;
+		machdrdata.len_or_ethertype_be = __builtin_bswap16(pPacket->len); // backup
+
+		// Add new MAC header
+		machdr = netbufPushHeaderType(pPacket, NetMacHdr);
+		if (!machdr) {
+			dietPrint("[AR6K] WMI TX MAC fail\n");
+			return false;
+		}
+
+		// Fill in new MAC header
+		*machdr = machdrdata;
+	}
+
+	// Add WMI data header
+	Ar6kWmiDataHdr* datahdr = netbufPushHeaderType(pPacket, Ar6kWmiDataHdr);
+	if (!datahdr) {
+		dietPrint("[AR6K] WMI TX datahdr fail\n");
+		return false;
+	}
+
+	// Fill in WMI data header
+	datahdr->rssi = 0;
+	datahdr->msg_type = 0;
+	datahdr->user_prio = 0; // TODO: do something useful with this
+	datahdr->_pad = 0;
+
+	// Send packet! (TODO: select QoS endpoint)
+	return _ar6kHtcSendPacket(dev, dev->wmi_data_epids[2], pPacket);
 }
 
 // TODO: Temporarily using static storage for WMI commands

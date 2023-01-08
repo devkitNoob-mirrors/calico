@@ -473,3 +473,8 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 
 	return true;
 }
+
+bool twlwifiTx(NetBuf* pPacket)
+{
+	return ar6kWmiTx(&s_ar6kDev, pPacket);
+}
