@@ -3,6 +3,11 @@
 #include "netbuf.h"
 #include "wlan.h"
 
+#define WPA_EAPOL_NONCE_LEN  32
+#define WPA_EAPOL_MIC_LEN    16
+#define WPA_EAPOL_REPLAY_LEN 8
+#define WPA_SHA1_LEN         20
+
 typedef struct WpaState WpaState;
 
 typedef enum WpaEapolDescrType {
@@ -32,13 +37,13 @@ typedef struct __attribute__((packed)) WpaEapolKeyHdr {
 	u8 descr_type; // WpaEapolDescrType
 	u16 key_info_be;
 	u16 key_len_be;
-	u64 key_replay_cnt_be;
-	u8 key_nonce[32];
+	u8 key_replay_cnt[WPA_EAPOL_REPLAY_LEN];
+	u8 key_nonce[WPA_EAPOL_NONCE_LEN];
 	u8 key_iv[16];
 	u8 key_rsc[8];
 	u8 reserved[8];
 
-	u8 mic[16];
+	u8 mic[WPA_EAPOL_MIC_LEN];
 	u16 key_data_len_be;
 } WpaEapolKeyHdr;
 
@@ -47,6 +52,16 @@ typedef struct WpaKey {
 	u8 tx[8];   // Used only for TKIP
 	u8 rx[8];   // Used only for TKIP
 } WpaKey;
+
+typedef struct WpaPtkPad {
+	char magic[22];
+	u8 zero;
+	u8 min_bssid[6];
+	u8 max_bssid[6];
+	u8 min_nonce[WPA_EAPOL_NONCE_LEN];
+	u8 max_nonce[WPA_EAPOL_NONCE_LEN];
+	u8 counter;
+} WpaPtkPad;
 
 typedef struct WpaPtk {
 	u8 kck[0x10]; // Key Confirmation Key (for MIC calculation)
@@ -58,6 +73,7 @@ struct WpaState {
 	Mailbox mbox;
 	u32 mbox_storage;
 
+	NetBuf* (* cb_alloc_packet)(WpaState* st, size_t len);
 	void (* cb_tx)(WpaState* st, NetBuf* pPacket);
 
 	// Information element (RSN or WPA)
@@ -67,7 +83,12 @@ struct WpaState {
 	u8 pmk[WLAN_WPA_PSK_LEN]; // Pairwise Master Key
 	WpaPtk ptk; // Pairwise Transient Key
 	WpaKey gtk; // Group Transient Key
+
+	u8 replay[WPA_EAPOL_REPLAY_LEN];
 };
+
+void wpaHmacSha1(void* out, const void* key, size_t key_len, const void* data, size_t data_len);
+void wpaPseudoRandomFunction(void* out, size_t out_len, const void* key, size_t key_size, void* pad, size_t pad_len);
 
 void wpaPrepare(WpaState* st);
 int wpaSupplicantThreadMain(WpaState* st);

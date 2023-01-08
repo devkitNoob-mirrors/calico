@@ -161,9 +161,27 @@ static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
 	}
 }
 
+// TODO: Temporarily using static storage for WPA EAPOL packets
+alignas(4) static u8 s_tempWpaPacket[sizeof(NetBuf) + 512];
+
+static NetBuf* _twlwifiWpaAllocPacket(WpaState* st, size_t len)
+{
+	// TODO: make this a buf
+	NetBuf* pPacket = (NetBuf*)s_tempWpaPacket;
+	pPacket->capacity = sizeof(s_tempWpaPacket) - sizeof(NetBuf);
+	pPacket->pos = sizeof(Ar6kHtcFrameHdr) + sizeof(Ar6kWmiDataHdr) + sizeof(NetMacHdr) + sizeof(NetLlcSnapHdr);
+
+	if (pPacket->capacity - pPacket->pos < len) {
+		return NULL;
+	}
+
+	pPacket->len = len;
+	return pPacket;
+}
+
 static void _twlwifiWpaTx(WpaState* st, NetBuf* pPacket)
 {
-	// XX: TODO
+	twlwifiTx(pPacket);
 }
 
 bool twlwifiInit(void)
@@ -228,6 +246,7 @@ bool twlwifiInit(void)
 	s_ar6kDev.cb_onAssoc = _twlwifiOnAssoc;
 	s_ar6kDev.cb_onDeassoc = _twlwifiOnDeassoc;
 	s_ar6kDev.cb_rx = _twlwifiRx;
+	s_wpaState.cb_alloc_packet = _twlwifiWpaAllocPacket;
 	s_wpaState.cb_tx = _twlwifiWpaTx;
 	s_wpaState.ie_data = s_wpaIeBuf;
 
