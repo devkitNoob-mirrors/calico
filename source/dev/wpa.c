@@ -41,6 +41,40 @@ void wpaPseudoRandomFunction(void* out, size_t out_len, const void* key, size_t 
 	}
 }
 
+bool wpaAesUnwrap(const void* kek, const void* in, void* out, size_t num_blk)
+{
+	u8 A[WPA_AES_WRAP_BLK_LEN], B[2*WPA_AES_WRAP_BLK_LEN];
+	WpaAesContext ctx;
+	wpaAesSetDecryptKey(kek, WPA_AES_BLOCK_LEN*8, &ctx);
+
+	// Setup
+	memcpy(A, in, WPA_AES_WRAP_BLK_LEN);
+	memcpy(out, (u8*)in+WPA_AES_WRAP_BLK_LEN, num_blk*WPA_AES_WRAP_BLK_LEN);
+
+	// Unwrap
+	for (int j = 5; j >= 0; j --) {
+		u8* R = (u8*)out + (num_blk-1) * 8;
+		for (int i = num_blk; i >= 1; i --) {
+			memcpy(&B[0], A, WPA_AES_WRAP_BLK_LEN);
+			memcpy(&B[WPA_AES_WRAP_BLK_LEN], R, WPA_AES_WRAP_BLK_LEN);
+			B[WPA_AES_WRAP_BLK_LEN-1] ^= i + num_blk * j;
+			wpaAesDecrypt(B, B, &ctx);
+			memcpy(A, &B[0], WPA_AES_WRAP_BLK_LEN);
+			memcpy(R, &B[WPA_AES_WRAP_BLK_LEN], WPA_AES_WRAP_BLK_LEN);
+			R -= WPA_AES_WRAP_BLK_LEN;
+		}
+	}
+
+	// Check IV
+	for (unsigned i = 0; i < WPA_AES_WRAP_BLK_LEN; i ++) {
+		if (A[i] != 0xa6) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static void _wpaEapolCalcMic(WpaState* st, WpaWork* wk, WpaEapolHdr* eapolhdr)
 {
 	WpaEapolKeyHdr* hdr = (WpaEapolKeyHdr*)(eapolhdr+1);
@@ -96,6 +130,7 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
 
 	// Update key replay counter (TODO: validate)
 	memcpy(st->replay, wk->hdr->key_replay_cnt, WPA_EAPOL_REPLAY_LEN);
+	memcpy(st->anonce, wk->hdr->key_nonce, WPA_EAPOL_NONCE_LEN);
 
 	// Generate a nonce for ourselves
 	u8 snonce[WPA_EAPOL_NONCE_LEN] = "TEMP key please use random one";
@@ -149,6 +184,19 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
 MEOW_NOINLINE static void _wpaPairwiseHandshake34(WpaState* st, WpaWork* wk)
 {
 	dietPrint("[WPA] Handshake 3/4\n");
+
+	// TODO: validate replay (should be N+1)
+
+	if (memcmp(st->anonce, wk->hdr->key_nonce, WPA_EAPOL_NONCE_LEN) != 0) {
+		dietPrint("[WPA] nonce error\n");
+		return;
+	}
+
+	u8* key_data = (u8*)wk->key_data;
+	for (unsigned i = 0; i < wk->key_data_len; i ++) {
+		dietPrint("%.2X ", key_data[i]);
+	}
+	dietPrint("\n");
 }
 
 MEOW_NOINLINE static void _wpaGroupHandshake(WpaState* st, WpaWork* wk)
@@ -236,10 +284,22 @@ static void _wpaEapolRx(WpaState* st, NetBuf* pPacket)
 	}
 
 	if (wk.key_info & WPA_EAPOL_ENCRYPTED) {
-		// TODO: Decrypt keydata
+		// Decrypt keydata
 		// XX: WPA does not use this bit, instead it is assumed to be always true?
-		dietPrint("[WPA] TODO: decrypt keydata\n");
 		wk.key_data = netbufGet(pPacket);
+
+		if (wk.descr_ver == 2) {
+			// Apply AES-Key-Unwrap
+			wk.key_data_len -= WPA_AES_WRAP_BLK_LEN;
+			if (!wpaAesUnwrap(st->ptk.kek, wk.key_data, wk.key_data, wk.key_data_len/WPA_AES_WRAP_BLK_LEN)) {
+				dietPrint("[WPA] Corrupted keydata\n");
+				return;
+			}
+		} else {
+			// XX: Apply RC4
+			dietPrint("[WPA] RC4 decrypt not impl\n");
+			return;
+		}
 	}
 
 	switch (wk.key_info & (WPA_EAPOL_KEY_TYPE_MASK|WPA_EAPOL_KEY_MIC)) {

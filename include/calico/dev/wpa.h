@@ -7,6 +7,14 @@
 #define WPA_EAPOL_MIC_LEN    16
 #define WPA_EAPOL_REPLAY_LEN 8
 #define WPA_SHA1_LEN         20
+#define WPA_AES_BLOCK_LEN    16
+#define WPA_AES_MAX_ROUNDS   14
+#define WPA_AES_WRAP_BLK_LEN 8
+
+typedef struct WpaAesContext {
+	alignas(4) u8 round_keys[1+WPA_AES_MAX_ROUNDS][WPA_AES_BLOCK_LEN];
+	u32 num_rounds;
+} WpaAesContext;
 
 typedef struct WpaState WpaState;
 
@@ -85,10 +93,17 @@ struct WpaState {
 	WpaKey gtk; // Group Transient Key
 
 	u8 replay[WPA_EAPOL_REPLAY_LEN];
+	u8 anonce[WPA_EAPOL_NONCE_LEN];
 };
 
 void wpaHmacSha1(void* out, const void* key, size_t key_len, const void* data, size_t data_len);
 void wpaPseudoRandomFunction(void* out, size_t out_len, const void* key, size_t key_size, void* pad, size_t pad_len);
+
+void wpaAesEncrypt(const void* in, void* out, WpaAesContext const* ctx);
+void wpaAesDecrypt(const void* in, void* out, WpaAesContext const* ctx);
+void wpaAesSetEncryptKey(const void* key, unsigned bits, WpaAesContext* ctx);
+void wpaAesSetDecryptKey(const void* key, unsigned bits, WpaAesContext* ctx);
+bool wpaAesUnwrap(const void* kek, const void* in, void* out, size_t num_blk);
 
 void wpaPrepare(WpaState* st);
 int wpaSupplicantThreadMain(WpaState* st);
