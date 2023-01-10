@@ -184,7 +184,7 @@ static void _twlwifiWpaTx(WpaState* st, NetBuf* pPacket)
 	twlwifiTx(pPacket);
 }
 
-static void _twlwifiInstallKey(WpaState* st, bool is_group, unsigned slot, unsigned len)
+static void _twlwifiWpaInstallKey(WpaState* st, bool is_group, unsigned slot, unsigned len)
 {
 	// XX: wmiSyncronize should happen around key change
 
@@ -193,9 +193,30 @@ static void _twlwifiInstallKey(WpaState* st, bool is_group, unsigned slot, unsig
 	key.type = len > WPA_AES_BLOCK_LEN ? Ar6kWmiCipherType_TKIP : Ar6kWmiCipherType_AES;
 	key.usage = is_group ? AR6K_WMI_CIPHER_USAGE_GROUP : AR6K_WMI_CIPHER_USAGE_PAIRWISE;
 	key.length = len;
-	memcpy(key.key, is_group ? &st->gtk : &st->ptk.tk, key.length);
+	key.op_ctrl = AR6K_WMI_KEY_OP_INIT_TSC | AR6K_WMI_KEY_OP_INIT_RSC;
+
+	WpaKey* inkey = is_group ? &st->gtk : &st->ptk.tk;
+	memcpy(&key.key[0], inkey->main, 0x10);
+
+	if (key.type == Ar6kWmiCipherType_TKIP) {
+		// Fill in extra fields for TKIP
+		memcpy(&key.key[0x10], inkey->rx, 8);
+		memcpy(&key.key[0x18], inkey->tx, 8);
+	}
+
+	// Fill in RSC
+	if (is_group) {
+		memcpy(key.rsc, st->rsc, WPA_RSC_LEN);
+	} else {
+		memset(key.rsc, 0, WPA_RSC_LEN);
+	}
+
 	if (!ar6kWmiAddCipherKey(&s_ar6kDev, &key)) {
 		dietPrint("[TWLWIFI] %s key%u fail\n", is_group ? "group" : "pairwise", slot);
+	}
+
+	if (is_group) {
+		dietPrint("[TWLWIFI] WPA negotiated!\n");
 	}
 }
 
@@ -263,7 +284,7 @@ bool twlwifiInit(void)
 	s_ar6kDev.cb_rx = _twlwifiRx;
 	s_wpaState.cb_alloc_packet = _twlwifiWpaAllocPacket;
 	s_wpaState.cb_tx = _twlwifiWpaTx;
-	s_wpaState.cb_install_key = _twlwifiInstallKey;
+	s_wpaState.cb_install_key = _twlwifiWpaInstallKey;
 	s_wpaState.ie_data = s_wpaIeBuf;
 
 	return true;
@@ -496,8 +517,8 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 			conn_params.pairwise_cipher_type = cipher[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
 			conn_params.group_cipher_type = cipher[bss->auth_type-WlanBssAuthType_WPA_PSK_TKIP];
 
-			// Copy PMK into WPA supplicant state
-			memcpy(s_wpaState.pmk, auth->wpa_psk, WLAN_WPA_PSK_LEN);
+			// Reset WPA supplicant state with the new PSK
+			wpaReset(&s_wpaState, auth->wpa_psk);
 			break;
 		}
 	}

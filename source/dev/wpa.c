@@ -75,6 +75,15 @@ bool wpaAesUnwrap(const void* kek, const void* in, void* out, size_t num_blk)
 	return true;
 }
 
+static u64 _wpaDecodeReplayCounter(const u8* replay_buf)
+{
+	u64 ret = 0;
+	for (unsigned i = 0; i < WPA_EAPOL_REPLAY_LEN; i ++) {
+		ret = (ret << 8) | replay_buf[i];
+	}
+	return ret;
+}
+
 static void _wpaEapolCalcMic(WpaState* st, WpaWork* wk, WpaEapolHdr* eapolhdr)
 {
 	WpaEapolKeyHdr* hdr = (WpaEapolKeyHdr*)(eapolhdr+1);
@@ -87,6 +96,7 @@ static void _wpaEapolCalcMic(WpaState* st, WpaWork* wk, WpaEapolHdr* eapolhdr)
 		memcpy(hdr->mic, temp, WPA_EAPOL_MIC_LEN);
 	} else {
 		// XX: same thing but with HMAC-MD5
+		dietPrint("[WPA] HMAC-MD5 not impl\n");
 	}
 }
 
@@ -170,8 +180,7 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
 {
 	dietPrint("[WPA] Handshake 1/4\n");
 
-	// Update key replay counter (TODO: validate)
-	memcpy(st->replay, wk->hdr->key_replay_cnt, WPA_EAPOL_REPLAY_LEN);
+	// Obtain nonce from the AP
 	memcpy(st->anonce, wk->hdr->key_nonce, WPA_EAPOL_NONCE_LEN);
 
 	// Generate a nonce for ourselves
@@ -223,8 +232,6 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake34(WpaState* st, WpaWork* wk)
 {
 	dietPrint("[WPA] Handshake 3/4\n");
 
-	// TODO: validate replay (should be N+1)
-
 	if (memcmp(st->anonce, wk->hdr->key_nonce, WPA_EAPOL_NONCE_LEN) != 0) {
 		dietPrint("[WPA] nonce error\n");
 		return;
@@ -238,6 +245,9 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake34(WpaState* st, WpaWork* wk)
 			dietPrint("[WPA2] No GTK found\n");
 			return;
 		}
+
+		// Obtain RSC
+		memcpy(&st->rsc, wk->hdr->key_rsc, WPA_RSC_LEN);
 	}
 
 	// Send packet 4
@@ -279,6 +289,9 @@ MEOW_NOINLINE static void _wpaGroupHandshake(WpaState* st, WpaWork* wk)
 		gtk_len = wk->key_data_len;
 		memcpy(&st->gtk, wk->key_data, gtk_len);
 	}
+
+	// Obtain RSC
+	memcpy(&st->rsc, wk->hdr->key_rsc, WPA_RSC_LEN);
 
 	// Send response packet
 	if (!_wpaEapolCreateAndSendReplyPacket(st, wk)) {
@@ -368,6 +381,14 @@ static void _wpaEapolRx(WpaState* st, NetBuf* pPacket)
 		}
 	}
 
+	// Verify replay
+	u64 new_replay = _wpaDecodeReplayCounter(wk.hdr->key_replay_cnt);
+	if ((s64)(new_replay - st->replay) <= 0) {
+		dietPrint("[WPA] EAPOL replay detected\n");
+		return;
+	}
+	st->replay = new_replay;
+
 	bool is_keydata_encrypted;
 	if (wk.is_rsn) {
 		// WPA2: Keydata is encrypted if the "encrypted" flag is set
@@ -422,6 +443,12 @@ void wpaPrepare(WpaState* st)
 {
 	*st = (WpaState){0};
 	mailboxPrepare(&st->mbox, &st->mbox_storage, 1);
+}
+
+void wpaReset(WpaState* st, const void* pmk)
+{
+	memcpy(st->pmk, pmk, WLAN_WPA_PSK_LEN);
+	st->replay = UINT64_MAX;
 }
 
 int wpaSupplicantThreadMain(WpaState* st)

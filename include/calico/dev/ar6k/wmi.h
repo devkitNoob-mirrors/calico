@@ -269,7 +269,6 @@ typedef struct Ar6kWmiCipherKey {
 	u8 rsc[8];  // replay sequence counter
 	u8 key[32];
 	u8 op_ctrl; // bitmask of AR6K_WMI_KEY_OP_*
-	u8 macaddr[6];
 } Ar6kWmiCipherKey;
 
 typedef enum Ar6kWmiBitRate {

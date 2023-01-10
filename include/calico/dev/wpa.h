@@ -6,7 +6,9 @@
 #define WPA_EAPOL_NONCE_LEN  32
 #define WPA_EAPOL_MIC_LEN    16
 #define WPA_EAPOL_REPLAY_LEN 8
+#define WPA_RSC_LEN          8
 #define WPA_SHA1_LEN         20
+#define WPA_RC4_IV_LEN       16
 #define WPA_AES_BLOCK_LEN    16
 #define WPA_AES_MAX_ROUNDS   14
 #define WPA_AES_WRAP_BLK_LEN 8
@@ -49,8 +51,8 @@ typedef struct __attribute__((packed)) WpaEapolKeyHdr {
 	u16 key_len_be;
 	u8 key_replay_cnt[WPA_EAPOL_REPLAY_LEN];
 	u8 key_nonce[WPA_EAPOL_NONCE_LEN];
-	u8 key_iv[16];
-	u8 key_rsc[8];
+	u8 key_iv[WPA_RC4_IV_LEN];
+	u8 key_rsc[WPA_RSC_LEN];
 	u8 reserved[8];
 
 	u8 mic[WPA_EAPOL_MIC_LEN];
@@ -94,8 +96,9 @@ struct WpaState {
 	u8 pmk[WLAN_WPA_PSK_LEN]; // Pairwise Master Key
 	WpaPtk ptk; // Pairwise Transient Key
 	WpaKey gtk; // Group Transient Key
+	u8 rsc[WPA_RSC_LEN]; // Received Sequence Counter
 
-	u8 replay[WPA_EAPOL_REPLAY_LEN];
+	u64 replay;
 	u8 anonce[WPA_EAPOL_NONCE_LEN];
 };
 
@@ -109,6 +112,7 @@ void wpaAesSetDecryptKey(const void* key, unsigned bits, WpaAesContext* ctx);
 bool wpaAesUnwrap(const void* kek, const void* in, void* out, size_t num_blk);
 
 void wpaPrepare(WpaState* st);
+void wpaReset(WpaState* st, const void* pmk);
 int wpaSupplicantThreadMain(WpaState* st);
 
 MEOW_INLINE bool wpaEapolRx(WpaState* st, NetBuf* pPacket)
