@@ -184,6 +184,21 @@ static void _twlwifiWpaTx(WpaState* st, NetBuf* pPacket)
 	twlwifiTx(pPacket);
 }
 
+static void _twlwifiInstallKey(WpaState* st, bool is_group, unsigned slot, unsigned len)
+{
+	// XX: wmiSyncronize should happen around key change
+
+	Ar6kWmiCipherKey key;
+	key.index = slot;
+	key.type = len > WPA_AES_BLOCK_LEN ? Ar6kWmiCipherType_TKIP : Ar6kWmiCipherType_AES;
+	key.usage = is_group ? AR6K_WMI_CIPHER_USAGE_GROUP : AR6K_WMI_CIPHER_USAGE_PAIRWISE;
+	key.length = len;
+	memcpy(key.key, is_group ? &st->gtk : &st->ptk.tk, key.length);
+	if (!ar6kWmiAddCipherKey(&s_ar6kDev, &key)) {
+		dietPrint("[TWLWIFI] %s key%u fail\n", is_group ? "group" : "pairwise", slot);
+	}
+}
+
 bool twlwifiInit(void)
 {
 	// XX: Below sequence does a full reset of the Atheros hardware, clearing
@@ -248,6 +263,7 @@ bool twlwifiInit(void)
 	s_ar6kDev.cb_rx = _twlwifiRx;
 	s_wpaState.cb_alloc_packet = _twlwifiWpaAllocPacket;
 	s_wpaState.cb_tx = _twlwifiWpaTx;
+	s_wpaState.cb_install_key = _twlwifiInstallKey;
 	s_wpaState.ie_data = s_wpaIeBuf;
 
 	return true;

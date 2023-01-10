@@ -27,6 +27,8 @@ typedef enum WpaEapolDescrType {
 #define WPA_EAPOL_KEY_TYPE_MASK     (1U<<3)
 #define WPA_EAPOL_KEY_TYPE_GROUP    (0U<<3)
 #define WPA_EAPOL_KEY_TYPE_PAIRWISE (1U<<3)
+#define WPA_EAPOL_OLD_KEY_IDX_MASK  (3U<<4)
+#define WPA_EAPOL_OLD_KEY_IDX(_x)   (((_x)>>4)&3)
 #define WPA_EAPOL_KEY_INSTALL       (1U<<6)
 #define WPA_EAPOL_KEY_ACK           (1U<<7)
 #define WPA_EAPOL_KEY_MIC           (1U<<8)
@@ -56,9 +58,9 @@ typedef struct __attribute__((packed)) WpaEapolKeyHdr {
 } WpaEapolKeyHdr;
 
 typedef struct WpaKey {
-	u8 main[8]; // Used for both TKIP and AES-CCMP
-	u8 tx[8];   // Used only for TKIP
-	u8 rx[8];   // Used only for TKIP
+	u8 main[0x10]; // Used for both TKIP and AES-CCMP
+	u8 tx[8];      // Used only for TKIP
+	u8 rx[8];      // Used only for TKIP
 } WpaKey;
 
 typedef struct WpaPtkPad {
@@ -83,6 +85,7 @@ struct WpaState {
 
 	NetBuf* (* cb_alloc_packet)(WpaState* st, size_t len);
 	void (* cb_tx)(WpaState* st, NetBuf* pPacket);
+	void (* cb_install_key)(WpaState* st, bool is_group, unsigned slot, unsigned len);
 
 	// Information element (RSN or WPA)
 	void* ie_data;

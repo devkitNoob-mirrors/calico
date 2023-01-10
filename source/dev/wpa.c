@@ -90,7 +90,31 @@ static void _wpaEapolCalcMic(WpaState* st, WpaWork* wk, WpaEapolHdr* eapolhdr)
 	}
 }
 
-MEOW_NOINLINE static NetBuf* _wpaEapolCreateReplyPacket(WpaState* st, WpaWork* wk, size_t keydatalen, unsigned info)
+static WlanIeHdr* _wpaRsnSnagGtk(u8* key_data, unsigned data_len)
+{
+	while (data_len > sizeof(WlanIeHdr)) {
+		WlanIeHdr* ie = (WlanIeHdr*)key_data;
+		key_data += 2;
+		data_len -= 2;
+
+		if (ie->len > data_len) {
+			break;
+		}
+
+		u8* ie_data = key_data;
+		key_data += ie->len;
+		data_len -= ie->len;
+
+		if (ie->id == WlanEid_Vendor && ie->len >= 0x16 &&
+			ie_data[0] == 0x00 && ie_data[1] == 0x0f && ie_data[2] == 0xac && ie_data[3] == 0x01) {
+			return ie; // Found it!
+		}
+	}
+
+	return NULL;
+}
+
+MEOW_NOINLINE static NetBuf* _wpaEapolCreateReplyPacket(WpaState* st, WpaWork* wk, size_t keydatalen)
 {
 	NetBuf* pPacket = st->cb_alloc_packet(st, sizeof(WpaEapolHdr) + sizeof(WpaEapolKeyHdr) + keydatalen);
 	if (!pPacket) {
@@ -109,8 +133,14 @@ MEOW_NOINLINE static NetBuf* _wpaEapolCreateReplyPacket(WpaState* st, WpaWork* w
 	WpaEapolKeyHdr* hdr = (WpaEapolKeyHdr*)(eapolhdr+1);
 	memset(hdr, 0, sizeof(*hdr));
 	hdr->descr_type = wk->hdr->descr_type;
-	hdr->key_info_be = __builtin_bswap16(info);
-	memcpy(hdr->key_replay_cnt, st->replay, WPA_EAPOL_REPLAY_LEN);
+	hdr->key_info_be = __builtin_bswap16(
+		wk->descr_ver | WPA_EAPOL_KEY_MIC |
+		(wk->key_info & (
+			WPA_EAPOL_KEY_TYPE_MASK|WPA_EAPOL_OLD_KEY_IDX_MASK|
+			WPA_EAPOL_SECURE|WPA_EAPOL_ERROR|WPA_EAPOL_REQUEST
+		))
+	);
+	memcpy(hdr->key_replay_cnt, wk->hdr->key_replay_cnt, WPA_EAPOL_REPLAY_LEN);
 	hdr->key_data_len_be = __builtin_bswap16(keydatalen);
 	wk->reply = hdr;
 
@@ -122,6 +152,18 @@ MEOW_NOINLINE static NetBuf* _wpaEapolCreateReplyPacket(WpaState* st, WpaWork* w
 	machdr->len_or_ethertype_be = wk->machdr->len_or_ethertype_be;
 
 	return pPacket;
+}
+
+MEOW_INLINE bool _wpaEapolCreateAndSendReplyPacket(WpaState* st, WpaWork* wk)
+{
+	NetBuf* pPacket = _wpaEapolCreateReplyPacket(st, wk, 0);
+	if (!pPacket) {
+		return false;
+	}
+
+	_wpaEapolCalcMic(st, wk, wk->replyeapol);
+	st->cb_tx(st, pPacket);
+	return true;
 }
 
 MEOW_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
@@ -162,11 +204,7 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
 	wpaPseudoRandomFunction(&st->ptk, sizeof(st->ptk), st->pmk, sizeof(st->pmk), &pad, sizeof(pad));
 
 	// Prepare packet 2
-	unsigned info =
-		wk->descr_ver |
-		WPA_EAPOL_KEY_MIC |
-		(wk->key_info & (WPA_EAPOL_KEY_TYPE_MASK|WPA_EAPOL_SECURE|WPA_EAPOL_ERROR|WPA_EAPOL_REQUEST));
-	NetBuf* pPacket = _wpaEapolCreateReplyPacket(st, wk, st->ie_len, info);
+	NetBuf* pPacket = _wpaEapolCreateReplyPacket(st, wk, st->ie_len);
 	if (!pPacket) {
 		return;
 	}
@@ -192,16 +230,63 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake34(WpaState* st, WpaWork* wk)
 		return;
 	}
 
-	u8* key_data = (u8*)wk->key_data;
-	for (unsigned i = 0; i < wk->key_data_len; i ++) {
-		dietPrint("%.2X ", key_data[i]);
+	// Snag the GTK now if using WPA2
+	WlanIeHdr* gtk_ie = NULL;
+	if (wk->is_rsn) {
+		gtk_ie = _wpaRsnSnagGtk((u8*)wk->key_data, wk->key_data_len);
+		if (!gtk_ie) {
+			dietPrint("[WPA2] No GTK found\n");
+			return;
+		}
 	}
-	dietPrint("\n");
+
+	// Send packet 4
+	if (!_wpaEapolCreateAndSendReplyPacket(st, wk)) {
+		return;
+	}
+
+	// Install pairwise key
+	st->cb_install_key(st, false, 0, wk->descr_ver == 2 ? WPA_AES_BLOCK_LEN : sizeof(WpaKey));
+
+	// Install group key if available
+	if (gtk_ie) {
+		u8* data = (u8*)(gtk_ie+1);
+		memcpy(&st->gtk, &data[6], gtk_ie->len-6);
+		st->cb_install_key(st, true, data[4], gtk_ie->len-6);
+	}
 }
 
 MEOW_NOINLINE static void _wpaGroupHandshake(WpaState* st, WpaWork* wk)
 {
 	dietPrint("[WPA] Group renew 1/2\n");
+
+	// Obtain GTK from the keydata
+	unsigned gtk_idx;
+	unsigned gtk_len;
+	if (wk->is_rsn) {
+		WlanIeHdr* gtk_ie = _wpaRsnSnagGtk((u8*)wk->key_data, wk->key_data_len);
+		if (!gtk_ie) {
+			dietPrint("[WPA2] No GTK found\n");
+			return;
+		}
+
+		u8* data = (u8*)(gtk_ie+1);
+		gtk_idx = data[4];
+		gtk_len = gtk_ie->len-6;
+		memcpy(&st->gtk, &data[6], gtk_len);
+	} else {
+		gtk_idx = WPA_EAPOL_OLD_KEY_IDX(wk->key_info);
+		gtk_len = wk->key_data_len;
+		memcpy(&st->gtk, wk->key_data, gtk_len);
+	}
+
+	// Send response packet
+	if (!_wpaEapolCreateAndSendReplyPacket(st, wk)) {
+		return;
+	}
+
+	// Install group key
+	st->cb_install_key(st, true, gtk_idx, gtk_len);
 }
 
 static void _wpaEapolRx(WpaState* st, NetBuf* pPacket)
@@ -283,9 +368,17 @@ static void _wpaEapolRx(WpaState* st, NetBuf* pPacket)
 		}
 	}
 
-	if (wk.key_info & WPA_EAPOL_ENCRYPTED) {
+	bool is_keydata_encrypted;
+	if (wk.is_rsn) {
+		// WPA2: Keydata is encrypted if the "encrypted" flag is set
+		is_keydata_encrypted = (wk.key_info & WPA_EAPOL_ENCRYPTED) != 0;
+	} else {
+		// WPA: Keydata is encrypted if it's a group key
+		is_keydata_encrypted = (wk.key_info & WPA_EAPOL_KEY_TYPE_MASK) == WPA_EAPOL_KEY_TYPE_GROUP;
+	}
+
+	if (wk.key_data_len && is_keydata_encrypted) {
 		// Decrypt keydata
-		// XX: WPA does not use this bit, instead it is assumed to be always true?
 		wk.key_data = netbufGet(pPacket);
 
 		if (wk.descr_ver == 2) {
