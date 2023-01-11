@@ -13,6 +13,11 @@ typedef struct ArmContext {
 
 typedef unsigned ArmIrqState;
 
+MEOW_INLINE void armCompilerBarrier(void)
+{
+	__asm__ __volatile__ ("" ::: "memory");
+}
+
 MEOW_INLINE void armSoftBreakpoint(void)
 {
 	__asm__ __volatile__ ("mov r11, r11");
@@ -44,6 +49,20 @@ MEOW_INLINE void armSetSpsr(u32 value)
 	__asm__ __volatile__ ("msr spsr, %0" :: "r" (value));
 }
 
+MEOW_INLINE u32 armSwapWord(u32* addr, u32 value)
+{
+	u32 ret;
+	__asm__ __volatile__ ("swp %[Rd], %[Rm], [%[Rn]]" : [Rd]"=r"(ret) : [Rm]"[Rd]"(value), [Rn]"r"(addr) : "memory");
+	return ret;
+}
+
+MEOW_INLINE u8 armSwapByte(u8* addr, u8 value)
+{
+	u8 ret;
+	__asm__ __volatile__ ("swpb %[Rd], %[Rm], [%[Rn]]" : [Rd]"=r"(ret) : [Rm]"[Rd]"(value), [Rn]"r"(addr) : "memory");
+	return ret;
+}
+
 #if __ARM_ARCH >= 5
 
 MEOW_INLINE void armWaitForIrq(void)
@@ -71,6 +90,8 @@ MEOW_INLINE void armIrqUnlockByPsr(ArmIrqState st)
 
 MEOW_EXTERN32 ArmIrqState armIrqLockByPsrFromThumb(void);
 MEOW_EXTERN32 void armIrqUnlockByPsrFromThumb(ArmIrqState st);
+MEOW_EXTERN32 u32 armSwapWordFromThumb(u32 value, u32* addr);
+MEOW_EXTERN32 u8 armSwapByteFromThumb(u8 value, u8* addr);
 
 MEOW_INLINE ArmIrqState armIrqLockByPsr(void)
 {
@@ -80,6 +101,16 @@ MEOW_INLINE ArmIrqState armIrqLockByPsr(void)
 MEOW_INLINE void armIrqUnlockByPsr(ArmIrqState st)
 {
 	armIrqUnlockByPsrFromThumb(st);
+}
+
+MEOW_INLINE u32 armSwapWord(u32* addr, u32 value)
+{
+	return armSwapWordFromThumb(value, addr);
+}
+
+MEOW_INLINE u8 armSwapByte(u8* addr, u8 value)
+{
+	return armSwapByteFromThumb(value, addr);
 }
 
 #endif
