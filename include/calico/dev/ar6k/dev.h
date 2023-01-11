@@ -31,7 +31,8 @@ struct Ar6kDev {
 	// HTC
 	u32 lookahead;
 	u16 credit_size;
-	u16 credit_count;
+	u16 credit_avail;
+	u16 max_msg_credits;
 	Ar6kEndpoint endpoints[Ar6kHtcEndpointId_Count-1];
 
 	// WMI

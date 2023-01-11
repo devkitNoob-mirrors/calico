@@ -1,6 +1,8 @@
 #include "common.h"
 #include <string.h>
 
+static ThrListNode s_ar6kCreditWaitList;
+
 typedef struct _Ar6kHtcCtrlPktMem {
 	alignas(4) u8 mem[SDIO_BLOCK_SZ];
 } _Ar6kHtcCtrlPktMem;
@@ -13,6 +15,59 @@ MEOW_CONSTEXPR Ar6kHtcEndpointId _ar6kHtcLookaheadGetEndpointId(u32 lookahead)
 MEOW_CONSTEXPR u16 _ar6kHtcLookaheadGetPayloadLen(u32 lookahead)
 {
 	return lookahead >> 16;
+}
+
+MEOW_CONSTEXPR unsigned _ar6kHtcBytesToCredits(Ar6kDev* dev, unsigned pkt_size)
+{
+	// Calculate number of needed credits for sending a packet of the given size.
+	// This is actually just (pkt_size + dev->credit_size - 1) / dev->credit_size,
+	// however as you might already know, there is no hardware division instruction
+	// in the processor's instruction set. Given that most packets will only need
+	// one or two credits, a loop-based division is probably an idea better than
+	// having to call the software emulated division routine.
+	unsigned credits = 0;
+	pkt_size += dev->credit_size - 1;
+	while (pkt_size >= dev->credit_size) {
+		pkt_size -= dev->credit_size;
+		credits ++;
+	}
+
+	return credits;
+}
+
+static void _ar6kHtcProcessCreditRpt(Ar6kDev* dev, Ar6kHtcCreditReport* pRpt, unsigned num_entries)
+{
+	// XX: Currently using naïve implementation - we simply collect all credits
+	// and deliver them first-come-first-serve based on thread prio. No attempt
+	// is made to implement a credit distribution algorithm based on QoS.
+	unsigned total_credits = 0;
+	for (unsigned i = 0; i < num_entries; i ++) {
+		total_credits += pRpt[i].credits;
+	}
+
+	// Wake up threads waiting for credits
+	ArmIrqState st = armIrqLockByPsr();
+	dev->credit_avail += total_credits;
+	if (s_ar6kCreditWaitList.next) {
+		threadUnblockAllByValue(&s_ar6kCreditWaitList, (u32)dev);
+	}
+	armIrqUnlockByPsr(st);
+}
+
+static unsigned _ar6kHtcCheckCredits(Ar6kDev* dev, unsigned needed_credits)
+{
+	// If we don't have enough credirs, wait until we do
+	ArmIrqState st = armIrqLockByPsr();
+	unsigned avail;
+	while ((avail = dev->credit_avail) < needed_credits) {
+		threadBlock(&s_ar6kCreditWaitList, (u32)dev); // izQKJJ9tyZc
+	}
+	avail -= needed_credits;
+	dev->credit_avail = avail;
+	armIrqUnlockByPsr(st);
+
+	// Return how many credits are left
+	return avail;
 }
 
 static bool _ar6kHtcProcessTrailer(Ar6kDev* dev, void* trailer, size_t size)
@@ -51,8 +106,7 @@ static bool _ar6kHtcProcessTrailer(Ar6kDev* dev, void* trailer, size_t size)
 				break; // nop
 
 			case Ar6kHtcRecordId_Credit: {
-				// TODO: handle
-				dietPrint("[AR6K] received credits\n");
+				_ar6kHtcProcessCreditRpt(dev, (Ar6kHtcCreditReport*)data, hdr->length/sizeof(Ar6kHtcCreditReport));
 				break;
 			}
 
@@ -213,10 +267,21 @@ bool _ar6kHtcSendPacket(Ar6kDev* dev, Ar6kHtcEndpointId epid, NetBuf* pPacket)
 
 	// Fill in HTC frame header
 	htchdr->endpoint_id = epid;
-	htchdr->flags = AR6K_HTC_FLAG_NEED_CREDIT_UPDATE; // TODO: smarter logic
+	htchdr->flags = 0;
 	htchdr->payload_len = payload_len;
 
-	// XX: Check we actually have credits
+	// Ensure that we actually have credits for sending this packet
+	unsigned avail_credits = _ar6kHtcCheckCredits(dev,
+		_ar6kHtcBytesToCredits(dev, pPacket->len));
+
+	// If we're sending a WMI control message or dangerously running low on
+	// credits, ask the device to send us a credit update report.
+	// XX: Technically speaking, there's a race condition here where multiple
+	// threads could end up requesting credit update reports; however we are
+	// actually OK with that.
+	if (ep->service_id == Ar6kHtcSrvId_WmiControl || avail_credits < dev->max_msg_credits) {
+		htchdr->flags |= AR6K_HTC_FLAG_NEED_CREDIT_UPDATE;
+	}
 
 #if 0
 	// XX: Dump packet
@@ -251,11 +316,12 @@ bool ar6kHtcInit(Ar6kDev* dev)
 	}
 
 	dev->credit_size  = u.msg.credit_size;
-	dev->credit_count = u.msg.credit_count;
+	dev->credit_avail = u.msg.credit_count;
+	dev->max_msg_credits = 0;
 
 	dietPrint("[AR6K] Max endpoints: %u\n", u.msg.max_endpoints);
 	dietPrint("[AR6K]   Credit size: %u\n", dev->credit_size);
-	dietPrint("[AR6K]  Credit count: %u\n", dev->credit_count);
+	dietPrint("[AR6K]  Credit count: %u\n", dev->credit_avail);
 
 	return true;
 }
@@ -316,6 +382,11 @@ Ar6kHtcSrvStatus ar6kHtcConnectService(Ar6kDev* dev, Ar6kHtcSrvId service_id, u1
 	Ar6kEndpoint* ep = &dev->endpoints[u.resp.endpoint_id-1];
 	ep->service_id = service_id;
 	ep->max_msg_size = u.resp.max_msg_size;
+
+	unsigned msg_credits = _ar6kHtcBytesToCredits(dev, ep->max_msg_size);
+	if (msg_credits > dev->max_msg_credits) {
+		dev->max_msg_credits = msg_credits;
+	}
 
 	return Ar6kHtcSrvStatus_Success;
 }
