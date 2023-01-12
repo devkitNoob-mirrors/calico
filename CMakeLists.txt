@@ -93,6 +93,7 @@ if(NINTENDO_DS)
 		source/nds/bios.twl.s
 		source/nds/irq_handler.32.s
 		source/nds/pxi.c
+		source/nds/smutex.32.c
 
 		source/dev/wlan.c
 	)

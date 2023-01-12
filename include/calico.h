@@ -59,6 +59,7 @@
 #include "calico/nds/ndma.h"
 #include "calico/nds/env.h"
 #include "calico/nds/pxi.h"
+#include "calico/nds/smutex.h"
 
 #include "calico/dev/blk.h"
 #include "calico/dev/wlan.h"
