@@ -39,7 +39,14 @@ struct NetBuf {
 	u32 reserved[4];
 };
 
-NetBuf* netbufAlloc(unsigned hdr_headroom_sz, unsigned data_sz, bool wait_free);
+typedef enum NetBufPool {
+	NetBufPool_Tx = 0,
+	NetBufPool_Rx = 1,
+
+	NetBufPool_Count
+} NetBufPool;
+
+NetBuf* netbufAlloc(unsigned hdr_headroom_sz, unsigned data_sz, NetBufPool pool);
 void netbufFlush(NetBuf* nb);
 void netbufFree(NetBuf* nb);
 

@@ -95,6 +95,7 @@ if(NINTENDO_DS)
 		source/nds/pxi.c
 		source/nds/smutex.32.c
 
+		source/nds/netbuf.c
 		source/dev/wlan.c
 	)
 
