@@ -32,6 +32,7 @@ alignas(8) static u8 s_wpaSupplicantThreadStack[2048];
 
 static SdioCard s_sdioCard;
 static Ar6kDev s_ar6kDev;
+alignas(4) static u8 s_ar6kWorkBuf[AR6K_WORK_BUF_SIZE];
 static WpaState s_wpaState;
 static u8 s_wpaIeBuf[0x20];
 
@@ -158,30 +159,21 @@ static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
 	} else {
 		// Regular packet -> TODO: callback
 		dietPrint("[RX:%2d] eth=%.4X len=%u\n", rssi, ethertype, pPacket->len);
+		netbufFree(pPacket);
 	}
 }
 
-// TODO: Temporarily using static storage for WPA EAPOL packets
-alignas(4) static u8 s_tempWpaPacket[sizeof(NetBuf) + 512];
-
 static NetBuf* _twlwifiWpaAllocPacket(WpaState* st, size_t len)
 {
-	// TODO: make this a buf
-	NetBuf* pPacket = (NetBuf*)s_tempWpaPacket;
-	pPacket->capacity = sizeof(s_tempWpaPacket) - sizeof(NetBuf);
-	pPacket->pos = sizeof(Ar6kHtcFrameHdr) + sizeof(Ar6kWmiDataHdr) + sizeof(NetMacHdr) + sizeof(NetLlcSnapHdr);
-
-	if (pPacket->capacity - pPacket->pos < len) {
-		return NULL;
-	}
-
-	pPacket->len = len;
-	return pPacket;
+	return netbufAlloc(
+		sizeof(Ar6kHtcFrameHdr) + sizeof(Ar6kWmiDataHdr) + sizeof(NetMacHdr) + sizeof(NetLlcSnapHdr),
+		len, NetBufPool_Tx);
 }
 
 static void _twlwifiWpaTx(WpaState* st, NetBuf* pPacket)
 {
 	twlwifiTx(pPacket);
+	netbufFree(pPacket);
 }
 
 static void _twlwifiWpaInstallKey(WpaState* st, bool is_group, unsigned slot, unsigned len)
@@ -253,7 +245,7 @@ bool twlwifiInit(void)
 	}
 
 	// Initialize the Atheros wireless device
-	if (!ar6kDevInit(&s_ar6kDev, &s_sdioCard)) {
+	if (!ar6kDevInit(&s_ar6kDev, &s_sdioCard, s_ar6kWorkBuf)) {
 		dietPrint("[TWLWIFI] AR6K init failed\n");
 		return false;
 	}

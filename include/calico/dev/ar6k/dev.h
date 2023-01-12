@@ -6,6 +6,8 @@
 #include "htc.h"
 #include "wmi.h"
 
+#define AR6K_WORK_BUF_SIZE (sizeof(NetBuf) + AR6K_HTC_MAX_PACKET_SZ)
+
 typedef struct Ar6kEndpoint {
 	u16 service_id;
 	u16 max_msg_size;
@@ -29,6 +31,7 @@ struct Ar6kDev {
 	Ar6kIrqEnableRegs irq_regs;
 
 	// HTC
+	void* workbuf;
 	u32 lookahead;
 	u16 credit_size;
 	u16 credit_avail;
@@ -50,7 +53,7 @@ struct Ar6kDev {
 	void (* cb_rx)(Ar6kDev* dev, int rssi, NetBuf* pPacket);
 };
 
-bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio);
+bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio, void* workbuf);
 int ar6kDevThreadMain(Ar6kDev* dev);
 
 bool ar6kDevReadRegDiag(Ar6kDev* dev, u32 addr, u32* out);

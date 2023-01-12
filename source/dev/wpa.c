@@ -460,6 +460,7 @@ int wpaSupplicantThreadMain(WpaState* st)
 		}
 
 		_wpaEapolRx(st, pPacket);
+		netbufFree(pPacket);
 	}
 
 	return 0;

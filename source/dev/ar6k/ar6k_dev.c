@@ -28,10 +28,11 @@ static void _ar6kCardIrqHandler(TmioCtl* ctl, unsigned port)
 	mailboxTrySend(&dev->irq_mbox, 1);
 }
 
-bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio)
+bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio, void* workbuf)
 {
 	*dev = (Ar6kDev){0};
 	dev->sdio = sdio;
+	dev->workbuf = workbuf;
 
 	if (sdio->manfid.code != 0x0271) {
 		dietPrint("[AR6K] Bad SDIO manufacturer\n");

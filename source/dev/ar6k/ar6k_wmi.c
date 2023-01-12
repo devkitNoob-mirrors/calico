@@ -251,68 +251,75 @@ bool ar6kWmiTx(Ar6kDev* dev, NetBuf* pPacket)
 	return _ar6kHtcSendPacket(dev, dev->wmi_data_epids[2], pPacket);
 }
 
-// TODO: Temporarily using static storage for WMI commands
-alignas(4) static u8 s_tempWmiCmdBuf[sizeof(NetBuf) + AR6K_HTC_MAX_PACKET_SZ];
-
-static NetBuf* _ar6kWmiAllocCmdPacket(Ar6kDev* dev)
+static NetBuf* _ar6kWmiAllocPacket(unsigned headroom, unsigned size)
 {
-	// TODO: make this a buf
-	NetBuf* pPacket = (NetBuf*)s_tempWmiCmdBuf;
-	pPacket->capacity = AR6K_HTC_MAX_PACKET_SZ;
-	pPacket->pos = sizeof(Ar6kHtcFrameHdr) + sizeof(Ar6kWmiCtrlHdr);
-	pPacket->len = 0;
+	NetBuf* pPacket;
+	while (!(pPacket = netbufAlloc(headroom, size, NetBufPool_Tx))) {
+		// Try again after a little while
+		threadSleep(1000);
+	}
+	return pPacket;
+}
 
+MEOW_INLINE NetBuf* _ar6kWmiAllocCmdPacket(unsigned size)
+{
+	unsigned hdr_len = sizeof(Ar6kHtcFrameHdr) + sizeof(Ar6kWmiCtrlHdr);
+	NetBuf* pPacket = _ar6kWmiAllocPacket(hdr_len, size);
+	pPacket->len = 0;
+	MEOW_ASSUME(pPacket->pos == hdr_len);
+	MEOW_ASSUME(pPacket->capacity >= (size + hdr_len));
 	return pPacket;
 }
 
 static bool _ar6kWmiSendCmdPacket(Ar6kDev* dev, Ar6kWmiCmdId cmdid, NetBuf* pPacket)
 {
+	bool rc = false;
 	Ar6kWmiCtrlHdr* hdr = netbufPushHeaderType(pPacket, Ar6kWmiCtrlHdr);
-	if (!hdr) {
-		return false; // Shouldn't happen
+	if (hdr) {
+		hdr->id = cmdid;
+		rc = _ar6kHtcSendPacket(dev, dev->wmi_ctrl_epid, pPacket);
 	}
-
-	hdr->id = cmdid;
-	return _ar6kHtcSendPacket(dev, dev->wmi_ctrl_epid, pPacket);
+	netbufFree(pPacket);
+	return rc;
 }
 
 bool ar6kWmiSimpleCmd(Ar6kDev* dev, Ar6kWmiCmdId cmdid)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(0);
 	return _ar6kWmiSendCmdPacket(dev, cmdid, pPacket);
 }
 
 bool ar6kWmiSimpleCmdWithParam8(Ar6kDev* dev, Ar6kWmiCmdId cmdid, u8 param)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiGeneric8));
 	netbufPushTrailerType(pPacket, Ar6kWmiGeneric8)->value = param;
 	return _ar6kWmiSendCmdPacket(dev, cmdid, pPacket);
 }
 
 bool ar6kWmiSimpleCmdWithParam32(Ar6kDev* dev, Ar6kWmiCmdId cmdid, u32 param)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiGeneric32));
 	netbufPushTrailerType(pPacket, Ar6kWmiGeneric32)->value = param;
 	return _ar6kWmiSendCmdPacket(dev, cmdid, pPacket);
 }
 
 bool ar6kWmiConnect(Ar6kDev* dev, Ar6kWmiConnectParams const* params)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiConnectParams));
 	*netbufPushTrailerType(pPacket, Ar6kWmiConnectParams) = *params;
 	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_Connect, pPacket);
 }
 
 bool ar6kWmiCreatePstream(Ar6kDev* dev, Ar6kWmiPstreamConfig const* config)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiPstreamConfig));
 	*netbufPushTrailerType(pPacket, Ar6kWmiPstreamConfig) = *config;
 	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_CreatePstream, pPacket);
 }
 
 bool ar6kWmiStartScan(Ar6kDev* dev, Ar6kWmiScanType type, u32 home_dwell_time_ms)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiCmdStartScan));
 	Ar6kWmiCmdStartScan* cmd = netbufPushTrailerType(pPacket, Ar6kWmiCmdStartScan);
 	// XX: maybe make some more of these configurable?
 	cmd->force_bg_scan = 0;
@@ -326,14 +333,14 @@ bool ar6kWmiStartScan(Ar6kDev* dev, Ar6kWmiScanType type, u32 home_dwell_time_ms
 
 bool ar6kWmiSetScanParams(Ar6kDev* dev, Ar6kWmiScanParams const* params)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiScanParams));
 	*netbufPushTrailerType(pPacket, Ar6kWmiScanParams) = *params;
 	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_SetScanParams, pPacket);
 }
 
 bool ar6kWmiSetBssFilter(Ar6kDev* dev, Ar6kWmiBssFilter filter, u32 ie_mask)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiCmdBssFilter));
 	Ar6kWmiCmdBssFilter* cmd = netbufPushTrailerType(pPacket, Ar6kWmiCmdBssFilter);
 	cmd->bss_filter = filter;
 	cmd->ie_mask = ie_mask;
@@ -342,7 +349,7 @@ bool ar6kWmiSetBssFilter(Ar6kDev* dev, Ar6kWmiBssFilter filter, u32 ie_mask)
 
 bool ar6kWmiSetProbedSsid(Ar6kDev* dev, Ar6kWmiProbedSsid const* probed_ssid)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiProbedSsid));
 	*netbufPushTrailerType(pPacket, Ar6kWmiProbedSsid) = *probed_ssid;
 	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_SetProbedSsid, pPacket);
 }
@@ -353,9 +360,10 @@ bool ar6kWmiSetChannelParams(Ar6kDev* dev, u8 scan_param, u32 chan_mask)
 	static const u32 chan_mask_g = 0x003fff; // Channels  0..13
 	chan_mask &= chan_mask_a|chan_mask_g;
 
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
 	u16 num_channels = __builtin_popcount(chan_mask);
-	Ar6kWmiChannelParams* cmd = (Ar6kWmiChannelParams*)netbufPushTrailer(pPacket, sizeof(Ar6kWmiChannelParams) + num_channels*sizeof(u16));
+	unsigned pkt_len = sizeof(Ar6kWmiChannelParams) + num_channels*sizeof(u16);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(pkt_len);
+	Ar6kWmiChannelParams* cmd = (Ar6kWmiChannelParams*)netbufPushTrailer(pPacket, pkt_len);
 
 	cmd->scan_param = scan_param;
 	cmd->num_channels = num_channels;
@@ -383,14 +391,14 @@ bool ar6kWmiSetChannelParams(Ar6kDev* dev, u8 scan_param, u32 chan_mask)
 
 bool ar6kWmiAddCipherKey(Ar6kDev* dev, Ar6kWmiCipherKey const* key)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiCipherKey));
 	*netbufPushTrailerType(pPacket, Ar6kWmiCipherKey) = *key;
 	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_AddCipherKey, pPacket);
 }
 
 bool ar6kWmiSetFrameRate(Ar6kDev* dev, unsigned ieee_frame_type, unsigned ieee_frame_subtype, unsigned rate_mask)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiCmdSetFrameRate));
 	Ar6kWmiCmdSetFrameRate* cmd = netbufPushTrailerType(pPacket, Ar6kWmiCmdSetFrameRate);
 	cmd->enable_frame_mask = rate_mask ? 1 : 0;
 	cmd->frame_type = ieee_frame_type;
@@ -401,7 +409,7 @@ bool ar6kWmiSetFrameRate(Ar6kDev* dev, unsigned ieee_frame_type, unsigned ieee_f
 
 bool ar6kWmiSetBitRate(Ar6kDev* dev, Ar6kWmiBitRate data_rate, Ar6kWmiBitRate mgmt_rate, Ar6kWmiBitRate ctrl_rate)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiCmdSetBitRate));
 	Ar6kWmiCmdSetBitRate* cmd = netbufPushTrailerType(pPacket, Ar6kWmiCmdSetBitRate);
 	cmd->data_rate_idx = data_rate;
 	cmd->mgmt_rate_idx = mgmt_rate;
@@ -411,7 +419,7 @@ bool ar6kWmiSetBitRate(Ar6kDev* dev, Ar6kWmiBitRate data_rate, Ar6kWmiBitRate mg
 
 bool ar6kWmixConfigDebugModuleCmd(Ar6kDev* dev, u32 cfgmask, u32 config)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(dev);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiGeneric32) + sizeof(Ar6kWmixDbgLogCfgModule));
 	netbufPushTrailerType(pPacket, Ar6kWmiGeneric32)->value = Ar6kWmixCmdId_DbgLogCfgModule;
 	Ar6kWmixDbgLogCfgModule* cmd = netbufPushTrailerType(pPacket, Ar6kWmixDbgLogCfgModule);
 	cmd->cfgvalid = cfgmask;

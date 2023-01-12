@@ -150,15 +150,8 @@ static bool _ar6kHtcWaitforControlMessage(Ar6kDev* dev, _Ar6kHtcCtrlPktMem* mem)
 	return true;
 }
 
-// TODO: Temporarily using static storage for received packets
-alignas(4) static u8 s_tempRxBuf[sizeof(NetBuf) + AR6K_HTC_MAX_PACKET_SZ];
-
 bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 {
-	// TODO: this should really be a parameter
-	NetBuf* pPacket = (NetBuf*)s_tempRxBuf;
-	pPacket->capacity = AR6K_HTC_MAX_PACKET_SZ;
-
 	do {
 		// Grab lookahead
 		u32 lookahead = dev->lookahead;
@@ -188,9 +181,21 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 			return false;
 		}
 
-		// XX: always using statically allocated netbuf
-		pPacket->pos = 0;
-		pPacket->len = len;
+		// Allocate a new packet buffer
+		NetBuf* pPacket;
+		bool is_data = srvid >= Ar6kHtcSrvId_WmiDataBe && srvid <= Ar6kHtcSrvId_WmiDataVo;
+		if (is_data) {
+			while (!(pPacket = netbufAlloc(0, len, NetBufPool_Rx))) {
+				// Try again after a little while
+				threadSleep(1000);
+			}
+		} else {
+			// Using the (statically allocated) work buffer for non-data packets
+			pPacket = (NetBuf*)dev->workbuf;
+			pPacket->capacity = AR6K_HTC_MAX_PACKET_SZ;
+			pPacket->pos = 0;
+			pPacket->len = len;
+		}
 
 		// Read packet!
 		if (!_ar6kDevRecvPacket(dev, netbufGet(pPacket), len)) {
@@ -204,6 +209,7 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 		// Validate packet against lookahead
 		if (*(u32*)netbufGet(pPacket) != lookahead) {
 			dietPrint("[AR6K] RX lookahead mismatch\n");
+			if (is_data) netbufFree(pPacket);
 			return false;
 		}
 
@@ -212,12 +218,14 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 		if (htchdr->flags & AR6K_HTC_FLAG_RECV_TRAILER) {
 			void* trailer = netbufPopTrailer(pPacket, htchdr->recv_trailer_len);
 			if (!trailer || !_ar6kHtcProcessTrailer(dev, trailer, htchdr->recv_trailer_len)) {
+				if (is_data) netbufFree(pPacket);
 				return false;
 			}
 		}
 
 		// Drop the packet if it's empty
 		if (pPacket->len == 0) {
+			if (is_data) netbufFree(pPacket);
 			continue;
 		}
 
