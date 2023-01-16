@@ -63,9 +63,6 @@ bool twlblkInit(void)
 	dietPrint("NAND IV: %.8lX %.8lX\n         %.8lX %.8lX\n",
 		s_sdmcNandAesIv.data[0], s_sdmcNandAesIv.data[1], s_sdmcNandAesIv.data[2], s_sdmcNandAesIv.data[3]);
 
-	// Enable DMA interrupt used for transfers
-	irqEnable2(IRQ_NDMA3);
-
 	return true;
 }
 
@@ -110,9 +107,7 @@ static void _twlblkDmaEnd(TmioTx* tx)
 	if (tx->status == 0) {
 		// Success - wait for the DMA to be completed
 		dietPrint("[TWLBLK] DMA End (OK)\n");
-		while (ndmaIsBusy(3)) {
-			threadIrqWait(false, IRQ_NDMA3);
-		}
+		ndmaBusyWait(3);
 	} else {
 		// Error - cancel the DMA
 		dietPrint("[TWLBLK] DMA End (Error)\n");
@@ -127,7 +122,7 @@ static void _twlblkDmaRead(TmioCtl* ctl, TmioTx* tx)
 		_twlblkSetupDma(3,
 			ctl->fifo_base, NdmaMode_Fixed, (uptr)tx->user, NdmaMode_Increment,
 			BLK_SECTOR_SZ_WORDS, tx->num_blocks*BLK_SECTOR_SZ_WORDS,
-			NDMA_TIMING(NdmaTiming_Tmio0) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_IRQ_ENABLE | NDMA_ENABLE);
+			NDMA_TIMING(NdmaTiming_Tmio0) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
 	} else {
 		_twlblkDmaEnd(tx);
 	}
@@ -140,7 +135,7 @@ static void _twlblkDmaWrite(TmioCtl* ctl, TmioTx* tx)
 		_twlblkSetupDma(3,
 			(uptr)tx->user, NdmaMode_Increment, ctl->fifo_base, NdmaMode_Fixed,
 			BLK_SECTOR_SZ_WORDS, tx->num_blocks*BLK_SECTOR_SZ_WORDS,
-			NDMA_TIMING(NdmaTiming_Tmio0) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_IRQ_ENABLE | NDMA_ENABLE);
+			NDMA_TIMING(NdmaTiming_Tmio0) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
 	} else {
 		_twlblkDmaEnd(tx);
 	}
@@ -206,9 +201,7 @@ static void _twlblkAesDmaFinish(TmioTx* tx)
 	if (tx->status == 0) {
 		// Success - wait for the DMA to be completed
 		dietPrint("[TWLBLK] AES-DMA End (OK)\n");
-		while (ndmaIsBusy(3)) {
-			threadIrqWait(false, IRQ_NDMA3);
-		}
+		ndmaBusyWait(3);
 	} else {
 		// Error - cancel the DMA
 		dietPrint("[TWLBLK] AES-DMA End (Error)\n");
@@ -231,7 +224,7 @@ static void _twlblkAesDmaRead(TmioCtl* ctl, TmioTx* tx)
 		_twlblkSetupDma(3,
 			(uptr)&REG_AES_RDFIFO, NdmaMode_Fixed, (uptr)tx->user, NdmaMode_Increment,
 			AES_FIFO_SZ_WORDS, tx->num_blocks*BLK_SECTOR_SZ_WORDS,
-			NDMA_TIMING(NdmaTiming_AesRdFifo) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_IRQ_ENABLE | NDMA_ENABLE);
+			NDMA_TIMING(NdmaTiming_AesRdFifo) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
 
 		_twlblkAesStart(tx);
 	} else {
