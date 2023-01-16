@@ -21,6 +21,8 @@
 #define dietPrint(...) ((void)0)
 #endif
 
+#define SDIO_BLOCK_SZ_WORDS (SDIO_BLOCK_SZ/4)
+
 static TmioCtl s_sdioCtl;
 static u32 s_sdioCtlBuf[2];
 static Thread s_sdioThread;
@@ -84,6 +86,46 @@ static void _twlwifiSetWifiCompatMode(bool compat)
 	}
 	REG_GPIO_WL = reg;
 	dietPrint("GPIO_WL: %.4X -> %.4X\n", oldreg, reg);
+}
+
+MEOW_INLINE void _twlwifiSetupDma(unsigned ch,
+	uptr src, NdmaMode srcmode, uptr dst, NdmaMode dstmode,
+	u32 unit_words, u32 total_words, u32 cnt)
+{
+	REG_NDMAxSAD(ch) = src;
+	REG_NDMAxDAD(ch) = dst;
+	REG_NDMAxBCNT(ch) = 1 | NDMA_B_PRESCALER_1;
+	REG_NDMAxTCNT(ch) = total_words;
+	REG_NDMAxWCNT(ch) = unit_words;
+	REG_NDMAxCNT(ch) =
+		NDMA_DST_MODE(dstmode) |
+		NDMA_SRC_MODE(srcmode) |
+		NDMA_BLK_WORDS(unit_words) |
+		cnt;
+}
+
+static void _twlwifiSdioDma(TmioCtl* ctl, TmioTx* tx)
+{
+	if (tx->status & TMIO_STAT_CMD_BUSY) {
+		// DMA Start
+		if (tx->type & TMIO_CMD_TX_READ) {
+			_twlwifiSetupDma(1,
+				ctl->fifo_base, NdmaMode_Fixed, (uptr)tx->user, NdmaMode_Increment,
+				SDIO_BLOCK_SZ_WORDS, tx->num_blocks*SDIO_BLOCK_SZ_WORDS,
+				NDMA_TIMING(NdmaTiming_Tmio1) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
+		} else {
+			_twlwifiSetupDma(1,
+				(uptr)tx->user, NdmaMode_Increment, ctl->fifo_base, NdmaMode_Fixed,
+				SDIO_BLOCK_SZ_WORDS, tx->num_blocks*SDIO_BLOCK_SZ_WORDS,
+				NDMA_TIMING(NdmaTiming_Tmio1) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
+		}
+	} else if (tx->status == 0) {
+		// DMA End (OK)
+		ndmaBusyWait(1);
+	} else {
+		// DMA End (Error)
+		REG_NDMAxCNT(1) = 0;
+	}
 }
 
 static void _twlwifiOnBssInfo(Ar6kDev* dev, Ar6kWmiBssInfoHdr* bssInfo, NetBuf* pPacket)
@@ -243,6 +285,9 @@ bool twlwifiInit(void)
 		dietPrint("[TWLWIFI] SDIO init failed\n");
 		return false;
 	}
+
+	// Initialize DMA for SDIO
+	s_sdioCard.dma_cb = _twlwifiSdioDma;
 
 	// Initialize the Atheros wireless device
 	if (!ar6kDevInit(&s_ar6kDev, &s_sdioCard, s_ar6kWorkBuf)) {

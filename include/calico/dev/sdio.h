@@ -37,6 +37,8 @@ typedef struct SdioCard {
 	TmioCtl* ctl;
 	TmioPort port;
 
+	void (* dma_cb)(TmioCtl* ctl, TmioTx* tx);
+
 	u16 rca;
 	SdioManfid manfid;
 	u8 revision;

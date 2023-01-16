@@ -350,8 +350,14 @@ static bool _sdioCardReadWriteExtended(SdioCard* card, TmioTx* tx, u32 arg, size
 
 		tx->block_size = SDIO_BLOCK_SZ;
 		tx->num_blocks = size / SDIO_BLOCK_SZ;
-		tx->callback = NULL; // TODO: DMA callback
-		tx->xfer_isr = isWrite ? tmioXferSendByCpu : tmioXferRecvByCpu;
+
+		if (card->dma_cb) {
+			tx->callback = card->dma_cb;
+			tx->xfer_isr = NULL;
+		} else {
+			tx->callback = NULL;
+			tx->xfer_isr = isWrite ? tmioXferSendByCpu : tmioXferRecvByCpu;
+		}
 
 		arg |= SDIO_RW_EXTENDED_BLOCKS | SDIO_RW_EXTENDED_COUNT(tx->num_blocks);
 	}
