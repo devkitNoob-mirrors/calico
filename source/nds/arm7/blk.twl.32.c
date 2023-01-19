@@ -45,8 +45,34 @@ bool twlblkInit(void)
 	irqSet2(IRQ2_TMIO0, _sdmcIrqHandler);
 	irqEnable2(IRQ2_TMIO0);
 
+	return true;
+}
+
+bool twlSdInit(void)
+{
+	if (s_transferRegion->blkdev_sector_count[BlkDevice_TwlSdCard]) {
+		// Already initialized
+		return true;
+	}
+
+	bool ret = sdmmcCardInit(&s_sdmcDevSd, &s_sdmcCtl, 0, false);
+	if (ret) {
+		s_transferRegion->blkdev_sector_count[BlkDevice_TwlSdCard] = s_sdmcDevSd.num_sectors;
+	}
+
+	return ret;
+}
+
+bool twlNandInit(void)
+{
+	if (s_transferRegion->blkdev_sector_count[BlkDevice_TwlNand]) {
+		// Already initialized
+		return true;
+	}
+
 	// TODO: Try importing the state from MM_ENV_TWL_NAND_INFO
-	if (sdmmcCardInit(&s_sdmcDevNand, &s_sdmcCtl, 1, true)) {
+	bool ret = sdmmcCardInit(&s_sdmcDevNand, &s_sdmcCtl, 1, true);
+	if (ret) {
 		s_transferRegion->blkdev_sector_count[BlkDevice_TwlNand] = s_sdmcDevNand.num_sectors;
 	} else {
 		dietPrint("[TWLBLK] NAND init failed\n");
@@ -64,21 +90,6 @@ bool twlblkInit(void)
 		s_sdmcNandAesIv.data[0], s_sdmcNandAesIv.data[1], s_sdmcNandAesIv.data[2], s_sdmcNandAesIv.data[3]);
 
 	return true;
-}
-
-bool twlSdInit(void)
-{
-	if (s_transferRegion->blkdev_sector_count[BlkDevice_TwlSdCard]) {
-		// Already initialized
-		return true;
-	}
-
-	bool ret = sdmmcCardInit(&s_sdmcDevSd, &s_sdmcCtl, 0, false);
-	if (ret) {
-		s_transferRegion->blkdev_sector_count[BlkDevice_TwlSdCard] = s_sdmcDevSd.num_sectors;
-	}
-
-	return ret;
 }
 
 bool twlSdIsInserted(void)

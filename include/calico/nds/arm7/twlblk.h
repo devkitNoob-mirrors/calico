@@ -12,5 +12,6 @@ bool twlSdIsInserted(void);
 bool twlSdReadSectors(void* buffer, u32 first_sector, u32 num_sectors);
 bool twlSdWriteSectors(const void* buffer, u32 first_sector, u32 num_sectors);
 
+bool twlNandInit(void);
 bool twlNandReadSectors(void* buffer, u32 first_sector, u32 num_sectors);
 bool twlNandReadSectorsAes(void* buffer, u32 first_sector, u32 num_sectors);

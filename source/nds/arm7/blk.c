@@ -105,7 +105,7 @@ MEOW_NOINLINE bool blkDevInit(BlkDevice dev)
 
 		case BlkDevice_TwlNand:
 		case BlkDevice_TwlNandAes:
-			return s_blkHasTwl;
+			return s_blkHasTwl && twlNandInit();
 	}
 
 	return false;
