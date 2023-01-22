@@ -7,6 +7,7 @@
 #include <calico/nds/irq.h>
 #include <calico/nds/env.h>
 #include <calico/nds/lcd.h>
+#include <calico/nds/pm.h>
 #include <calico/nds/arm9/vram.h>
 
 MEOW_WEAK void systemUserStartup(void)
@@ -17,6 +18,7 @@ MEOW_WEAK void systemUserStartup(void)
 MEOW_WEAK void systemStartup(void)
 {
 	// Clear video display registers
+	REG_POWCNT = POWCNT_LCD | POWCNT_2D_GFX_A | POWCNT_2D_GFX_B | POWCNT_LCD_SWAP;
 	dmaStartFill32(3, (void*)(MM_IO + IO_GFX_A), 0, IO_TVOUTCNT-IO_DISPCNT);
 	dmaBusyWait(3);
 	dmaStartFill32(3, (void*)(MM_IO + IO_GFX_B), 0, IO_TVOUTCNT-IO_DISPCNT);

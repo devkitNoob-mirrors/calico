@@ -62,6 +62,7 @@
 #include "calico/nds/pxi.h"
 #include "calico/nds/smutex.h"
 #include "calico/nds/lcd.h"
+#include "calico/nds/pm.h"
 
 #include "calico/dev/blk.h"
 #include "calico/dev/wlan.h"
