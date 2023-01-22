@@ -25,8 +25,9 @@
 #define IO_BG2xPD(_x)   (0x026 + 0x10*(_x))
 #define IO_BG2xX(_x)    (0x028 + 0x10*(_x))
 #define IO_BG2xY(_x)    (0x02c + 0x10*(_x))
-#define IO_WINxH(_x)    (0x040 + 0x4*(_x))
-#define IO_WINxV(_x)    (0x044 + 0x4*(_x))
+#define IO_WINxH(_x)    (0x040 + 0x2*(_x))
+#define IO_WINxV(_x)    (0x044 + 0x2*(_x))
+#define IO_WININ         0x048
 #define IO_WINOUT        0x04a
 #define IO_MOSAIC        0x04c
 #define IO_BLDCNT        0x050

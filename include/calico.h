@@ -49,6 +49,7 @@
 #include "calico/gba/keypad.h"
 #include "calico/gba/timer.h"
 #include "calico/gba/dma.h"
+#include "calico/gba/lcd.h"
 #endif
 
 #if defined(__NDS__)
@@ -60,6 +61,7 @@
 #include "calico/nds/env.h"
 #include "calico/nds/pxi.h"
 #include "calico/nds/smutex.h"
+#include "calico/nds/lcd.h"
 
 #include "calico/dev/blk.h"
 #include "calico/dev/wlan.h"
@@ -87,6 +89,8 @@
 
 #ifdef ARM9
 #include "calico/nds/arm9/arm7_debug.h"
+
+#include "calico/nds/arm9/vram.h"
 #endif
 
 #endif
