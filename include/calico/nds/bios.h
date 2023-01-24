@@ -47,7 +47,6 @@ typedef struct SvcSha1Context {
 	void (*hash_block)(struct SvcSha1Context* ctx, const void* data, size_t size); // MUST be set to 0 before init!
 } SvcSha1Context;
 
-void svcSoftReset(void) MEOW_NORETURN;
 void svcWaitByLoop(s32 loop_cycles);
 void svcHalt(void);
 #ifdef ARM7

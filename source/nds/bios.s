@@ -9,7 +9,7 @@ FUNC_END
 
 @ "Basic" functions
 
-BIOSFUNC 0x00, SoftReset
+@ 0x00: SoftResetNTR (does not exist on TWL)
 @ 0x01: LZ77UncompWramCallbackTWL
 @ 0x02: LZ77UncompVramCallbackTWL
 BIOSFUNC 0x03, WaitByLoop
