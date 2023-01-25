@@ -45,15 +45,21 @@
 //   16-31  Immediate (16-bit)
 
 typedef enum PxiChannel {
-	PxiChannel_Power    = 0,
-	PxiChannel_Sound    = 1,
-	PxiChannel_System   = 2,
-	PxiChannel_Mitsumi  = 3,
-	PxiChannel_Atheros  = 4,
-	PxiChannel_BlkDev   = 5,
+	PxiChannel_System   = 0,  // Grab bag of system management functions
+	PxiChannel_Power    = 1,  // Power/environment management
 
-	PxiChannel_Reset    = 12,
+	PxiChannel_BlkDev   = 2,  // Block device access (DLDI, SD, eMMC)
+	PxiChannel_WlMgr    = 3,  // Wireless management (DS/Mitsumi, DSi/Atheros)
+	PxiChannel_NetBuf   = 4,  // Network interface (packet send/receive)
 
+	PxiChannel_Touch    = 5,  // Touch screen access
+	PxiChannel_Sound    = 6,  // Sound hardware access
+	PxiChannel_Mic      = 7,  // Microphone access
+	PxiChannel_Camera   = 8,  // DSi camera access
+
+	PxiChannel_Reset    = 12, // Special channel used for ret2hbmenu
+
+	// General purpose user channels
 	PxiChannel_User0    = 23,
 	PxiChannel_User1    = 24,
 	PxiChannel_User2    = 25,
@@ -63,7 +69,7 @@ typedef enum PxiChannel {
 	PxiChannel_User6    = 29,
 	PxiChannel_User7    = 30,
 
-	PxiChannel_Extended = 31,
+	PxiChannel_Extended = 31, // Extended packet format
 	PxiChannel_Count = PxiChannel_Extended,
 } PxiChannel;
 

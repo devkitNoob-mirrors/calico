@@ -98,6 +98,7 @@ SECTIONS {
 			.text.__call_exitprocs
 			.text.__do_global_dtors_aux
 			.text._exit
+			.text._pmJumpToBootstub /* must be outside ARM7 WRAM */
 			.text._*_r
 		)
 		*.16.o (.text .stub .text.* .gnu.linkonce.t.*)

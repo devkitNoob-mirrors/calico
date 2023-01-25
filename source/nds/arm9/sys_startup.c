@@ -39,6 +39,9 @@ MEOW_WEAK void systemStartup(void)
 	lcdSetIrqMask(DISPSTAT_IE_ALL, DISPSTAT_IE_VBLANK);
 	irqEnable(IRQ_VBLANK);
 
+	// Initialize PM
+	pmInit();
+
 	// Call user initialization function
 	systemUserStartup();
 }

@@ -92,7 +92,7 @@ static void _pxiMailboxHandler(void* user, u32 data)
 void _pxiInit(void)
 {
 	REG_PXI_CNT |= PXI_CNT_SEND_IRQ | PXI_CNT_RECV_IRQ;
-	REG_PXI_SYNC |= PXI_SYNC_IRQ_ENABLE;
+	REG_PXI_SYNC = PXI_SYNC_IRQ_ENABLE;
 	irqSet(IRQ_PXI_RECV, _pxiRecvIrqHandler);
 	irqEnable(IRQ_PXI_SEND | IRQ_PXI_RECV | IRQ_PXI_SYNC);
 }

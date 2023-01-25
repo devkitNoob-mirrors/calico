@@ -30,6 +30,21 @@
 #error "ARM9 or ARM7 must be defined"
 #endif
 
+typedef enum PmEvent {
+	PmEvent_OnSleep      = 0,
+	PmEvent_OnWakeup     = 1,
+	PmEvent_OnReset      = 2,
+} PmEvent;
+
+typedef void (* PmEventFn)(void* user, PmEvent event);
+typedef struct PmEventCookie PmEventCookie;
+
+struct PmEventCookie {
+	PmEventCookie* next;
+	PmEventFn handler;
+	void* user;
+};
+
 MEOW_INLINE void pmSetControl(unsigned mask, unsigned value)
 {
 	mask &= POWCNT_ALL;
@@ -70,3 +85,14 @@ MEOW_INLINE void pmGfxSetLcdLayout(PmLcdLayout layout)
 }
 
 #endif
+
+void pmInit(void);
+void pmAddEventHandler(PmEventCookie* cookie, PmEventFn handler, void* user);
+void pmRemoveEventHandler(PmEventCookie* cookie);
+
+bool pmShouldReset(void);
+bool pmIsSleepAllowed(void);
+void pmSetSleepAllowed(bool allowed);
+bool pmHasResetJumpTarget(void);
+void pmClearResetJumpTarget(void);
+bool pmMainLoop(void);
