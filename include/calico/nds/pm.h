@@ -91,6 +91,7 @@ void pmAddEventHandler(PmEventCookie* cookie, PmEventFn handler, void* user);
 void pmRemoveEventHandler(PmEventCookie* cookie);
 
 bool pmShouldReset(void);
+void pmPrepareToReset(void);
 bool pmIsSleepAllowed(void);
 void pmSetSleepAllowed(bool allowed);
 bool pmHasResetJumpTarget(void);

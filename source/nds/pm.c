@@ -18,8 +18,9 @@
 
 #include <sys/iosupport.h>
 
-#define PM_FLAG_SHOULD_RESET  (1U << 0)
-#define PM_FLAG_SLEEP_ALLOWED (1U << 1)
+#define PM_FLAG_RESET_ASSERTED (1U << 0)
+#define PM_FLAG_RESET_PREPARED (1U << 1)
+#define PM_FLAG_SLEEP_ALLOWED  (1U << 2)
 
 typedef struct PmState {
 	PmEventCookie* cookie_list;
@@ -43,7 +44,7 @@ static void _pmResetPxiHandler(void* user, u32 data)
 
 		case 0x10: // "Reset"
 		case 0x20: // "Terminate"
-			s_pmState.flags |= PM_FLAG_SHOULD_RESET;
+			s_pmState.flags |= PM_FLAG_RESET_ASSERTED;
 			break;
 	}
 }
@@ -76,7 +77,7 @@ void __SYSCALL(exit)(int rc)
 	pxiSend(PxiChannel_Reset, 0x10 << 8);
 
 	// Wait for reset to be asserted on us
-	while (!pmShouldReset()) {
+	while (!(s_pmState.flags & PM_FLAG_RESET_ASSERTED)) {
 		threadSleep(1000);
 	}
 
@@ -179,7 +180,14 @@ void pmRemoveEventHandler(PmEventCookie* cookie)
 
 bool pmShouldReset(void)
 {
-	return s_pmState.flags & PM_FLAG_SHOULD_RESET;
+	return s_pmState.flags & (PM_FLAG_RESET_ASSERTED|PM_FLAG_RESET_PREPARED);
+}
+
+void pmPrepareToReset(void)
+{
+	IrqState st = irqLock();
+	s_pmState.flags |= PM_FLAG_RESET_PREPARED;
+	irqUnlock(st);
 }
 
 bool pmIsSleepAllowed(void)
@@ -210,6 +218,6 @@ void pmClearResetJumpTarget(void)
 
 bool pmMainLoop(void)
 {
-	// TODO
+	// TODO: Sleep mode handling
 	return !pmShouldReset();
 }
