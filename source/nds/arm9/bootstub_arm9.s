@@ -146,11 +146,10 @@ FUNC_START32 __ds9_bootstub, bootstub
 	@ Copy crt0 section to the correct address
 	adr  r12, .Lcrt0_load
 	ldm  r12, {r0-r2}
-	subs r2, r2, r1
-.Lcopy_crt0:
-	ldr  r3, [r0], #4
-	str  r3, [r1], #4
-	subs r2, r2, #4
+.Lcopy_crt0: @ Linkscript guarantees crt0 size is 32-byte aligned
+	ldm  r0!, {r3,r5,r6,r7,r9,r11,r12,r14}
+	stm  r1!, {r3,r5,r6,r7,r9,r11,r12,r14}
+	cmp  r1, r2
 	bne  .Lcopy_crt0
 
 	@ Run the crt0 logic

@@ -12,8 +12,7 @@ MEMORY {
 	/* Runtime memory layout for code/data areas (VMAs) */
 	vectors : ORIGIN = 0x0000000, LENGTH = 0x20     /* Vectors */
 	itcm    : ORIGIN = 0x1ff8020, LENGTH = 0x7fe0   /* ITCM (minus vectors) */
-	boot    : ORIGIN = 0x2000800, LENGTH = 0x800    /* Scratch boot memory used during crt0 */
-	main    : ORIGIN = 0x2001000, LENGTH = 0xfcb000 /* Main RAM (usable area for ARM9) */
+	main    : ORIGIN = 0x2000800, LENGTH = 0xfcb800 /* Main RAM (usable area for ARM9) */
 	dtcm    : ORIGIN = 0x2ff0000, LENGTH = 0x3e80   /* DTCM (minus stacks/reserved BIOS memory) */
 }
 
@@ -74,13 +73,16 @@ SECTIONS {
 		*.crt0.* (.glue_7t .glue_7 .vfp11_veneer .v4_bx)
 		*.crt0.* (.rodata .rodata.* .gnu.linkonce.r.*)
 		*.crt0.* (.rodata1)
-		. = ALIGN(4);
-	} >boot AT>lma9 :crt0 = 0xff
+		. = ALIGN(32);
+	} >main AT>lma9 :crt0 = 0xff
 
 	/* Load information for crt0 */
 	PROVIDE_HIDDEN( __crt0_lma   = LOADADDR(.crt0)             );
 	PROVIDE_HIDDEN( __crt0_start = ADDR(.crt0)                 );
 	PROVIDE_HIDDEN( __crt0_end   = ADDR(.crt0) + SIZEOF(.crt0) );
+
+	/* Ensure crt0 does not overlap initial bootstrap */
+	ASSERT( __crt0_end <= ADDR(.bootstub), "Error: crt0 section overlaps initial bootstrap" )
 
 	/* ARM exception vectors (start of ITCM) */
 	.vectors : {
