@@ -7,7 +7,7 @@
 
 #define MCU_IRQ_PWRBTN_RESET    (1U << 0) // Depressed prior to a period of time = Reset request
 #define MCU_IRQ_PWRBTN_SHUTDOWN (1U << 1) // Held down for a period of time = Shutdown request
-#define MCU_IRQ_PWRBTN          (1U << 3) // Begin pressing
+#define MCU_IRQ_PWRBTN_BEGIN    (1U << 3) // Begin pressing
 #define MCU_IRQ_BATTERY_EMPTY   (1U << 4)
 #define MCU_IRQ_BATTERY_LOW     (1U << 5)
 #define MCU_IRQ_VOLBTN          (1U << 6)
@@ -19,6 +19,7 @@ typedef enum McuRegister {
 
 	McuReg_IrqFlags = 0x10,
 	McuReg_DoReset  = 0x11,
+	McuReg_Config   = 0x12,
 
 	McuReg_BatteryState = 0x20,
 	McuReg_BatteryUnk   = 0x21,
@@ -49,4 +50,22 @@ typedef enum McuRegister {
 	McuReg_PwrBtnHoldDelay = 0x81,
 } McuRegister;
 
+typedef enum McuPwrBtnState {
+	McuPwrBtnState_Normal   = 0,
+	McuPwrBtnState_Begin    = 1,
+	McuPwrBtnState_Reset    = 2,
+	McuPwrBtnState_Shutdown = 3,
+} McuPwrBtnState;
+
+typedef void (*McuIrqHandler)(unsigned irq_mask);
+
+MEOW_INLINE McuPwrBtnState mcuGetPwrBtnState(void)
+{
+	extern McuPwrBtnState g_mcuPwrBtnState;
+	return g_mcuPwrBtnState;
+}
+
 void mcuInit(void);
+void mcuIrqSet(unsigned irq_mask, McuIrqHandler fn);
+void mcuIssueReset(void) MEOW_NORETURN;
+void mcuIssueShutdown(void) MEOW_NORETURN;

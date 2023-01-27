@@ -107,20 +107,26 @@ void __SYSCALL(exit)(int rc)
 
 #elif defined(ARM7)
 
+	// On DSi, if the user started to press the power button, wait for the
+	// MCU to figure out the desired command (reset/shutdown). Note that
+	// we will only see reset requests, as shutdown handling takes effect
+	// immediately (see explanation in pmInit).
+	if (systemIsTwlMode()) {
+		while (mcuGetPwrBtnState() == McuPwrBtnState_Begin) {
+			threadSleep(1000);
+		}
+	}
+
 	// If there is no jump target, reset or shut down the DS
 	if (!pmHasResetJumpTarget()) {
 		if (systemIsTwlMode()) {
 			// Issue reset through MCU
-			i2cLock();
-			i2cWriteRegister8(I2cDev_MCU, McuReg_WarmbootFlag, 1);
-			i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 1);
+			mcuIssueReset();
 		} else {
 			// Use PMIC to shut down the DS
 			pmicWriteRegister(PmicReg_Control, 0x40);
+			for (;;); // infinite loop just in case
 		}
-
-		// Above should have killed us. Otherwise: infinite loop for safety
-		for (;;);
 	}
 
 	// Disable interrupts
@@ -154,7 +160,22 @@ void pmInit(void)
 	//...
 #elif defined(ARM7)
 	if (systemIsTwlMode()) {
+		// Initialize DSi MCU, and register interrupt handlers for it.
+		// Power button:
+		//   Begin pressing: we issue a reset request, which is later handled
+		//     by the application main loop.
+		//   Reset (aka tap): handled by __SYSCALL(exit) (refer to it)
+		//   Shutdown (aka hold): immediately shut down (see below explanation)
+
+		// For safety reasons, immediately shut down the DSi upon receiving a
+		// power button shutdown/battery empty message. Note that a timeframe
+		// exists between the power button being physically pushed and released
+		// (see McuReg_PwrBtnHoldDelay), which seems to be intended to allow the
+		// running application to finish writing any unsaved data to disk/etc.
+
 		mcuInit();
+		mcuIrqSet(MCU_IRQ_PWRBTN_SHUTDOWN|MCU_IRQ_BATTERY_EMPTY, (McuIrqHandler)mcuIssueShutdown);
+		mcuIrqSet(MCU_IRQ_PWRBTN_BEGIN, (McuIrqHandler)pmPrepareToReset);
 	}
 #endif
 }

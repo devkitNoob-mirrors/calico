@@ -4,47 +4,60 @@
 #include <calico/nds/arm7/i2c.h>
 #include <calico/nds/arm7/mcu.h>
 
+#define MCU_IRQ_MASK ( \
+	MCU_IRQ_PWRBTN_RESET|MCU_IRQ_PWRBTN_SHUTDOWN|MCU_IRQ_PWRBTN_BEGIN| \
+	MCU_IRQ_BATTERY_EMPTY|MCU_IRQ_BATTERY_LOW|MCU_IRQ_VOLBTN \
+)
+
 void _i2cSetMcuDelay(s32 delay);
 
-/*
-static void _mcuIrqHandler(void)
-{
-	unsigned flags = i2cReadRegister8(I2cDev_MCU, McuReg_IrqFlags);
-	if (flags & MCU_IRQ_PWRBTN_RESET) {
-		// Reset request coming from power button
-		i2cWriteRegister8(I2cDev_MCU, McuReg_WarmbootFlag, 1);
-		i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 1);
-	} else if (flags & MCU_IRQ_PWRBTN_SHUTDOWN) {
-		// Shutdown request coming from power button
-		// TODO: how to actually power off the DSi?
-		i2cWriteRegister8(I2cDev_MCU, McuReg_WarmbootFlag, 1);
-		i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 1);
-	}
-}
-*/
+McuPwrBtnState g_mcuPwrBtnState;
 
 static Thread s_mcuThread;
 static alignas(8) u8 s_mcuThreadStack[0x200];
+
+static McuIrqHandler s_mcuIrqTable[8];
+
+static unsigned _mcuCheckIrqFlags(void)
+{
+	i2cLock();
+	unsigned flags = i2cReadRegister8(I2cDev_MCU, McuReg_IrqFlags);
+	i2cUnlock();
+	return flags;
+}
+
+MEOW_INLINE bool _mcuIrqMaskUnpack(unsigned* pmask, unsigned* pid)
+{
+	if (!*pmask)
+		return false;
+	while (!(*pmask & (1U << *pid)))
+		++*pid;
+	*pmask &= ~(1U << *pid);
+	return true;
+}
 
 static int _mcuThread(void* unused)
 {
 	for (;;) {
 		threadIrqWait2(false, IRQ2_MCU);
-		i2cLock();
-		unsigned flags = i2cReadRegister8(I2cDev_MCU, McuReg_IrqFlags);
-		if (flags & MCU_IRQ_PWRBTN_RESET) {
-			// Reset request coming from power button
-			i2cWriteRegister8(I2cDev_MCU, McuReg_WarmbootFlag, 1);
-			i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 1);
-		} else if (flags & MCU_IRQ_PWRBTN_SHUTDOWN) {
-			// Shutdown request coming from power button
-			// TODO: how to actually power off the DSi?
-			//i2cWriteRegister8(I2cDev_MCU, McuReg_WarmbootFlag, 1);
-			//i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 1);
-			i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 2);
-			pmicWriteRegister(PmicReg_Control, 0x40);
+		unsigned flags = _mcuCheckIrqFlags();
+
+		// Update power button state
+		if (flags & MCU_IRQ_PWRBTN_SHUTDOWN) {
+			g_mcuPwrBtnState = McuPwrBtnState_Shutdown;
+		} else if (flags & MCU_IRQ_PWRBTN_RESET) {
+			g_mcuPwrBtnState = McuPwrBtnState_Reset;
+		} else if (flags & MCU_IRQ_PWRBTN_BEGIN) {
+			g_mcuPwrBtnState = McuPwrBtnState_Begin;
 		}
-		i2cUnlock();
+
+		// Call irq handlers
+		unsigned id = 0;
+		while (_mcuIrqMaskUnpack(&flags, &id)) {
+			if (s_mcuIrqTable[id]) {
+				s_mcuIrqTable[id](1U << id);
+			}
+		}
 	}
 
 	return 0;
@@ -68,6 +81,34 @@ void mcuInit(void)
 	threadStart(&s_mcuThread);
 
 	// Enable MCU interrupt
-	//irqSet2(IRQ2_MCU, _mcuIrqHandler);
 	irqEnable2(IRQ2_MCU);
+}
+
+void mcuIrqSet(unsigned irq_mask, McuIrqHandler fn)
+{
+	IrqState st = irqLock();
+	unsigned id = 0;
+	irq_mask &= MCU_IRQ_MASK;
+	while (_mcuIrqMaskUnpack(&irq_mask, &id)) {
+		s_mcuIrqTable[id] = fn;
+	}
+	irqUnlock(st);
+}
+
+void mcuIssueReset(void)
+{
+	armIrqLockByPsr();
+	i2cLock();
+	i2cWriteRegister8(I2cDev_MCU, McuReg_WarmbootFlag, 1);
+	i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 1);
+	for (;;); // infinite loop just in case
+}
+
+void mcuIssueShutdown(void)
+{
+	armIrqLockByPsr();
+	i2cLock();
+	i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 2);
+	pmicWriteRegister(PmicReg_Control, 0x40);
+	for (;;); // infinite loop just in case
 }
