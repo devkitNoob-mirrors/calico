@@ -12,7 +12,7 @@ MEMORY {
 	/* Runtime memory layout for code/data areas (VMAs) */
 	vectors : ORIGIN = 0x0000000, LENGTH = 0x20     /* Vectors */
 	itcm    : ORIGIN = 0x1ff8020, LENGTH = 0x7fe0   /* ITCM (minus vectors) */
-	main    : ORIGIN = 0x2000800, LENGTH = 0xfcb800 /* Main RAM (usable area for ARM9) */
+	main    : ORIGIN = 0x2000c00, LENGTH = 0xfcb400 /* Main RAM (usable area for ARM9) */
 	dtcm    : ORIGIN = 0x2ff0000, LENGTH = 0x3e80   /* DTCM (minus stacks/reserved BIOS memory) */
 }
 
@@ -103,6 +103,7 @@ SECTIONS {
 	PROVIDE_HIDDEN( __itcm_lma   = LOADADDR(.vectors)             );
 	PROVIDE_HIDDEN( __itcm_start = ADDR(.itcm) - SIZEOF(.vectors) );
 	PROVIDE_HIDDEN( __itcm_end   = ADDR(.itcm) + SIZEOF(.itcm)    );
+	ASSERT( __itcm_lma + SIZEOF(.vectors) == LOADADDR(.itcm), "Error: gap between vectors and itcm" )
 
 	/* DTCM section */
 	.dtcm : {
