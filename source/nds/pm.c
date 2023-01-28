@@ -5,6 +5,7 @@
 #include <calico/nds/env.h>
 #include <calico/nds/system.h>
 #include <calico/nds/pxi.h>
+#include <calico/nds/keypad.h>
 #include <calico/nds/pm.h>
 
 #if defined(ARM9)
@@ -159,6 +160,11 @@ void pmInit(void)
 #if defined(ARM9)
 	//...
 #elif defined(ARM7)
+	// Set up soft-reset key combination
+	REG_KEYCNT = KEY_SELECT | KEY_START | KEY_R | KEY_L | KEYCNT_IRQ_ENABLE | KEYCNT_IRQ_AND;
+	irqSet(IRQ_KEYPAD, pmPrepareToReset);
+	irqEnable(IRQ_KEYPAD);
+
 	if (systemIsTwlMode()) {
 		// Initialize DSi MCU, and register interrupt handlers for it.
 		// Power button:

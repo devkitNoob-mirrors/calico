@@ -30,4 +30,6 @@ typedef struct TransferRegion {
 	u32 arm7_pxi_mask;
 
 	u32 blkdev_sector_count[3];
+
+	u16 keypad_ext;
 } TransferRegion;
