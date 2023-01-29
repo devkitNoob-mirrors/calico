@@ -51,9 +51,24 @@ typedef enum RtcInt1Mode {
 	RtcInt1Mode_32kHz     = 0x8,
 } RtcInt1Mode;
 
+typedef struct RtcDateTime {
+	u8 year;    // 2000-2099 (only last two digits)
+	u8 month;   // 1-12
+	u8 day;     // 1-31
+	u8 weekday; // 0-7 starting Monday
+	u8 hour;    // 0-23
+	u8 minute;  // 0-59
+	u8 second;  // 0-59
+} RtcDateTime;
+
 void rtcInit(void);
+void rtcSyncTime(void);
+
 void rtcReadRegister(RtcRegister reg, void* data, size_t size);
 void rtcWriteRegister(RtcRegister reg, const void* data, size_t size);
+void rtcReadRegisterBcd(RtcRegister reg, void* data, size_t size);
+
+u32 rtcDateTimeToUnix(const RtcDateTime* t);
 
 MEOW_INLINE u8 rtcReadRegister8(RtcRegister reg)
 {
@@ -65,4 +80,16 @@ MEOW_INLINE u8 rtcReadRegister8(RtcRegister reg)
 MEOW_INLINE void rtcWriteRegister8(RtcRegister reg, u8 value)
 {
 	rtcWriteRegister(reg, &value, 1);
+}
+
+MEOW_INLINE void rtcReadDateTime(RtcDateTime* t)
+{
+	rtcReadRegisterBcd(RtcReg_DateTime, t, sizeof(*t));
+}
+
+MEOW_INLINE u32 rtcReadUnixTime(void)
+{
+	RtcDateTime t;
+	rtcReadDateTime(&t);
+	return rtcDateTimeToUnix(&t);
 }

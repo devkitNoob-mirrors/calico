@@ -1,9 +1,15 @@
+#include <calico/system/mutex.h>
+#include <calico/system/tick.h>
 #include <calico/nds/system.h>
 #include <calico/nds/bios.h>
 #include <calico/nds/arm7/gpio.h>
 #include <calico/nds/arm7/rtc.h>
+#include "../transfer.h"
 
 #define RTC_CMD(_reg,_isread) (0x60 | (((_reg)&0xf)<<1) | ((_isread)&1))
+
+static Mutex s_rtcMutex;
+static TickTask s_rtcUpdateTask;
 
 MEOW_INLINE void _rtcSleepUsec(int usec)
 {
@@ -14,6 +20,7 @@ MEOW_INLINE void _rtcSleepUsec(int usec)
 
 MEOW_INLINE void _rtcBegin(void)
 {
+	mutexLock(&s_rtcMutex);
 	REG_RCNT_RTC = RCNT_RTC_CS_0 | RCNT_RTC_SCK_1;
 	_rtcSleepUsec(1);
 	REG_RCNT_RTC = RCNT_RTC_CS_1 | RCNT_RTC_SCK_1;
@@ -23,6 +30,7 @@ MEOW_INLINE void _rtcBegin(void)
 MEOW_INLINE void _rtcEnd(void)
 {
 	REG_RCNT_RTC = RCNT_RTC_CS_0 | RCNT_RTC_SCK_1;
+	mutexUnlock(&s_rtcMutex);
 }
 
 MEOW_INLINE void _rtcOutputBit(u8 bit)
@@ -99,6 +107,18 @@ void rtcInit(void)
 	rtcWriteRegister8(RtcReg_Status2, 0);
 }
 
+static void _rtcUpdateTask(TickTask* t)
+{
+	s_transferRegion->unix_time++;
+}
+
+void rtcSyncTime(void)
+{
+	tickTaskStop(&s_rtcUpdateTask);
+	s_transferRegion->unix_time = rtcReadUnixTime();
+	tickTaskStart(&s_rtcUpdateTask, _rtcUpdateTask, 0, ticksFromHz(1));
+}
+
 void rtcReadRegister(RtcRegister reg, void* data, size_t size)
 {
 	u8* data8 = (u8*)data;
@@ -125,4 +145,54 @@ void rtcWriteRegister(RtcRegister reg, const void* data, size_t size)
 	}
 
 	_rtcEnd();
+}
+
+void rtcReadRegisterBcd(RtcRegister reg, void* data, size_t size)
+{
+	rtcReadRegister(reg, data, size);
+
+	u8* data8 = (u8*)data;
+	for (size_t i = 0; i < size; i ++) {
+		unsigned bcd = data8[i];
+		data8[i] = 10*(bcd>>4) + (bcd & 0xf);
+	}
+}
+
+u32 rtcDateTimeToUnix(const RtcDateTime* t)
+{
+	// Table of month -> day offsets within a year
+	static const u16 s_monthDayOffsets[] = {
+		0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334,
+	};
+
+	// Unpack/adjust values from RTC
+	unsigned YY,MM,DD,hh,mm,ss;
+	YY = 2000 + t->year - 1970;
+	MM = t->month - 1;
+	DD = t->day - 1;
+	hh = t->hour;
+	mm = t->minute;
+	ss = t->second;
+
+	// Calculate second index into the day
+	unsigned seconds = ss + 60U*(mm + 60U*hh);
+
+	// Classic first grade programming job
+	// The correct algorithm is as follows:
+	//bool isLeap = (YY % 4) == 0 && !((YY % 100) == 0 && !((YY % 400) == 0));
+	// However, we only consider years 1970..2099. During this interval, none
+	// of the 100-year exceptions apply (in fact, the 400-year exception cancels
+	// the 100-year exception for the year 2000), so the following is correct:
+	bool isLeap = (YY % 4) == 0;
+
+	// Calculate day index into the year (adjusting for Feb 29)
+	unsigned days = DD + s_monthDayOffsets[MM] + (isLeap && MM > 1 ? 1 : 0);
+
+	// Add year offset (including extra days for leap years)
+	// Using a count of leap years since 1968 (which was leap)
+	// Not including 100-year exceptions (see above comment)
+	days += 365U*YY + (2+YY)/4U;
+
+	// Final calculation
+	return seconds + 86400U*days;
 }
