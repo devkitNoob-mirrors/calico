@@ -116,7 +116,8 @@ void rtcSyncTime(void)
 {
 	tickTaskStop(&s_rtcUpdateTask);
 	s_transferRegion->unix_time = rtcReadUnixTime();
-	tickTaskStart(&s_rtcUpdateTask, _rtcUpdateTask, 0, ticksFromHz(1));
+	unsigned ticks = ticksFromHz(1);
+	tickTaskStart(&s_rtcUpdateTask, _rtcUpdateTask, ticks, ticks);
 }
 
 void rtcReadRegister(RtcRegister reg, void* data, size_t size)
