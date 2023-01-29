@@ -7,6 +7,8 @@
 
 //#define COLOR_DEBUG
 
+REFERENCE __newlib_syscalls
+
 .section .vectors, "ax", %progbits
 .align 2
 	b .Lrst

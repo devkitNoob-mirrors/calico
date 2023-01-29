@@ -59,6 +59,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 	source/system/mutex.c
 	source/system/mailbox.c
 	source/system/dietprint.c
+	source/system/newlib_syscalls.c
 
 	source/arm/arm-copy-fill.32.s
 	source/arm/arm-context.32.s

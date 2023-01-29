@@ -4,6 +4,8 @@
 #include <calico/nds/mm_env.h>
 #include <calico/nds/io.h>
 
+REFERENCE __newlib_syscalls
+
 FUNC_START32 __ds7_bootstub, bootstub
 	b .Lactual_start
 

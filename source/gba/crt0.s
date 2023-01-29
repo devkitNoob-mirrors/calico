@@ -3,6 +3,8 @@
 #include <calico/gba/mm.h>
 #include <calico/gba/io.h>
 
+REFERENCE __newlib_syscalls
+
 #ifndef MULTIBOOT
 FUNC_START32 __gba_start, crt0
 #else

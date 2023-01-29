@@ -57,3 +57,9 @@
 3135:
 	.cfi_endproc
 .endm
+
+.macro REFERENCE symbol
+	.section .rodata.ref.\symbol, "a"
+	.align   2
+	.word    \symbol
+.endm
