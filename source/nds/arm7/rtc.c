@@ -117,7 +117,7 @@ void rtcSyncTime(void)
 	tickTaskStop(&s_rtcUpdateTask);
 	s_transferRegion->unix_time = rtcReadUnixTime();
 	unsigned ticks = ticksFromHz(1);
-	tickTaskStart(&s_rtcUpdateTask, _rtcUpdateTask, ticks, ticks);
+	tickTaskStart(&s_rtcUpdateTask, _rtcUpdateTask, ticks/2, ticks); // /2 in order to fairly distribute the error
 }
 
 void rtcReadRegister(RtcRegister reg, void* data, size_t size)
