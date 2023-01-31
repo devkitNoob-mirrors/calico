@@ -125,8 +125,7 @@ void __SYSCALL(exit)(int rc)
 			mcuIssueReset();
 		} else {
 			// Use PMIC to shut down the DS
-			pmicWriteRegister(PmicReg_Control, 0x40);
-			for (;;); // infinite loop just in case
+			pmicIssueShutdown();
 		}
 	}
 

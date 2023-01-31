@@ -63,7 +63,6 @@ static int _mcuThread(void* unused)
 	return 0;
 }
 
-
 void mcuInit(void)
 {
 	// Retrieve MCU firmware version, and set up the correct I2C delay for it
@@ -109,6 +108,5 @@ void mcuIssueShutdown(void)
 	armIrqLockByPsr();
 	i2cLock();
 	i2cWriteRegister8(I2cDev_MCU, McuReg_DoReset, 2);
-	pmicWriteRegister(PmicReg_Control, 0x40);
-	for (;;); // infinite loop just in case
+	pmicIssueShutdown();
 }

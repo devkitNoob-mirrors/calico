@@ -4,6 +4,7 @@
 #endif
 
 #include "../../types.h"
+#include "../../system/mutex.h"
 #include "../io.h"
 
 #define REG_SPICNT  MEOW_REG(u16, IO_SPICNT)
@@ -28,6 +29,18 @@ typedef enum SpiDevice {
 	SpiDev_NVRAM,
 	SpiDev_TSC,
 } SpiDevice;
+
+extern Mutex g_spiMutex;
+
+MEOW_INLINE void spiLock(void)
+{
+	mutexLock(&g_spiMutex);
+}
+
+MEOW_INLINE void spiUnlock(void)
+{
+	mutexUnlock(&g_spiMutex);
+}
 
 MEOW_INLINE void spiWaitBusy(void)
 {
