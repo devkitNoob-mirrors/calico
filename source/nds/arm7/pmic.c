@@ -3,14 +3,11 @@
 #include <calico/nds/arm7/spi.h>
 #include <calico/nds/arm7/pmic.h>
 
-static void _pmicReadWriteCommon(u8 reg, u8 data)
+static void _pmicSpiBegin(u8 cmd)
 {
-	spiWaitBusy();
-	REG_SPICNT = SpiBaud_1MHz | SPICNT_DEVICE(SpiDev_PMIC) | SPICNT_HOLD | SPICNT_ENABLE;
-	REG_SPIDATA = reg;
-	spiWaitBusy();
-	REG_SPICNT = SpiBaud_1MHz | SPICNT_DEVICE(SpiDev_PMIC) | SPICNT_ENABLE;
-	REG_SPIDATA = data;
+	spiRawStartHold(SpiDev_PMIC, SpiBaud_1MHz);
+	spiRawWriteByte(cmd);
+	spiRawEndHold(SpiDev_PMIC, SpiBaud_1MHz);
 }
 
 bool pmicWriteRegister(PmicRegister reg, u8 data)
@@ -19,7 +16,8 @@ bool pmicWriteRegister(PmicRegister reg, u8 data)
 		return false;
 	}
 
-	_pmicReadWriteCommon(reg, data);
+	_pmicSpiBegin(reg);
+	spiRawWriteByteAsync(data);
 	return true;
 }
 
@@ -29,10 +27,8 @@ u8 pmicReadRegister(PmicRegister reg)
 		return 0xff;
 	}
 
-	_pmicReadWriteCommon(0x80 | reg, 0);
-
-	spiWaitBusy();
-	return REG_SPIDATA & 0xff;
+	_pmicSpiBegin(reg | (1U<<7));
+	return spiRawReadByte();
 }
 
 void pmicIssueShutdown(void)

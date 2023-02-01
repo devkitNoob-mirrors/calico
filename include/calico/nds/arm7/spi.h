@@ -46,3 +46,31 @@ MEOW_INLINE void spiWaitBusy(void)
 {
 	while (REG_SPICNT & SPICNT_BUSY);
 }
+
+MEOW_INLINE void spiRawStartHold(SpiDevice dev, SpiBaudrate baud)
+{
+	spiWaitBusy();
+	REG_SPICNT = baud | SPICNT_DEVICE(dev) | SPICNT_HOLD | SPICNT_ENABLE;
+}
+
+MEOW_INLINE void spiRawEndHold(SpiDevice dev, SpiBaudrate baud)
+{
+	REG_SPICNT = baud | SPICNT_DEVICE(dev) | SPICNT_ENABLE;
+}
+
+MEOW_INLINE void spiRawWriteByteAsync(u8 data)
+{
+	REG_SPIDATA = data;
+}
+
+MEOW_INLINE void spiRawWriteByte(u8 data)
+{
+	spiRawWriteByteAsync(data);
+	spiWaitBusy();
+}
+
+MEOW_INLINE u8 spiRawReadByte(void)
+{
+	spiRawWriteByte(0);
+	return REG_SPIDATA;
+}
