@@ -8,6 +8,7 @@
 #define g_envCardTwlHeader ((EnvTwlHeader*)         MM_ENV_CARD_TWL_HEADER)
 #define g_envNdsArgvHeader ((EnvNdsArgvHeader*)     MM_ENV_ARGV_HEADER)
 #define g_envNdsBootstub   ((EnvNdsBootstubHeader*) MM_ENV_HB_BOOTSTUB)
+#define g_envUserSettings  ((EnvUserSettings*)      MM_ENV_USER_SETTINGS)
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
 
 typedef struct EnvNdsHeader {
@@ -235,6 +236,86 @@ typedef struct EnvNdsBootstubHeader {
 	void (*arm7_entrypoint)(void);
 } EnvNdsBootstubHeader;
 
+#define ENV_USER_SETTINGS_VERSION     5
+#define ENV_USER_SETTINGS_VERSION_EXT 1
+
+#define ENV_USER_NAME_LEN    10
+#define ENV_USER_COMMENT_LEN 26
+
+typedef enum EnvLanguage {
+	EnvLanguage_Japanese = 0,
+	EnvLanguage_English  = 1,
+	EnvLanguage_French   = 2,
+	EnvLanguage_German   = 3,
+	EnvLanguage_Italian  = 4,
+	EnvLanguage_Spanish  = 5,
+	EnvLanguage_Chinese  = 6,
+	EnvLanguage_Korean   = 7,
+} EnvLanguage;
+
+typedef struct EnvUserSettings {
+	u8 version;
+	u8 _pad_0x01;
+
+	struct {
+		u8  favorite_color;
+		u8  birth_month;
+		u8  birth_day;
+		u8  _pad_0x05;
+		u16 name_ucs2[ENV_USER_NAME_LEN];
+		u8  name_len;
+		u8  _pad_0x1b;
+		u16 comment_ucs2[ENV_USER_COMMENT_LEN];
+		u8  comment_len;
+		u8  _pad_0x51;
+	} user;
+
+	struct {
+		u8 hour;
+		u8 minute;
+		u8 second; // unused?
+		u8 _pad_0x55;
+		u8 flags;
+		u8 _pad_0x57;
+	} alarm;
+
+	struct {
+		u16 raw_x1, raw_y1;
+		u8  lcd_x1, lcd_y1;
+		u16 raw_x2, raw_y2;
+		u8  lcd_x2, lcd_y2;
+	} touch_calib;
+
+	struct {
+		u16 language          : 3; // see EnvLanguage
+		u16 gba_on_bottom_lcd : 1;
+		u16 dslite_brightness : 2;
+		u16 autoboot          : 1;
+		u16 _pad              : 9;
+
+		u8  unused_maybe1;
+		u8  unused_maybe2;
+		s32 rtc_offset_lo;
+		s32 rtc_offset_hi; // only sign extend/useless (?)
+	} config;
+} EnvUserSettings;
+
+typedef struct EnvUserSettingsNvram {
+	EnvUserSettings base;
+	u16 counter;
+	u16 crc16;
+
+	struct {
+		u8 version;
+		u8 language;
+		u16 lang_mask;
+
+		u8 _pad_0x78[0x86];
+	} ext;
+
+	u16 ext_crc16;
+} EnvUserSettingsNvram;
+
 typedef struct EnvTwlDeviceListEntry {
 	char drive_letter;
 	u8 flags;
@@ -249,3 +330,7 @@ typedef struct EnvTwlDeviceList {
 	u8 _pad_0x39c[0x24];
 	char argv0[0x40];
 } EnvTwlDeviceList;
+
+#if defined(ARM7)
+void envReadNvramSettings(void);
+#endif
