@@ -109,6 +109,7 @@ if(NINTENDO_DS)
 			source/nds/arm9/sys_startup.c
 
 			source/nds/arm9/arm7_debug.c
+			source/nds/arm9/pm_arm9.c
 			source/nds/arm9/blk.c
 		)
 	endif()
@@ -123,6 +124,7 @@ if(NINTENDO_DS)
 			source/nds/arm7/pmic.c
 			source/nds/arm7/nvram.c
 			source/nds/arm7/env.c
+			source/nds/arm7/pm_arm7.c
 			source/nds/arm7/i2c.twl.c
 			source/nds/arm7/mcu.twl.c
 

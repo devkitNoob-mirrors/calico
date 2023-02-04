@@ -97,3 +97,8 @@ void pmSetSleepAllowed(bool allowed);
 bool pmHasResetJumpTarget(void);
 void pmClearResetJumpTarget(void);
 bool pmMainLoop(void);
+
+#define PM_BATT_CHARGING  (1U<<7)
+#define PM_BATT_LEVEL(_x) ((_x)&0x7f)
+
+unsigned pmGetBatteryState(void);

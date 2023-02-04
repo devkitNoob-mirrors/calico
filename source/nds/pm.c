@@ -2,11 +2,13 @@
 #include <calico/arm/common.h>
 #include <calico/system/irq.h>
 #include <calico/system/thread.h>
+#include <calico/system/mailbox.h>
 #include <calico/nds/env.h>
 #include <calico/nds/system.h>
 #include <calico/nds/pxi.h>
 #include <calico/nds/keypad.h>
 #include <calico/nds/pm.h>
+#include "pxi/pm.h"
 
 #if defined(ARM9)
 #include <calico/arm/cp15.h>
@@ -30,6 +32,9 @@ typedef struct PmState {
 
 static PmState s_pmState;
 
+static Thread s_pmPxiThread;
+static alignas(8) u8 s_pmPxiThreadStack[0x200];
+
 MEOW_NOINLINE static void _pmCallEventHandlers(PmEvent event)
 {
 	for (PmEventCookie* c = s_pmState.cookie_list; c; c = c->next) {
@@ -48,6 +53,43 @@ static void _pmResetPxiHandler(void* user, u32 data)
 			s_pmState.flags |= PM_FLAG_RESET_ASSERTED;
 			break;
 	}
+}
+
+static int _pmPxiThreadMain(void* arg)
+{
+	// Set up PXI mailbox
+	Mailbox mb;
+	u32 mb_slots[4];
+	mailboxPrepare(&mb, mb_slots, sizeof(mb_slots)/sizeof(u32));
+
+	// Register PXI channels
+	pxiSetHandler(PxiChannel_Reset, _pmResetPxiHandler, NULL);
+	pxiSetMailbox(PxiChannel_Power, &mb);
+
+	// Handle PXI messages
+	for (;;) {
+		u32 msg = mailboxRecv(&mb);
+		PxiPmMsgType type = pxiPmGetType(msg);
+
+		switch (type) {
+			default: break;
+
+#if defined(ARM9)
+
+			//...
+
+#elif defined(ARM7)
+
+			case PxiPmMsg_GetBatteryState:
+				pxiReply(PxiChannel_Power, pmGetBatteryState());
+				break;
+
+#endif
+
+		}
+	}
+
+	return 0;
 }
 
 #if defined(ARM7)
@@ -154,8 +196,6 @@ void pmInit(void)
 {
 	s_pmState.flags = PM_FLAG_SLEEP_ALLOWED;
 
-	pxiSetHandler(PxiChannel_Reset, _pmResetPxiHandler, NULL);
-
 #if defined(ARM9)
 	//...
 #elif defined(ARM7)
@@ -183,6 +223,13 @@ void pmInit(void)
 		mcuIrqSet(MCU_IRQ_PWRBTN_BEGIN, (McuIrqHandler)pmPrepareToReset);
 	}
 #endif
+
+	// Bring up PXI thread
+	threadPrepare(&s_pmPxiThread, _pmPxiThreadMain, NULL, &s_pmPxiThreadStack[sizeof(s_pmPxiThreadStack)], 0x01);
+	threadStart(&s_pmPxiThread);
+
+	// Wait for the other CPU to bring up their PXI thread
+	pxiWaitRemote(PxiChannel_Power);
 }
 
 void pmAddEventHandler(PmEventCookie* cookie, PmEventFn handler, void* user)
