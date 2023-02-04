@@ -61,13 +61,18 @@ typedef struct RtcDateTime {
 	u8 second;  // 0-59
 } RtcDateTime;
 
+MEOW_CONSTEXPR u8 rtcDecodeBcd(u8 bcd)
+{
+	return 10*(bcd>>4) + (bcd & 0xf);
+}
+
 void rtcInit(void);
 void rtcSyncTime(void);
 
 void rtcReadRegister(RtcRegister reg, void* data, size_t size);
 void rtcWriteRegister(RtcRegister reg, const void* data, size_t size);
-void rtcReadRegisterBcd(RtcRegister reg, void* data, size_t size);
 
+void rtcReadDateTime(RtcDateTime* t);
 u32 rtcDateTimeToUnix(const RtcDateTime* t);
 
 MEOW_INLINE u8 rtcReadRegister8(RtcRegister reg)
@@ -80,11 +85,6 @@ MEOW_INLINE u8 rtcReadRegister8(RtcRegister reg)
 MEOW_INLINE void rtcWriteRegister8(RtcRegister reg, u8 value)
 {
 	rtcWriteRegister(reg, &value, 1);
-}
-
-MEOW_INLINE void rtcReadDateTime(RtcDateTime* t)
-{
-	rtcReadRegisterBcd(RtcReg_DateTime, t, sizeof(*t));
 }
 
 MEOW_INLINE u32 rtcReadUnixTime(void)

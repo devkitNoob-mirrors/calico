@@ -148,14 +148,17 @@ void rtcWriteRegister(RtcRegister reg, const void* data, size_t size)
 	_rtcEnd();
 }
 
-void rtcReadRegisterBcd(RtcRegister reg, void* data, size_t size)
+void rtcReadDateTime(RtcDateTime* t)
 {
-	rtcReadRegister(reg, data, size);
+	rtcReadRegister(RtcReg_DateTime, t, sizeof(*t));
 
-	u8* data8 = (u8*)data;
-	for (size_t i = 0; i < size; i ++) {
-		unsigned bcd = data8[i];
-		data8[i] = 10*(bcd>>4) + (bcd & 0xf);
+	// Remove extraneous AM/PM flag
+	t->hour &= 0x3f;
+
+	// Decode all BCD fields
+	u8* raw = (u8*)t;
+	for (size_t i = 0; i < sizeof(*t); i ++) {
+		raw[i] = rtcDecodeBcd(raw[i]);
 	}
 }
 
