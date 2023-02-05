@@ -9,6 +9,14 @@
 #error "This header file is only for GBA and NDS"
 #endif
 
+#if defined(__GBA__)
+#define LCD_WIDTH  240
+#define LCD_HEIGHT 160
+#elif defined(__NDS__)
+#define LCD_WIDTH  256
+#define LCD_HEIGHT 192
+#endif
+
 #define REG_DISPSTAT MEOW_REG(u16, IO_DISPSTAT)
 #define REG_VCOUNT   MEOW_REG(u16, IO_VCOUNT)
 
