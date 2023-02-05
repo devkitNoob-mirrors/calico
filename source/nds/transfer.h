@@ -19,6 +19,9 @@
 #define DBG_BUF_ALIVE (1U << 0)
 #define DBG_BUF_BUSY  (1U << 1)
 
+#define TOUCH_BUF   (1U << 0)
+#define TOUCH_VALID (1U << 1)
+
 typedef struct DebugBuffer {
 	vu16 flags;
 	u16  size;
@@ -31,6 +34,9 @@ typedef struct TransferRegion {
 
 	u32 unix_time;
 	u16 keypad_ext;
+
+	vu16 touch_state;
+	u16 touch_data[2][4];
 
 	u32 blkdev_sector_count[3];
 } TransferRegion;
