@@ -8,6 +8,7 @@
 #include <calico/nds/pxi.h>
 #include <calico/nds/keypad.h>
 #include <calico/nds/pm.h>
+#include "pxi/reset.h"
 #include "pxi/pm.h"
 
 #if defined(ARM9)
@@ -42,14 +43,14 @@ MEOW_NOINLINE static void _pmCallEventHandlers(PmEvent event)
 	}
 }
 
-static void _pmResetPxiHandler(void* user, u32 data)
+static void _pmResetPxiHandler(void* user, u32 msg)
 {
-	switch ((data >> 8) & 0x7f) {
+	switch (pxiResetGetType(msg)) {
 		default:
 			break;
 
-		case 0x10: // "Reset"
-		case 0x20: // "Terminate"
+		case PxiResetMsgType_Reset:
+		case PxiResetMsgType_Abort:
 			s_pmState.flags |= PM_FLAG_RESET_ASSERTED;
 			break;
 	}
@@ -117,7 +118,7 @@ void __SYSCALL(exit)(int rc)
 	_pmCallEventHandlers(PmEvent_OnReset);
 
 	// Assert reset on the other processor
-	pxiSend(PxiChannel_Reset, 0x10 << 8);
+	pxiSend(PxiChannel_Reset, pxiResetMakeMsg(PxiResetMsgType_Reset));
 
 	// Wait for reset to be asserted on us
 	while (!(s_pmState.flags & PM_FLAG_RESET_ASSERTED)) {
