@@ -79,6 +79,7 @@
 
 #include "calico/nds/arm7/i2c.h"
 #include "calico/nds/arm7/mcu.h"
+#include "calico/nds/arm7/codec.h"
 
 #include "calico/nds/arm7/aes.h"
 #include "calico/nds/arm7/twlblk.h"

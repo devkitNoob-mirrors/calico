@@ -127,6 +127,7 @@ if(NINTENDO_DS)
 			source/nds/arm7/pm_arm7.c
 			source/nds/arm7/i2c.twl.c
 			source/nds/arm7/mcu.twl.c
+			source/nds/arm7/codec.twl.c
 
 			source/nds/arm7/tmio.twl.32.c
 			source/nds/arm7/sdmmc.twl.32.c

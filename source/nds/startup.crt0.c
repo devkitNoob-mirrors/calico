@@ -13,6 +13,9 @@
 #endif
 
 bool g_isTwlMode;
+#if defined(ARM7)
+bool g_cdcIsTwlMode;
+#endif
 
 extern void *fake_heap_start, *fake_heap_end;
 
@@ -182,6 +185,12 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 
 	// Back up DSi mode flag
 	g_isTwlMode = is_twl;
+#if defined(ARM7)
+	if (is_twl) {
+		// Back up DSi mode codec flag too
+		g_cdcIsTwlMode = g_envAppTwlHeader->twl_flags2 & 1;
+	}
+#endif
 
 	// Set up newlib heap
 #if defined(ARM9)
