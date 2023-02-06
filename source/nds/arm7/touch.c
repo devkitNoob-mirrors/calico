@@ -8,9 +8,19 @@
 #include <calico/nds/arm7/codec.h>
 #include "../transfer.h"
 
+// Touch stability filter params
+#define TOUCH_MIN_THRESHOLD 20
+#define TOUCH_MAX_THRESHOLD 35
+#define TOUCH_HYSTERESIS 4
+
 typedef struct TouchState {
 	s32 xscale, yscale;
 	s32 xoffset, yoffset;
+
+	// Touch stability filter
+	u16 num_valid;
+	u16 num_noisy;
+	u8  cur_threshold;
 } TouchState;
 
 static TouchState s_touchState;
@@ -66,6 +76,8 @@ void touchInit(void)
 {
 	touchLoadCalibration();
 
+	s_touchState.cur_threshold = TOUCH_MIN_THRESHOLD;
+
 	spiLock();
 	if (cdcIsTwlMode()) {
 		cdcTscInit();
@@ -91,28 +103,77 @@ void touchLoadCalibration(void)
 #undef CALIB
 }
 
+static void _touchUpdateFilter(TscResult res, u16 max_diff)
+{
+	switch (res) {
+		// Touch not detected
+		case TscResult_None: default: {
+			s_touchState.num_valid = 0;
+			s_touchState.num_noisy = 0;
+			break;
+		}
+
+		// Touch detected, but data was noisy
+		case TscResult_Noisy: {
+			s_touchState.num_valid = 0;
+			s_touchState.num_noisy++;
+			if (s_touchState.num_noisy >= TOUCH_HYSTERESIS) {
+				s_touchState.num_noisy = 0;
+				if (s_touchState.cur_threshold < TOUCH_MAX_THRESHOLD) {
+					s_touchState.cur_threshold++;
+				}
+			}
+			break;
+		}
+
+		// Touch detected with valid data
+		case TscResult_Valid: {
+			s_touchState.num_noisy = 0;
+			if (max_diff >= s_touchState.cur_threshold/2) {
+				s_touchState.num_valid = 0;
+			} else {
+				s_touchState.num_valid++;
+				if (s_touchState.num_valid >= TOUCH_HYSTERESIS) {
+					s_touchState.num_valid = 0;
+					if (s_touchState.cur_threshold > TOUCH_MIN_THRESHOLD) {
+						s_touchState.cur_threshold--;
+						s_touchState.num_noisy = TOUCH_HYSTERESIS-1;
+					}
+				}
+			}
+			break;
+		}
+	}
+}
+
 bool touchRead(TouchData* out)
 {
-	bool ok;
+	TscResult res;
+	TscTouchData data;
+	u16 max_diff;
 
+	// Read touch data from TSC
 	spiLock();
 	if (cdcIsTwlMode()) {
-		CdcTscBuffer buf;
-		ok = cdcTscReadBuffer(&buf);
-
-		if (ok) {
-			out->rawx = buf.x;
-			out->rawy = buf.y;
-		}
+		res = cdcTscReadTouch(&data, s_touchState.cur_threshold, &max_diff);
 	} else {
 		// TODO: NDS mode TSC
-		ok = false;
+		res = TscResult_None;
 	}
 	spiUnlock();
 
-	if (ok) {
-		_touchCalcPos(out);
+	// Update touch stability filter
+	_touchUpdateFilter(res, max_diff);
+
+	// Return early if no touch is detected
+	if (res == TscResult_None) {
+		return false;
 	}
 
-	return ok;
+	// Fill out return data
+	out->rawx = data.x;
+	out->rawy = data.y;
+	_touchCalcPos(out);
+
+	return true;
 }

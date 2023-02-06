@@ -77,6 +77,7 @@
 #include "calico/nds/arm7/spi.h"
 #include "calico/nds/arm7/pmic.h"
 #include "calico/nds/arm7/nvram.h"
+#include "calico/nds/arm7/tsc.h"
 
 #include "calico/nds/arm7/i2c.h"
 #include "calico/nds/arm7/mcu.h"

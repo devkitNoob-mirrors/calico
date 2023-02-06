@@ -5,6 +5,7 @@
 
 #include "../../types.h"
 #include "spi.h"
+#include "tsc.h"
 
 typedef enum CdcPage {
 	CdcPage_Control    = 0x00,
@@ -31,10 +32,6 @@ typedef enum CdcTscCtrlReg {
 	CdcTscCtrlReg_DebounceTimer  = 0x12,
 } CdcTscCtrlReg;
 
-typedef struct CdcTscBuffer {
-	u16 x, y;
-} CdcTscBuffer;
-
 MEOW_INLINE bool cdcIsTwlMode(void)
 {
 	extern bool g_cdcIsTwlMode;
@@ -49,4 +46,4 @@ bool cdcReadRegArray(CdcPage page, unsigned reg, void* data, unsigned len);
 bool cdcWriteRegArray(CdcPage page, unsigned reg, const void* data, unsigned len);
 
 void cdcTscInit(void);
-bool cdcTscReadBuffer(CdcTscBuffer* out);
+TscResult cdcTscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_diff);

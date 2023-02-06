@@ -159,16 +159,16 @@ void cdcTscInit(void)
 	cdcWriteRegMask(CdcPage_TscControl, CdcTscCtrlReg_BufferMode,     0x80, 1U<<7);
 }
 
-bool cdcTscReadBuffer(CdcTscBuffer* out)
+TscResult cdcTscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_diff)
 {
 	// Fail early if pen touch is not detected
 	if ((cdcReadReg(CdcPage_TscControl, CdcTscCtrlReg_Status0) & 0xc0) == 0x40) {
-		return false;
+		return TscResult_None;
 	}
 
 	// Fail early if the buffer is empty (uh, datasheet says bit1 means full???)
 	if (cdcReadReg(CdcPage_TscControl, CdcTscCtrlReg_BufferMode) & 0x02) {
-		return false;
+		return TscResult_None;
 	}
 
 	// Read raw incoming data from TSC
@@ -182,20 +182,55 @@ bool cdcTscReadBuffer(CdcTscBuffer* out)
 		arrayY[i] = (raw[i*2+10]<<8) | raw[i*2+11];
 		if ((arrayX[i] & 0xF000) || (arrayY[i] & 0xF000)) {
 			// Pen-up was detected - return failure
-			return false;
+			return TscResult_None;
 		}
 	}
 
-	// TODO: For now we just average all values without removing inaccurate values
-	u32 sumX = 0, sumY = 0;
-	for (unsigned i = 0; i < 5; i ++) {
-		sumX += arrayX[i];
-		sumY += arrayY[i];
+	// Calc max difference if requested
+	if (out_max_diff) {
+		unsigned max_diff = 0;
+		for (unsigned i = 0; i < 5-1; i ++) {
+			for (unsigned j = 1; j < 5; j ++) {
+				unsigned diff_x = tscAbs(arrayX[i] - arrayX[j]);
+				unsigned diff_y = tscAbs(arrayY[i] - arrayY[j]);
+				unsigned diff = diff_x >= diff_y ? diff_x : diff_y;
+				if (diff > max_diff) {
+					max_diff = diff;
+				}
+			}
+		}
+
+		*out_max_diff = max_diff;
 	}
 
-	// Output final data
-	out->x = sumX / 5;
-	out->y = sumY / 5;
+	// Select one among the 5 touch points to use as reference point.
+	// At least two more points must be below a given coordinate threshold
+	// to be considered as a valid (non-noisy) result.
+	unsigned sumX, sumY;
+	unsigned num_valid;
+	TscResult res = TscResult_Noisy;
+	for (unsigned i = 0; res == TscResult_Noisy && i < 4; i ++) {
+		sumX = arrayX[i], sumY = arrayY[i];
+		num_valid = 1;
 
-	return true;
+		for (unsigned j = 0; j < 5; j ++) {
+			if (i == j) continue;
+
+			unsigned diff_x = tscAbs(arrayX[i] - arrayX[j]);
+			unsigned diff_y = tscAbs(arrayY[i] - arrayY[j]);
+			if (diff_x < diff_threshold && diff_y < diff_threshold) {
+				sumX += arrayX[j];
+				sumY += arrayY[j];
+				num_valid++;
+			}
+		}
+
+		res = num_valid >= (2+1) ? TscResult_Valid : TscResult_Noisy;
+	}
+
+	// The final result is the average of the selected points
+	out->x = sumX / num_valid;
+	out->y = sumY / num_valid;
+
+	return res;
 }
