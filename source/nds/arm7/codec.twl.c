@@ -190,7 +190,7 @@ TscResult cdcTscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_m
 	if (out_max_diff) {
 		unsigned max_diff = 0;
 		for (unsigned i = 0; i < 5-1; i ++) {
-			for (unsigned j = 1; j < 5; j ++) {
+			for (unsigned j = i+1; j < 5; j ++) {
 				unsigned diff_x = tscAbs(arrayX[i] - arrayX[j]);
 				unsigned diff_y = tscAbs(arrayY[i] - arrayY[j]);
 				unsigned diff = diff_x >= diff_y ? diff_x : diff_y;

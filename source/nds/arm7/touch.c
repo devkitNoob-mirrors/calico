@@ -88,7 +88,7 @@ void touchInit(void)
 	if (cdcIsTwlMode()) {
 		cdcTscInit();
 	} else {
-		// TODO: NDS mode TSC
+		tscInit();
 	}
 	spiUnlock();
 }
@@ -163,8 +163,7 @@ bool touchRead(TouchData* out)
 	if (cdcIsTwlMode()) {
 		res = cdcTscReadTouch(&data, s_touchState.cur_threshold, &max_diff);
 	} else {
-		// TODO: NDS mode TSC
-		res = TscResult_None;
+		res = tscReadTouch(&data, s_touchState.cur_threshold, &max_diff);
 	}
 	spiUnlock();
 

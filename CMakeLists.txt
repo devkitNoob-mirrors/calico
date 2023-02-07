@@ -124,6 +124,7 @@ if(NINTENDO_DS)
 			source/nds/arm7/spi.c
 			source/nds/arm7/pmic.c
 			source/nds/arm7/nvram.c
+			source/nds/arm7/tsc.c
 			source/nds/arm7/env.c
 			source/nds/arm7/pm_arm7.c
 			source/nds/arm7/touch.c

@@ -69,8 +69,13 @@ MEOW_INLINE void spiRawWriteByte(u8 data)
 	spiWaitBusy();
 }
 
+MEOW_INLINE u8 spiRawWriteReadByte(u8 data)
+{
+	spiRawWriteByte(data);
+	return REG_SPIDATA;
+}
+
 MEOW_INLINE u8 spiRawReadByte(void)
 {
-	spiRawWriteByte(0);
-	return REG_SPIDATA;
+	return spiRawWriteReadByte(0);
 }
