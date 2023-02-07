@@ -5,7 +5,7 @@
 
 #include "../types.h"
 
-typedef struct TouchData {
+typedef struct MEOW_STRUCT_ALIGN(4) TouchData {
 	u16 px, py;
 	u16 rawx, rawy;
 } TouchData;

@@ -12,7 +12,7 @@ typedef enum TscResult {
 	TscResult_Valid = 2,
 } TscResult;
 
-typedef struct TscTouchData {
+typedef struct MEOW_STRUCT_ALIGN(4) TscTouchData {
 	u16 x, y;
 } TscTouchData;
 

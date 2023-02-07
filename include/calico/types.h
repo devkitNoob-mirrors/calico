@@ -55,6 +55,12 @@ typedef volatile sptr vsptr; ///< Pointer-sized volatile signed integer.
 #define MEOW_CONSTEXPR  MEOW_INLINE
 #endif
 
+#if __cplusplus >= 201103L
+#define MEOW_STRUCT_ALIGN(_align) alignas(_align)
+#else
+#define MEOW_STRUCT_ALIGN(_align) __attribute__((aligned(_align)))
+#endif
+
 #define MEOW_REG(_type,_off) (*(_type volatile*)(MM_IO + (_off)))
 
 #define if_likely(_expr)   if(__builtin_expect(!!(_expr), 1))

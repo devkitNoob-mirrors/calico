@@ -5,6 +5,7 @@
 #include <calico/nds/env.h>
 #include <calico/nds/lcd.h>
 #include <calico/nds/touch.h>
+#include <calico/nds/arm7/tsc.h>
 #include <calico/nds/arm7/codec.h>
 #include "../transfer.h"
 
@@ -14,13 +15,18 @@
 #define TOUCH_HYSTERESIS 4
 
 typedef struct TouchState {
+	// Precalculated calibration data
 	s32 xscale, yscale;
 	s32 xoffset, yoffset;
 
+	// Latched touch position
+	TscTouchData latch_data;
+	bool has_latch;
+
 	// Touch stability filter
+	u8  cur_threshold;
 	u16 num_valid;
 	u16 num_noisy;
-	u8  cur_threshold;
 } TouchState;
 
 static TouchState s_touchState;
@@ -167,7 +173,23 @@ bool touchRead(TouchData* out)
 
 	// Return early if no touch is detected
 	if (res == TscResult_None) {
+		s_touchState.has_latch = false;
 		return false;
+	}
+
+	// Check if valid touch data has been successfully read
+	if_likely (res == TscResult_Valid) {
+		// Latch this data in case we subsequently read noisy data
+		s_touchState.has_latch = true;
+		s_touchState.latch_data = data;
+	} else /* if (res == TscResult_Noisy) */ {
+		// Return early if we have no latched data
+		if (!s_touchState.has_latch) {
+			return false;
+		}
+
+		// Replace the noisy data with the latched data
+		data = s_touchState.latch_data;
 	}
 
 	// Fill out return data
