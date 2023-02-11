@@ -20,5 +20,6 @@ MEOW_INLINE void mailboxPrepare(Mailbox* mb, u32* slots, unsigned num_slots)
 }
 
 bool mailboxTrySend(Mailbox* mb, u32 message);
+bool mailboxTryRecv(Mailbox* mb, u32* out);
 
 u32 mailboxRecv(Mailbox* mb);

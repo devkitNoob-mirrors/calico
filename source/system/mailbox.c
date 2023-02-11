@@ -29,6 +29,25 @@ bool mailboxTrySend(Mailbox* mb, u32 message)
 	return true;
 }
 
+bool mailboxTryRecv(Mailbox* mb, u32* out)
+{
+	ArmIrqState st = armIrqLockByPsr();
+
+	if_unlikely (!mb->pending_slots) {
+		armIrqUnlockByPsr(st);
+		return false;
+	}
+
+	*out = mb->slots[mb->cur_slot++];
+	mb->pending_slots --;
+	if (mb->cur_slot >= mb->num_slots) {
+		mb->cur_slot -= mb->num_slots;
+	}
+
+	armIrqUnlockByPsr(st);
+	return true;
+}
+
 u32 mailboxRecv(Mailbox* mb)
 {
 	ArmIrqState st = armIrqLockByPsr();
