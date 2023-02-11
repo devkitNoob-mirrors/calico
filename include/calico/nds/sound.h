@@ -8,6 +8,7 @@
 
 #define SOUND_CLOCK         (SYSTEM_CLOCK/2)
 #define SOUND_MIXER_FREQ_HZ (SYSTEM_CLOCK/1024)
+#define SOUND_UPDATE_HZ     192
 #define SOUND_NUM_CHANNELS  16
 
 typedef enum SoundOutSrc {

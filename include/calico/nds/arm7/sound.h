@@ -43,3 +43,5 @@
 #define SOUNDxCNT_MODE(_x)     (((_x)&3)<<27)
 #define SOUNDxCNT_FMT(_x)      (((_x)&3)<<29)
 #define SOUNDxCNT_ENABLE       (1U<<31)
+
+void soundStartServer(u8 thread_prio);

@@ -15,6 +15,7 @@ endif()
 
 if(NINTENDO_GBA)
 	set(PLATFORM_SUFFIX "_gba")
+	set(ARM7 TRUE)
 elseif(NINTENDO_DS)
 	if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv4t")
 		set(PLATFORM_SUFFIX "_ds7")
@@ -111,6 +112,7 @@ if(NINTENDO_DS)
 			source/nds/arm9/arm7_debug.c
 			source/nds/arm9/pm_arm9.c
 			source/nds/arm9/touch.c
+			source/nds/arm9/sound.c
 			source/nds/arm9/blk.c
 		)
 	endif()
@@ -137,6 +139,9 @@ if(NINTENDO_DS)
 			source/nds/arm7/sdmmc.twl.32.c
 			source/nds/arm7/sdio.twl.32.c
 			source/nds/arm7/ar6k.twl.32.c
+
+			source/nds/arm7/sound/sound.c
+			source/nds/arm7/sound/sound_pxi.c
 
 			source/nds/arm7/blk.c
 			source/nds/arm7/blk.twl.32.c

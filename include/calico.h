@@ -96,6 +96,7 @@
 
 #ifdef ARM9
 #include "calico/nds/arm9/arm7_debug.h"
+#include "calico/nds/arm9/sound.h"
 
 #include "calico/nds/arm9/vram.h"
 #endif
