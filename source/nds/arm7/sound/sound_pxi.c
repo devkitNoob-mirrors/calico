@@ -1,6 +1,6 @@
 #include "common.h"
 
-MEOW_NOINLINE static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsigned imm, const u32* body, unsigned num_words)
+MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsigned imm, const void* body, unsigned num_words)
 {
 	switch (cmd) {
 		default: {
@@ -10,6 +10,55 @@ MEOW_NOINLINE static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsigned imm, con
 
 		case PxiSoundCmd_Synchronize: {
 			pxiReply(PxiChannel_Sound, 0);
+			break;
+		}
+
+		case PxiSoundCmd_Start: {
+			for (unsigned i = 0; imm; i ++) {
+				unsigned bit = 1U<<i;
+				if (!(imm & bit)) {
+					continue;
+				}
+
+				imm &= ~bit;
+				soundChStart(i);
+			}
+			break;
+		}
+
+		case PxiSoundCmd_Stop: {
+			for (unsigned i = 0; imm; i ++) {
+				unsigned bit = 1U<<i;
+				if (!(imm & bit)) {
+					continue;
+				}
+
+				imm &= ~bit;
+				soundChStop(i);
+			}
+			break;
+		}
+
+		case PxiSoundCmd_PreparePcm: {
+			const PxiSoundArgPreparePcm* arg = (const PxiSoundArgPreparePcm*)body;
+			soundChPreparePcm(
+				arg->ch, arg->vol, (SoundVolDiv)arg->voldiv, imm, arg->timer,
+				(SoundMode)arg->mode, (SoundFmt)arg->fmt, (const void*)(MM_MAINRAM + arg->sad*4), arg->pnt, arg->len);
+
+			if (arg->start) {
+				soundChStart(arg->ch);
+			}
+			break;
+		}
+
+		case PxiSoundCmd_PreparePsg: {
+			const PxiSoundArgPreparePsg* arg = (const PxiSoundArgPreparePsg*)body;
+			unsigned ch = arg->ch + 8;
+			soundChPreparePsg(ch, arg->vol, (SoundVolDiv)arg->voldiv, imm, arg->timer, (SoundDuty)arg->duty);
+
+			if (arg->start) {
+				soundChStart(ch);
+			}
 			break;
 		}
 	}

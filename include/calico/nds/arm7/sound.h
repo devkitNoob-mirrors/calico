@@ -3,6 +3,7 @@
 #error "This header file is only for NDS ARM7"
 #endif
 
+#include "../io.h"
 #include "../sound.h"
 
 #define REG_SOUNDCNT       MEOW_REG(u16, IO_SOUNDCNT)
@@ -16,7 +17,7 @@
 #define REG_SOUNDxSAD(_x)  MEOW_REG(u32, IO_SOUNDxSAD(_x))
 #define REG_SOUNDxTMR(_x)  MEOW_REG(u16, IO_SOUNDxTMR(_x))
 #define REG_SOUNDxPNT(_x)  MEOW_REG(u16, IO_SOUNDxPNT(_x))
-#define REG_SOUNDxLEN(_x)  MEOW_REG(u16, IO_SOUNDxLEN(_x))
+#define REG_SOUNDxLEN(_x)  MEOW_REG(u32, IO_SOUNDxLEN(_x))
 
 #define REG_SNDCAPxCNT(_x) MEOW_REG(u8,  IO_SNDCAPxCNT(_x))
 #define REG_SNDCAPxDAD(_x) MEOW_REG(u32, IO_SNDCAPxDAD(_x))
@@ -43,5 +44,38 @@
 #define SOUNDxCNT_MODE(_x)     (((_x)&3)<<27)
 #define SOUNDxCNT_FMT(_x)      (((_x)&3)<<29)
 #define SOUNDxCNT_ENABLE       (1U<<31)
+
+MEOW_INLINE void soundChPreparePcm(
+	unsigned ch, unsigned vol, SoundVolDiv voldiv, unsigned pan, unsigned timer,
+	SoundMode mode, SoundFmt fmt, const void* sad, unsigned pnt, unsigned len)
+{
+	REG_SOUNDxCNT(ch) =
+		SOUNDxCNT_VOL(vol) | SOUNDxCNT_VOL_DIV(voldiv) | SOUNDxCNT_PAN(pan) |
+		SOUNDxCNT_MODE(mode) | SOUNDxCNT_FMT(fmt);
+	REG_SOUNDxSAD(ch) = (u32)sad;
+	REG_SOUNDxTMR(ch) = -timer;
+	REG_SOUNDxPNT(ch) = pnt;
+	REG_SOUNDxLEN(ch) = len;
+}
+
+MEOW_INLINE void soundChPreparePsg(
+	unsigned ch, unsigned vol, SoundVolDiv voldiv, unsigned pan, unsigned timer,
+	SoundDuty duty)
+{
+	REG_SOUNDxCNT(ch) =
+		SOUNDxCNT_VOL(vol) | SOUNDxCNT_VOL_DIV(voldiv) | SOUNDxCNT_PAN(pan) |
+		SOUNDxCNT_DUTY(duty) | SOUNDxCNT_FMT(SoundFmt_Psg);
+	REG_SOUNDxTMR(ch) = -timer;
+}
+
+MEOW_INLINE void soundChStart(unsigned ch)
+{
+	REG_SOUNDxCNT(ch) |= SOUNDxCNT_ENABLE;
+}
+
+MEOW_INLINE void soundChStop(unsigned ch)
+{
+	REG_SOUNDxCNT(ch) &= ~SOUNDxCNT_ENABLE;
+}
 
 void soundStartServer(u8 thread_prio);

@@ -38,6 +38,17 @@ typedef enum SoundFmt {
 	SoundFmt_Psg      = 3,
 } SoundFmt;
 
+typedef enum SoundDuty {
+	SoundDuty_12_5 = 0,
+	SoundDuty_25   = 1,
+	SoundDuty_37_5 = 2,
+	SoundDuty_50   = 3,
+	SoundDuty_62_5 = 4,
+	SoundDuty_75   = 5,
+	SoundDuty_87_5 = 6,
+	SoundDuty_0    = 7,
+} SoundDuty;
+
 MEOW_CONSTEXPR unsigned soundTimerFromHz(unsigned hz)
 {
 	return (SOUND_CLOCK + hz/2) / hz;

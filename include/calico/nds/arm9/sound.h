@@ -7,3 +7,10 @@
 
 void soundInit(void);
 void soundSynchronize(void);
+
+void soundPreparePcm(
+	unsigned ch, unsigned vol, unsigned pan, unsigned timer,
+	SoundMode mode, SoundFmt fmt, const void* sad, unsigned pnt, unsigned len);
+void soundPreparePsg(unsigned ch, unsigned vol, unsigned pan, unsigned timer, SoundDuty duty);
+void soundStart(u16 ch_mask);
+void soundStop(u16 ch_mask);
