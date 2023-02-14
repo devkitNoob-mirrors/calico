@@ -39,4 +39,7 @@ typedef struct TransferRegion {
 	u16 touch_data[2][4];
 
 	u32 blkdev_sector_count[3];
+
+	u16 sound_active_ch_mask;
+	u16 sound_reserved;
 } TransferRegion;

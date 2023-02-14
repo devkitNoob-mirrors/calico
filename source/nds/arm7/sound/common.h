@@ -4,6 +4,7 @@
 #include <calico/nds/bios.h>
 #include <calico/nds/sound.h>
 #include <calico/nds/arm7/sound.h>
+#include "../../transfer.h"
 #include "../../pxi/sound.h"
 
 #define SOUND_DEBUG
@@ -21,4 +22,5 @@ typedef struct SoundState {
 
 extern SoundState g_soundState;
 
+void _soundUpdateSharedState(void);
 void _soundPxiProcess(Mailbox* mb, bool do_credit_update);

@@ -73,7 +73,8 @@ static int _soundSrvThreadMain(void* arg)
 
 		// TODO: Process sequencer + sequencer voices
 
-		// TODO: Update shared state
+		// Update shared state
+		_soundUpdateSharedState();
 	}
 
 	return 0;
@@ -83,4 +84,16 @@ void soundStartServer(u8 thread_prio)
 {
 	threadPrepare(&s_soundSrvThread, _soundSrvThreadMain, NULL, &s_soundSrvThreadStack[sizeof(s_soundSrvThreadStack)], thread_prio);
 	threadStart(&s_soundSrvThread);
+}
+
+void _soundUpdateSharedState(void)
+{
+	unsigned ch_mask = 0;
+	for (unsigned i = 0; i < SOUND_NUM_CHANNELS; i ++) {
+		if (soundChIsActive(i)) {
+			ch_mask |= 1U<<i;
+		}
+	}
+
+	s_transferRegion->sound_active_ch_mask = ch_mask;
 }

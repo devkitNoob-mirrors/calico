@@ -8,6 +8,7 @@
 void soundInit(void);
 void soundSynchronize(void);
 
+unsigned soundGetActiveChannels(void);
 void soundPreparePcm(
 	unsigned ch, unsigned vol, unsigned pan, unsigned timer,
 	SoundMode mode, SoundFmt fmt, const void* sad, unsigned pnt, unsigned len);

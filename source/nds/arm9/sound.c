@@ -1,6 +1,7 @@
 #include <calico/types.h>
 #include <calico/system/thread.h>
 #include <calico/nds/arm9/sound.h>
+#include "../transfer.h"
 #include "../pxi/sound.h"
 
 static ThrListNode s_soundPxiCreditWaitList;
@@ -62,6 +63,11 @@ void soundSynchronize(void)
 {
 	bool update_credits = _soundPxiCheckCredits(1);
 	pxiSendAndReceive(PxiChannel_Sound, pxiSoundMakeCmdMsg(PxiSoundCmd_Synchronize, update_credits, 0));
+}
+
+unsigned soundGetActiveChannels(void)
+{
+	return s_transferRegion->sound_active_ch_mask;
 }
 
 MEOW_INLINE SoundVolDiv _soundCalcVolDiv(unsigned* vol)

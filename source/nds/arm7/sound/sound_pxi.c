@@ -1,5 +1,41 @@
 #include "common.h"
 
+MEOW_INLINE bool _soundBitmaskUnpack(unsigned* mask, unsigned* i)
+{
+	if (!*mask) {
+		return false;
+	}
+
+	while (!(*mask & (1U << *i))) {
+		++*i;
+	}
+
+	*mask &= ~(1U << *i);
+	return true;
+}
+
+MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStart(unsigned ch_mask)
+{
+	IrqState st = irqLock();
+
+	for (unsigned i = 0; _soundBitmaskUnpack(&ch_mask, &i);) {
+		soundChStart(i);
+	}
+
+	irqUnlock(st);
+}
+
+MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStop(unsigned ch_mask)
+{
+	IrqState st = irqLock();
+
+	for (unsigned i = 0; _soundBitmaskUnpack(&ch_mask, &i);) {
+		soundChStop(i);
+	}
+
+	irqUnlock(st);
+}
+
 MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsigned imm, const void* body, unsigned num_words)
 {
 	switch (cmd) {
@@ -14,28 +50,14 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 		}
 
 		case PxiSoundCmd_Start: {
-			for (unsigned i = 0; imm; i ++) {
-				unsigned bit = 1U<<i;
-				if (!(imm & bit)) {
-					continue;
-				}
-
-				imm &= ~bit;
-				soundChStart(i);
-			}
+			_soundPxiStart(imm & 0xffff);
+			_soundUpdateSharedState();
 			break;
 		}
 
 		case PxiSoundCmd_Stop: {
-			for (unsigned i = 0; imm; i ++) {
-				unsigned bit = 1U<<i;
-				if (!(imm & bit)) {
-					continue;
-				}
-
-				imm &= ~bit;
-				soundChStop(i);
-			}
+			_soundPxiStop(imm & 0xffff);
+			_soundUpdateSharedState();
 			break;
 		}
 

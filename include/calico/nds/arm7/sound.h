@@ -78,4 +78,9 @@ MEOW_INLINE void soundChStop(unsigned ch)
 	REG_SOUNDxCNT(ch) &= ~SOUNDxCNT_ENABLE;
 }
 
+MEOW_INLINE bool soundChIsActive(unsigned ch)
+{
+	return REG_SOUNDxCNT(ch) & SOUNDxCNT_ENABLE;
+}
+
 void soundStartServer(u8 thread_prio);
