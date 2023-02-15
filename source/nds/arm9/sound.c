@@ -57,12 +57,18 @@ void soundInit(void)
 	s_soundPxiCredits = PXI_SOUND_NUM_CREDITS;
 	pxiSetHandler(PxiChannel_Sound, _soundPxiHandler, NULL);
 	pxiWaitRemote(PxiChannel_Sound);
+	soundPowerOn();
 }
 
 void soundSynchronize(void)
 {
 	bool update_credits = _soundPxiCheckCredits(1);
 	pxiSendAndReceive(PxiChannel_Sound, pxiSoundMakeCmdMsg(PxiSoundCmd_Synchronize, update_credits, 0));
+}
+
+void soundSetPower(bool enable)
+{
+	_soundIssueCmdAsync(PxiSoundCmd_SetPower, enable ? 1 : 0, NULL, 0);
 }
 
 unsigned soundGetActiveChannels(void)

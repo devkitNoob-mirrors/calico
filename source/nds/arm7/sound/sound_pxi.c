@@ -38,6 +38,12 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStop(unsigned ch_mask)
 
 MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsigned imm, const void* body, unsigned num_words)
 {
+	// Ignore commands when sound hardware is not enabled
+	if (cmd > PxiSoundCmd_SetPower && !_soundIsEnabled()) {
+		dietPrint("[SND] off; ignoring cmd%u\n", cmd);
+		return;
+	}
+
 	switch (cmd) {
 		default: {
 			dietPrint("[SND] unkcmd%u 0x%X + %u\n", cmd, imm, num_words);
@@ -46,6 +52,15 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 
 		case PxiSoundCmd_Synchronize: {
 			pxiReply(PxiChannel_Sound, 0);
+			break;
+		}
+
+		case PxiSoundCmd_SetPower: {
+			if (imm & 1) {
+				_soundEnable();
+			} else {
+				_soundDisable();
+			}
 			break;
 		}
 

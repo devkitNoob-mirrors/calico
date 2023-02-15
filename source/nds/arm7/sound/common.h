@@ -16,11 +16,19 @@
 #endif
 
 typedef struct SoundState {
+	u16 soundcnt_cfg;
 	u16 channel_mask;
 	u16 pxi_credits;
 } SoundState;
 
 extern SoundState g_soundState;
 
+MEOW_INLINE bool _soundIsEnabled(void)
+{
+	return g_soundState.soundcnt_cfg & SOUNDCNT_ENABLE;
+}
+
+void _soundEnable(void);
+void _soundDisable(void);
 void _soundUpdateSharedState(void);
 void _soundPxiProcess(Mailbox* mb, bool do_credit_update);

@@ -8,6 +8,18 @@
 void soundInit(void);
 void soundSynchronize(void);
 
+void soundSetPower(bool enable);
+
+MEOW_INLINE void soundPowerOn(void)
+{
+	soundSetPower(true);
+}
+
+MEOW_INLINE void soundPowerOff(void)
+{
+	soundSetPower(false);
+}
+
 unsigned soundGetActiveChannels(void);
 void soundPreparePcm(
 	unsigned ch, unsigned vol, unsigned pan, unsigned timer,
