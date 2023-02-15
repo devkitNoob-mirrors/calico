@@ -1,6 +1,7 @@
 #include <calico/types.h>
 #include <calico/nds/system.h>
 #include <calico/nds/arm7/pmic.h>
+#include <calico/nds/arm7/codec.h>
 #include <calico/nds/arm7/i2c.h>
 #include <calico/nds/arm7/mcu.h>
 #include <calico/nds/pm.h>
@@ -26,4 +27,22 @@ unsigned pmGetBatteryState(void)
 	}
 
 	return ret;
+}
+
+void pmSoundSetAmpPower(bool enable)
+{
+	spiLock();
+	if (cdcIsTwlMode()) {
+		// TODO: implement this with CODEC
+	} else {
+		// Use PMIC
+		unsigned reg = pmicReadRegister(PmicReg_Control);
+		if (enable) {
+			reg = (reg &~ PMIC_CTRL_SOUND_MUTE) | PMIC_CTRL_SOUND_ENABLE;
+		} else {
+			reg = (reg &~ PMIC_CTRL_SOUND_ENABLE) | PMIC_CTRL_SOUND_MUTE;
+		}
+		pmicWriteRegister(PmicReg_Control, reg);
+	}
+	spiUnlock();
 }

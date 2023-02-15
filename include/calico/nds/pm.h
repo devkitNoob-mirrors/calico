@@ -84,6 +84,10 @@ MEOW_INLINE void pmGfxSetLcdLayout(PmLcdLayout layout)
 	REG_POWCNT = reg;
 }
 
+#elif defined(ARM7)
+
+void pmSoundSetAmpPower(bool enable);
+
 #endif
 
 void pmInit(void);
