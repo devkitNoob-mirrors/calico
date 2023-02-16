@@ -84,4 +84,24 @@ MEOW_INLINE bool soundChIsActive(unsigned ch)
 	return REG_SOUNDxCNT(ch) & SOUNDxCNT_ENABLE;
 }
 
+MEOW_INLINE void soundChSetVolume(unsigned ch, unsigned vol, SoundVolDiv voldiv)
+{
+	REG_SOUNDxVOL(ch) = SOUNDxCNT_VOL(vol) | SOUNDxCNT_VOL_DIV(voldiv);
+}
+
+MEOW_INLINE void soundChSetPan(unsigned ch, unsigned pan)
+{
+	REG_SOUNDxPAN(ch) = pan & 0x7f;
+}
+
+MEOW_INLINE void soundChSetTimer(unsigned ch, unsigned timer)
+{
+	REG_SOUNDxTMR(ch) = -timer;
+}
+
+MEOW_INLINE void soundChSetDuty(unsigned ch, SoundDuty duty)
+{
+	REG_SOUNDxCNT(ch) = (REG_SOUNDxCNT(ch) &~ SOUNDxCNT_DUTY(7)) | SOUNDxCNT_DUTY(duty);
+}
+
 void soundStartServer(u8 thread_prio);

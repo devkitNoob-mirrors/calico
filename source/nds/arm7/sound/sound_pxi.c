@@ -98,6 +98,30 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 			}
 			break;
 		}
+
+		case PxiSoundCmd_SetVolume: {
+			PxiSoundImmSetVolume u = { imm };
+			soundChSetVolume(u.ch, u.vol, (SoundVolDiv)u.voldiv);
+			break;
+		}
+
+		case PxiSoundCmd_SetPan: {
+			PxiSoundImmSetPan u = { imm };
+			soundChSetPan(u.ch, u.pan);
+			break;
+		}
+
+		case PxiSoundCmd_SetTimer: {
+			PxiSoundImmSetTimer u = { imm };
+			soundChSetTimer(u.ch, u.timer);
+			break;
+		}
+
+		case PxiSoundCmd_SetDuty: {
+			PxiSoundImmSetDuty u = { imm };
+			soundChSetDuty(u.ch+8, (SoundDuty)u.duty);
+			break;
+		}
 	}
 }
 

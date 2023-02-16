@@ -143,3 +143,45 @@ void soundStop(u16 ch_mask)
 {
 	_soundIssueCmdAsync(PxiSoundCmd_Stop, ch_mask, NULL, 0);
 }
+
+void soundChSetVolume(unsigned ch, unsigned vol)
+{
+	SoundVolDiv voldiv = _soundCalcVolDiv(&vol);
+	PxiSoundImmSetVolume u = {
+		.ch     = ch,
+		.vol    = vol,
+		.voldiv = voldiv,
+	};
+
+	_soundIssueCmdAsync(PxiSoundCmd_SetVolume, u.imm, NULL, 0);
+}
+
+void soundChSetPan(unsigned ch, unsigned pan)
+{
+	PxiSoundImmSetPan u = {
+		.ch  = ch,
+		.pan = pan,
+	};
+
+	_soundIssueCmdAsync(PxiSoundCmd_SetPan, u.imm, NULL, 0);
+}
+
+void soundChSetTimer(unsigned ch, unsigned timer)
+{
+	PxiSoundImmSetTimer u = {
+		.ch    = ch,
+		.timer = timer,
+	};
+
+	_soundIssueCmdAsync(PxiSoundCmd_SetTimer, u.imm, NULL, 0);
+}
+
+void soundChSetDuty(unsigned ch, SoundDuty duty)
+{
+	PxiSoundImmSetDuty u = {
+		.ch   = ch-8,
+		.duty = duty,
+	};
+
+	_soundIssueCmdAsync(PxiSoundCmd_SetDuty, u.imm, NULL, 0);
+}

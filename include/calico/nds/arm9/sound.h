@@ -27,3 +27,7 @@ void soundPreparePcm(
 void soundPreparePsg(unsigned ch, unsigned vol, unsigned pan, unsigned timer, SoundDuty duty);
 void soundStart(u16 ch_mask);
 void soundStop(u16 ch_mask);
+void soundChSetVolume(unsigned ch, unsigned vol);
+void soundChSetPan(unsigned ch, unsigned pan);
+void soundChSetTimer(unsigned ch, unsigned timer);
+void soundChSetDuty(unsigned ch, SoundDuty duty);

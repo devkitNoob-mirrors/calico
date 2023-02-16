@@ -48,6 +48,39 @@ typedef struct PxiSoundArgPreparePsg {
 	u32 start  : 1;
 } PxiSoundArgPreparePsg;
 
+typedef union PxiSoundImmSetVolume {
+	unsigned imm;
+	struct {
+		unsigned ch     : 4;
+		unsigned vol    : 7;
+		unsigned voldiv : 2; // SoundVolDiv
+	};
+} PxiSoundImmSetVolume;
+
+typedef union PxiSoundImmSetPan {
+	unsigned imm;
+	struct {
+		unsigned ch  : 4;
+		unsigned pan : 7;
+	};
+} PxiSoundImmSetPan;
+
+typedef union PxiSoundImmSetTimer {
+	unsigned imm;
+	struct {
+		unsigned ch    : 4;
+		unsigned timer : 16;
+	};
+} PxiSoundImmSetTimer;
+
+typedef union PxiSoundImmSetDuty {
+	unsigned imm;
+	struct {
+		unsigned ch   : 3;
+		unsigned duty : 3; // SoundDuty
+	};
+} PxiSoundImmSetDuty;
+
 MEOW_CONSTEXPR u32 pxiSoundMakeCmdMsg(PxiSoundCmd cmd, bool update_credits, unsigned imm)
 {
 	return (cmd & 0x7f) | (update_credits ? (1U<<7) : 0) | (imm << 8);
