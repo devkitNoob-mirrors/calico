@@ -64,19 +64,22 @@ FUNC_START32 __ds7_bootstub, bootstub
 	@ Calculate end of main RAM reserved for ARM9
 	cmp  r4, #0
 	ldr  r4, =__main_start
-	subeq r4, r4, #(MM_MAINRAM_SZ_TWL-MM_MAINRAM_SZ_NTR)
-
+	bne  1f
+	sub  r4, r4, #(MM_MAINRAM_SZ_TWL-MM_MAINRAM_SZ_NTR)
+	svc  0x0f0000 @ svcIsDebugger
+	cmp  r0, #0
+	addne r4, r4, #(MM_MAINRAM_SZ_DBG-MM_MAINRAM_SZ_NTR)
+1:
 	@ Set up trampoline for jumping to main
 	adr  r7, .LjumpToMain
 	ldm  r7, {r8-r9}
 	stmdb sp, {r8-r9}
 
 	@ Jump to main()
-	ldr  r1, =MM_ENV_ARGV_HEADER
-	ldr  r0, [r1, #0x0c] @ argc
-	ldr  r1, [r1, #0x10] @ argv
+	ldr  r2, =MM_ENV_ARGV_HEADER+0x0c
 	ldr  r5, =main
 	ldr  lr, =exit
+	ldm  r2, {r0, r1} @ argc, argv
 	sub  pc, sp, #8
 
 .LsyncWith9:

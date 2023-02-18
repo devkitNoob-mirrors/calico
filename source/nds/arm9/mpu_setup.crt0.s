@@ -10,8 +10,13 @@ FUNC_START32 crt0SetupMPU
 	cmp   r0, #0
 	ldm   r3, {r4-r11}
 
-	orreq r5, r5, #CP15_PU_4M  @ TODO: debug DS
 	orrne r5, r5, #CP15_PU_16M
+	bne   1f
+	svc   0x0f0000 @ svcIsDebugger
+	cmp   r0, #0
+	orreq r5, r5, #CP15_PU_4M
+	orrne r5, r5, #CP15_PU_8M
+1:
 
 	mcr   p15, 0, r4,  c6, c0, 0
 	mcr   p15, 0, r5,  c6, c1, 0
@@ -35,6 +40,7 @@ FUNC_START32 crt0SetupMPU
 	mrc   p15, 0, r3, c1, c0, 0
 	ldr   r2, =(CP15_CR_PU_ENABLE | CP15_CR_DCACHE_ENABLE | CP15_CR_ICACHE_ENABLE | CP15_CR_ROUND_ROBIN)
 	orr   r3, r3, r2
+	bic   r3, r3, #CP15_CR_ALT_VECTORS
 	mcr   p15, 0, r3, c1, c0, 0
 
 	pop   {r4-r11}

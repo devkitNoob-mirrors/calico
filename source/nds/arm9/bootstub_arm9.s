@@ -55,7 +55,7 @@ FUNC_START32 __ds9_bootstub, bootstub
 	msr  cpsr_c, #(ARM_PSR_I | ARM_PSR_F | ARM_PSR_MODE_SVC)
 
 	@ Disable everything in control register
-	mov  r12, #CP15_CR_SB1
+	ldr  r12, =CP15_CR_SB1 | CP15_CR_ALT_VECTORS
 	mcr  p15, 0, r12, c1, c0, 0
 
 	@ Invalidate instruction/data caches, and drain write buffer
@@ -220,11 +220,10 @@ FUNC_START32 __ds9_bootstub_trampoline, crt0, local
 #endif
 
 	@ Jump to main()
-	ldr  r1, =MM_ENV_ARGV_HEADER
-	ldr  r0, [r1, #0x0c] @ argc
-	ldr  r1, [r1, #0x10] @ argv
+	ldr  r2, =MM_ENV_ARGV_HEADER+0x0c
 	ldr  r4, =main
 	ldr  lr, =exit
+	ldm  r2, {r0, r1} @ argc, argv
 	bx   r4
 
 FUNC_END
