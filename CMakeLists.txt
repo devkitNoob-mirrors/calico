@@ -162,6 +162,14 @@ install(
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
+# Install linker scripts
+install(
+	DIRECTORY ${PROJECT_SOURCE_DIR}/share/
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	FILES_MATCHING
+		PATTERN "*.ld"
+)
+
 # Install headers
 install(
 	DIRECTORY ${PROJECT_SOURCE_DIR}/include/
@@ -177,7 +185,6 @@ install(
 	DIRECTORY ${PROJECT_SOURCE_DIR}/share/
 	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
 	FILES_MATCHING
-		PATTERN "*.ld"
 		PATTERN "*.specs"
 		PATTERN "*.bmp"
 )
