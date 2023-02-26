@@ -34,7 +34,7 @@ MEOW_INLINE u32 armGetCpsr(void)
 
 MEOW_INLINE void armSetCpsrC(u32 value)
 {
-	__asm__ __volatile__ ("msr cpsr_c, %0" :: "r" (value));
+	__asm__ __volatile__ ("msr cpsr_c, %0" :: "r" (value) : "memory");
 }
 
 MEOW_INLINE u32 armGetSpsr(void)

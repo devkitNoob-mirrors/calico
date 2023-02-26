@@ -4,6 +4,7 @@
 #endif
 
 #include "../types.h"
+#include "../arm/common.h"
 #include "io.h"
 
 #define REG_IME MEOW_REG(u32, IO_IME)
@@ -74,12 +75,16 @@ typedef u32 IrqMask;
 
 MEOW_INLINE IrqState irqLock(void)
 {
+	armCompilerBarrier();
 	IrqState saved = REG_IME;
 	REG_IME = 0;
+	armCompilerBarrier();
 	return saved;
 }
 
 MEOW_INLINE void irqUnlock(IrqState state)
 {
+	armCompilerBarrier();
 	REG_IME = state;
+	armCompilerBarrier();
 }
