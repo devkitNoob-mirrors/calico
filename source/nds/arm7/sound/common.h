@@ -30,5 +30,6 @@ MEOW_INLINE bool _soundIsEnabled(void)
 
 void _soundEnable(void);
 void _soundDisable(void);
+void _soundSetAutoUpdate(bool enable);
 void _soundUpdateSharedState(void);
 void _soundPxiProcess(Mailbox* mb, bool do_credit_update);

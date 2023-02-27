@@ -64,6 +64,11 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 			break;
 		}
 
+		case PxiSoundCmd_SetAutoUpdate: {
+			_soundSetAutoUpdate(imm & 1);
+			break;
+		}
+
 		case PxiSoundCmd_Start: {
 			_soundPxiStart(imm & 0xffff);
 			_soundUpdateSharedState();

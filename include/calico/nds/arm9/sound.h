@@ -9,6 +9,7 @@ void soundInit(void);
 void soundSynchronize(void);
 
 void soundSetPower(bool enable);
+void soundSetAutoUpdate(bool enable);
 
 MEOW_INLINE void soundPowerOn(void)
 {

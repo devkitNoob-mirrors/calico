@@ -7,8 +7,8 @@
 typedef enum PxiSoundCmd {
 	PxiSoundCmd_Synchronize    = 0,
 	PxiSoundCmd_SetPower       = 1,
-	PxiSoundCmd_LockChannels   = 2,
-	PxiSoundCmd_UnlockChannels = 3,
+	PxiSoundCmd_SetAutoUpdate  = 2,
+	PxiSoundCmd_SetChannelMask = 3,
 	PxiSoundCmd_Start          = 4,
 	PxiSoundCmd_Stop           = 5,
 	PxiSoundCmd_PreparePcm     = 6,

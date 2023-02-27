@@ -47,8 +47,11 @@ static int _soundSrvThreadMain(void* arg)
 	mailboxPrepare(&s_soundPxiMailbox, s_soundPxiMailboxSlots, PXI_SOUND_NUM_CREDITS);
 	pxiSetHandler(PxiChannel_Sound, _soundPxiHandler, &s_soundPxiMailbox);
 
-	// Clear sound registers
+	// Enable sound hardware
 	g_soundState.soundcnt_cfg = SOUNDCNT_VOL(0x7f);
+	_soundEnable();
+
+	// Clear sound registers
 	REG_SNDCAPCNT = 0;
 	for (unsigned i = 0; i < SOUND_NUM_CHANNELS; i ++) {
 		REG_SOUNDxCNT(i) = 0;
@@ -100,9 +103,6 @@ void _soundEnable(void)
 
 	// Configure sound mixer
 	REG_SOUNDCNT = (g_soundState.soundcnt_cfg |= SOUNDCNT_ENABLE);
-
-	// Start tick task for periodic sound updates
-	tickTaskStart(&s_soundTimer, _soundTimerTick, 0, SOUND_TIMER_PERIOD);
 }
 
 void _soundDisable(void)
@@ -111,9 +111,6 @@ void _soundDisable(void)
 	if (!_soundIsEnabled()) {
 		return;
 	}
-
-	// Stop periodic sound updates
-	tickTaskStop(&s_soundTimer);
 
 	// Disable sound mixer, backing up configuration
 	g_soundState.soundcnt_cfg = (REG_SOUNDCNT &~ SOUNDCNT_ENABLE);
@@ -127,6 +124,22 @@ void _soundDisable(void)
 
 	// Disable sound mixer circuit
 	pmPowerOff(POWCNT_SOUND);
+}
+
+void _soundSetAutoUpdate(bool enable)
+{
+	// Do nothing if tick task is already started/stopped
+	bool is_enabled = s_soundTimer.fn != NULL;
+	if (enable == is_enabled) {
+		return;
+	}
+
+	// Start or stop tick task for periodic sound updates
+	if (enable) {
+		tickTaskStart(&s_soundTimer, _soundTimerTick, 0, SOUND_TIMER_PERIOD);
+	} else {
+		tickTaskStop(&s_soundTimer);
+	}
 }
 
 void _soundUpdateSharedState(void)

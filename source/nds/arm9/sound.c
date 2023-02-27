@@ -71,6 +71,11 @@ void soundSetPower(bool enable)
 	_soundIssueCmdAsync(PxiSoundCmd_SetPower, enable ? 1 : 0, NULL, 0);
 }
 
+void soundSetAutoUpdate(bool enable)
+{
+	_soundIssueCmdAsync(PxiSoundCmd_SetAutoUpdate, enable ? 1 : 0, NULL, 0);
+}
+
 unsigned soundGetActiveChannels(void)
 {
 	return s_transferRegion->sound_active_ch_mask;
