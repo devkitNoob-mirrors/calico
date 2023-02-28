@@ -98,6 +98,7 @@ bool pmShouldReset(void);
 void pmPrepareToReset(void);
 bool pmIsSleepAllowed(void);
 void pmSetSleepAllowed(bool allowed);
+void pmEnterSleep(void);
 bool pmHasResetJumpTarget(void);
 void pmClearResetJumpTarget(void);
 bool pmMainLoop(void);

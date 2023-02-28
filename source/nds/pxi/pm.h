@@ -5,6 +5,8 @@
 typedef enum PxiPmMsgType {
 
 	PxiPmMsg_GetBatteryState = 0,
+	PxiPmMsg_Sleep           = 1,
+	PxiPmMsg_Wakeup          = 2,
 
 } PxiPmMsgType;
 

@@ -4,6 +4,7 @@
 #include <calico/system/thread.h>
 #include <calico/system/mailbox.h>
 #include <calico/nds/env.h>
+#include <calico/nds/bios.h>
 #include <calico/nds/system.h>
 #include <calico/nds/pxi.h>
 #include <calico/nds/keypad.h>
@@ -15,6 +16,7 @@
 #include <calico/arm/cp15.h>
 #include <calico/arm/cache.h>
 #elif defined(ARM7)
+#include <calico/nds/arm7/gpio.h>
 #include <calico/nds/arm7/pmic.h>
 #include <calico/nds/arm7/i2c.h>
 #include <calico/nds/arm7/mcu.h>
@@ -22,13 +24,24 @@
 
 #include <sys/iosupport.h>
 
+#define PM_HINGE_SLEEP_THRESHOLD 20
+
 #define PM_FLAG_RESET_ASSERTED (1U << 0)
 #define PM_FLAG_RESET_PREPARED (1U << 1)
 #define PM_FLAG_SLEEP_ALLOWED  (1U << 2)
+#define PM_FLAG_SLEEP_ORDERED  (1U << 3)
+#define PM_FLAG_WAKEUP         (1U << 4)
 
 typedef struct PmState {
 	PmEventCookie* cookie_list;
 	u32 flags;
+
+#if defined(ARM7)
+	u8 hinge_counter;
+#elif defined(ARM9)
+	// future use
+#endif
+
 } PmState;
 
 static PmState s_pmState;
@@ -75,9 +88,21 @@ static int _pmPxiThreadMain(void* arg)
 		switch (type) {
 			default: break;
 
+			case PxiPmMsg_Sleep: {
+				IrqState st = irqLock();
+				s_pmState.flags |= PM_FLAG_SLEEP_ORDERED;
+				irqUnlock(st);
+				break;
+			}
+
 #if defined(ARM9)
 
-			//...
+			case PxiPmMsg_Wakeup: {
+				IrqState st = irqLock();
+				s_pmState.flags |= PM_FLAG_WAKEUP;
+				irqUnlock(st);
+				break;
+			}
 
 #elif defined(ARM7)
 
@@ -205,6 +230,12 @@ void pmInit(void)
 	irqSet(IRQ_KEYPAD, pmPrepareToReset);
 	irqEnable(IRQ_KEYPAD);
 
+	// Power off Mitsumi wireless hardware in case it was previously left enabled
+	u16 powcnt = REG_POWCNT;
+	if (powcnt & POWCNT_WL_MITSUMI) {
+		REG_POWCNT = powcnt &~ POWCNT_WL_MITSUMI;
+	}
+
 	if (systemIsTwlMode()) {
 		// Initialize DSi MCU, and register interrupt handlers for it.
 		// Power button:
@@ -222,6 +253,16 @@ void pmInit(void)
 		mcuInit();
 		mcuIrqSet(MCU_IRQ_PWRBTN_SHUTDOWN|MCU_IRQ_BATTERY_EMPTY, (McuIrqHandler)mcuIssueShutdown);
 		mcuIrqSet(MCU_IRQ_PWRBTN_BEGIN, (McuIrqHandler)pmPrepareToReset);
+
+		// Check which wireless hardware is enabled, and switch to Mitsumi if
+		// Atheros is active. This is necessary in order to prevent sleep mode
+		// from causing a hardware fault/shutdown when the Atheros hardware is
+		// left in a dirty/undefined state (such as when using certain software).
+		u16 wl = REG_GPIO_WL;
+		if (!(wl & GPIO_WL_MITSUMI)) {
+			REG_GPIO_WL = wl | GPIO_WL_MITSUMI;
+			threadSleep(5000);
+		}
 	}
 #endif
 
@@ -272,12 +313,35 @@ bool pmIsSleepAllowed(void)
 void pmSetSleepAllowed(bool allowed)
 {
 	IrqState st = irqLock();
+
+	u32 flags = s_pmState.flags;
 	if (allowed) {
-		s_pmState.flags |= PM_FLAG_SLEEP_ALLOWED;
+		flags |= PM_FLAG_SLEEP_ALLOWED;
 	} else {
-		s_pmState.flags &= ~PM_FLAG_SLEEP_ALLOWED;
+		flags &= ~PM_FLAG_SLEEP_ALLOWED;
+	}
+
+	if (flags != s_pmState.flags) {
+		s_pmState.flags = flags;
+#ifdef ARM7
+		s_pmState.hinge_counter = PM_HINGE_SLEEP_THRESHOLD-1;
+#endif
+	}
+
+	irqUnlock(st);
+}
+
+static bool _pmWasOrderedToSleep(void)
+{
+	bool order = false;
+	IrqState st = irqLock();
+	u32 flags = s_pmState.flags;
+	if (flags & PM_FLAG_SLEEP_ORDERED) {
+		order = true;
+		s_pmState.flags = flags &~ PM_FLAG_SLEEP_ORDERED;
 	}
 	irqUnlock(st);
+	return order;
 }
 
 bool pmHasResetJumpTarget(void)
@@ -292,6 +356,112 @@ void pmClearResetJumpTarget(void)
 
 bool pmMainLoop(void)
 {
-	// TODO: Sleep mode handling
+	bool sleep_allowed = pmIsSleepAllowed();
+
+#ifdef ARM7
+	if (sleep_allowed) {
+		// Handle hinge-driven auto-sleep
+		bool hinge_state = (keypadGetExtState() & KEY_HINGE) != 0;
+		if (!hinge_state) {
+			s_pmState.hinge_counter = 0;
+		} else {
+			if (s_pmState.hinge_counter < PM_HINGE_SLEEP_THRESHOLD) {
+				s_pmState.hinge_counter ++;
+			}
+
+			if (s_pmState.hinge_counter == PM_HINGE_SLEEP_THRESHOLD) {
+				// Hinge has been down for a certain number of frames. We should sleep
+				s_pmState.hinge_counter = UINT8_MAX;
+				pxiSend(PxiChannel_Power, pxiPmMakeMsg(PxiPmMsg_Sleep, 0));
+			}
+		}
+	}
+#endif
+
+	if (_pmWasOrderedToSleep()) {
+		if (sleep_allowed) {
+			pmEnterSleep();
+		}
+#ifdef ARM7
+		else {
+			// Sleep is disallowed, so wake up the other CPU right away
+			pxiSend(PxiChannel_Power, pxiPmMakeMsg(PxiPmMsg_Wakeup, 0));
+		}
+#endif
+	}
+
 	return !pmShouldReset();
+}
+
+void pmEnterSleep(void)
+{
+	_pmCallEventHandlers(PmEvent_OnSleep);
+
+#ifdef ARM7
+	if (systemIsTwlMode()) {
+		i2cLock();
+	}
+
+	spiLock();
+#endif
+
+	ArmIrqState cpsr_if = armIrqLockByPsr();
+	IrqState ime = irqLock();
+
+#if defined(ARM9)
+	u32 ie = REG_IE;
+	REG_IE = IRQ_PXI_RECV;
+
+	u32 powcnt = REG_POWCNT;
+	if (powcnt & POWCNT_LCD) {
+		REG_POWCNT = powcnt &~ POWCNT_LCD;
+	}
+
+	s_pmState.flags &= ~PM_FLAG_WAKEUP;
+#elif defined(ARM7)
+	u32 ie = REG_IE;
+	u32 ie2 = REG_IE2;
+	REG_IE = IRQ_HINGE;
+	REG_IE2 = 0;
+
+	unsigned pmic_ctl = pmicReadRegister(PmicReg_Control);
+	pmicWriteRegister(PmicReg_Control, PMIC_CTRL_LED_BLINK_SLOW);
+#endif
+
+	irqUnlock(1);
+	armIrqUnlockByPsr(0);
+
+#if defined(ARM9)
+	pxiSend(PxiChannel_Power, pxiPmMakeMsg(PxiPmMsg_Sleep, 0));
+	do {
+		armWaitForIrq();
+	} while (!(s_pmState.flags & PM_FLAG_WAKEUP));
+
+	REG_POWCNT = powcnt;
+#elif defined(ARM7)
+	svcSleep();
+#endif
+
+	armIrqLockByPsr();
+	REG_IE = ie;
+#ifdef ARM7
+	REG_IE2 = ie2;
+#endif
+	irqUnlock(ime);
+	armIrqUnlockByPsr(cpsr_if);
+
+#ifdef ARM7
+	pmicWriteRegister(PmicReg_Control, pmic_ctl);
+
+	spiUnlock();
+	if (systemIsTwlMode()) {
+		i2cUnlock();
+	}
+#endif
+
+	_pmCallEventHandlers(PmEvent_OnWakeup);
+
+#ifdef ARM7
+	pxiSend(PxiChannel_Power, pxiPmMakeMsg(PxiPmMsg_Wakeup, 0));
+#endif
 }

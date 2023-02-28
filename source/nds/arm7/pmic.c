@@ -17,7 +17,7 @@ bool pmicWriteRegister(PmicRegister reg, u8 data)
 	}
 
 	_pmicSpiBegin(reg);
-	spiRawWriteByteAsync(data);
+	spiRawWriteByte(data);
 	return true;
 }
 
