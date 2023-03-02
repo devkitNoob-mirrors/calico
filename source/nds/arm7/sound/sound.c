@@ -16,6 +16,7 @@ SoundState g_soundState;
 static Thread s_soundSrvThread;
 alignas(8) static u8 s_soundSrvThreadStack[1024];
 static TickTask s_soundTimer;
+static PmEventCookie s_soundPmCookie;
 
 static Mailbox s_soundSrvMailbox, s_soundPxiMailbox;
 static u32 s_soundPxiMailboxSlots[PXI_SOUND_NUM_CREDITS];
@@ -34,6 +35,23 @@ static void _soundPxiHandler(void* user, u32 data)
 	// Wake up sound server thread if needed
 	if (s_soundSrvMailbox.pending_slots == 0) {
 		mailboxTrySend(&s_soundSrvMailbox, SOUND_MAIL_WAKEUP);
+	}
+}
+
+static void _soundPmEventHandler(void* user, PmEvent event)
+{
+	switch (event) {
+		default: break;
+
+		case PmEvent_OnSleep: {
+			_soundDisable();
+			break;
+		}
+
+		case PmEvent_OnWakeup: {
+			_soundEnable();
+			break;
+		}
 	}
 }
 
@@ -56,6 +74,9 @@ static int _soundSrvThreadMain(void* arg)
 	for (unsigned i = 0; i < SOUND_NUM_CHANNELS; i ++) {
 		REG_SOUNDxCNT(i) = 0;
 	}
+
+	// Register PM event handler
+	pmAddEventHandler(&s_soundPmCookie, _soundPmEventHandler, NULL);
 
 	for (;;) {
 		// Get message
