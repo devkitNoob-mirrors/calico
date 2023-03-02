@@ -92,3 +92,10 @@
 #define GPIO_WL_ATHEROS  (0U<<8) // Equivalent to 3DS 0x10147014
 #define GPIO_WL_MITSUMI  (1U<<8)
 #define GPIO_WL_MASK     (1U<<8)
+
+typedef enum GpioWlModule {
+	GpioWlModule_Atheros = 0,
+	GpioWlModule_Mitsumi = 1,
+} GpioWlModule;
+
+void gpioSetWlModule(GpioWlModule module);

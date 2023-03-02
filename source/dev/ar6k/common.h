@@ -3,7 +3,7 @@
 #include <calico/dev/sdio.h>
 #include <calico/dev/ar6k.h>
 
-#define AR6K_DEBUG
+//#define AR6K_DEBUG
 
 #ifdef AR6K_DEBUG
 #include <calico/system/dietprint.h>

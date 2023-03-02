@@ -258,11 +258,7 @@ void pmInit(void)
 		// Atheros is active. This is necessary in order to prevent sleep mode
 		// from causing a hardware fault/shutdown when the Atheros hardware is
 		// left in a dirty/undefined state (such as when using certain software).
-		u16 wl = REG_GPIO_WL;
-		if (!(wl & GPIO_WL_MITSUMI)) {
-			REG_GPIO_WL = wl | GPIO_WL_MITSUMI;
-			threadSleep(5000);
-		}
+		gpioSetWlModule(GpioWlModule_Mitsumi);
 	}
 #endif
 

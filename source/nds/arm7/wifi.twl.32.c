@@ -76,18 +76,6 @@ static bool _twlwifiGetWifiReset(void)
 	return (reg & (1U<<4)) != 0;
 }
 
-static void _twlwifiSetWifiCompatMode(bool compat)
-{
-	u16 reg = REG_GPIO_WL;
-	u16 oldreg = reg;
-	reg &= GPIO_WL_ACTIVE;
-	if (compat) {
-		reg |= GPIO_WL_MITSUMI;
-	}
-	REG_GPIO_WL = reg;
-	dietPrint("GPIO_WL: %.4X -> %.4X\n", oldreg, reg);
-}
-
 MEOW_INLINE void _twlwifiSetupDma(unsigned ch,
 	uptr src, NdmaMode srcmode, uptr dst, NdmaMode dstmode,
 	u32 unit_words, u32 total_words, u32 cnt)
@@ -197,6 +185,7 @@ static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
 		// EAPOL -> forward package to WPA supplicant
 		if (!wpaEapolRx(&s_wpaState, pPacket)) {
 			dietPrint("[RX] WPA busy, dropping packet\n");
+			netbufFree(pPacket);
 		}
 	} else {
 		// Regular packet -> TODO: callback
@@ -262,7 +251,7 @@ bool twlwifiInit(void)
 	//threadSleep(1000);
 
 	// Ensure Atheros is selected and powered on
-	_twlwifiSetWifiCompatMode(false);
+	gpioSetWlModule(GpioWlModule_Atheros);
 	if (!_twlwifiGetWifiReset()) {
 		_twlwifiSetWifiReset(true);
 		threadSleep(1000);
