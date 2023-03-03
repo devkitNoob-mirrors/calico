@@ -133,6 +133,11 @@ MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToBoots
 	for (;;); // just in case
 }
 
+MEOW_WEAK void rtcSyncTime(void)
+{
+	// Dummy function used in case the RTC code isn't linked in
+}
+
 #endif
 
 void __SYSCALL(exit)(int rc)
@@ -453,6 +458,8 @@ void pmEnterSleep(void)
 	if (systemIsTwlMode()) {
 		i2cUnlock();
 	}
+
+	rtcSyncTime();
 #endif
 
 	_pmCallEventHandlers(PmEvent_OnWakeup);
