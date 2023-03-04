@@ -68,6 +68,7 @@
 
 #include "calico/dev/blk.h"
 #include "calico/dev/wlan.h"
+#include "calico/nds/wlmgr.h"
 
 #ifdef ARM7
 #include "calico/nds/arm7/debug.h"

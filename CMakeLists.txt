@@ -114,6 +114,7 @@ if(NINTENDO_DS)
 			source/nds/arm9/touch.c
 			source/nds/arm9/sound.c
 			source/nds/arm9/blk.c
+			source/nds/arm9/wlmgr.c
 		)
 	endif()
 
@@ -147,6 +148,7 @@ if(NINTENDO_DS)
 			source/nds/arm7/blk.c
 			source/nds/arm7/blk.twl.32.c
 
+			source/nds/arm7/wlmgr.c
 			source/nds/arm7/wifi.twl.32.c
 			source/nds/arm7/wpa.twl.32.c
 			source/nds/arm7/wpa_hmac_sha1.twl.32.c
