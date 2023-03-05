@@ -583,6 +583,36 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiA
 	return true;
 }
 
+bool twlwifiDeassociate(void)
+{
+	static const Ar6kWmiScanParams dummy_scan_params = {
+		.fg_start_period_secs = UINT16_MAX,
+		.fg_end_period_secs = UINT16_MAX,
+		.bg_period_secs = UINT16_MAX,
+		.maxact_chdwell_time_ms = 200,
+		.pas_chdwell_time_ms = 200,
+		.short_scan_ratio = 0,
+		.scan_ctrl_flags = AR6K_WMI_SCAN_CONNECT,
+		.minact_chdwell_time_ms = 200,
+		._pad = 0,
+		.max_dfsch_act_time_ms = 0,
+	};
+
+	if (!ar6kWmiSetScanParams(&s_ar6kDev, &dummy_scan_params)) {
+		return false;
+	}
+
+	if (!ar6kWmiSetPowerMode(&s_ar6kDev, Ar6kWmiPowerMode_Recommended)) {
+		return false;
+	}
+
+	if (!ar6kWmiDisconnect(&s_ar6kDev)) {
+		return false;
+	}
+
+	return true;
+}
+
 bool twlwifiTx(NetBuf* pPacket)
 {
 	return ar6kWmiTx(&s_ar6kDev, pPacket);

@@ -13,5 +13,6 @@ bool twlwifiInit(void);
 bool twlwifiStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter, TwlWifiScanCompleteFn cb, void* user);
 bool twlwifiIsScanning(void);
 bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiAssocFn cb, void* user);
+bool twlwifiDeassociate(void);
 
 bool twlwifiTx(NetBuf* pPacket);

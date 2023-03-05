@@ -250,6 +250,20 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 			}
 			break;
 		}
+
+		case PxiWlMgrCmd_Deassociate: {
+			if (s_wlmgrState.state == WlMgrState_Associating || s_wlmgrState.state == WlMgrState_Associated) {
+				if (s_wlmgrState.using_twlwifi) {
+					rc = twlwifiDeassociate();
+				} else {
+					// XX: Mitsumi
+				}
+				if (rc) {
+					_wlmgrSetState(WlMgrState_Deassociating);
+				}
+			}
+			break;
+		}
 	}
 
 	if (!rc) {

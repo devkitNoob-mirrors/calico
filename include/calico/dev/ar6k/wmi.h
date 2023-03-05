@@ -6,6 +6,8 @@
 
 typedef enum Ar6kWmiCmdId {
 	Ar6kWmiCmdId_Connect                  = 0x0001,
+	Ar6kWmiCmdId_Disconnect               = 0x0003,
+	Ar6kWmiCmdId_Synchronize              = 0x0004,
 	Ar6kWmiCmdId_CreatePstream            = 0x0005,
 	Ar6kWmiCmdId_StartScan                = 0x0007,
 	Ar6kWmiCmdId_SetScanParams            = 0x0008,
@@ -383,6 +385,11 @@ bool ar6kWmiSetFrameRate(Ar6kDev* dev, unsigned ieee_frame_type, unsigned ieee_f
 bool ar6kWmiSetBitRate(Ar6kDev* dev, Ar6kWmiBitRate data_rate, Ar6kWmiBitRate mgmt_rate, Ar6kWmiBitRate ctrl_rate);
 
 bool ar6kWmixConfigDebugModuleCmd(Ar6kDev* dev, u32 cfgmask, u32 config);
+
+MEOW_INLINE bool ar6kWmiDisconnect(Ar6kDev* dev)
+{
+	return ar6kWmiSimpleCmd(dev, Ar6kWmiCmdId_Disconnect);
+}
 
 MEOW_INLINE bool ar6kWmiSetDiscTimeout(Ar6kDev* dev, u8 timeout)
 {
