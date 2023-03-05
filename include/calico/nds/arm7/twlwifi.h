@@ -7,10 +7,11 @@
 #include "../../dev/wlan.h"
 
 typedef void (*TwlWifiScanCompleteFn)(void* user, WlanBssDesc* bss_list, unsigned bss_count);
+typedef void (*TwlWifiAssocFn)(void* user, bool success, unsigned reason);
 
 bool twlwifiInit(void);
 bool twlwifiStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter, TwlWifiScanCompleteFn cb, void* user);
 bool twlwifiIsScanning(void);
-bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth);
+bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiAssocFn cb, void* user);
 
 bool twlwifiTx(NetBuf* pPacket);

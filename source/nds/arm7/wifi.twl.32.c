@@ -13,7 +13,7 @@
 #include <calico/nds/arm7/twlwifi.h>
 #include <string.h>
 
-#define TWLWIFI_DEBUG
+//#define TWLWIFI_DEBUG
 
 #ifdef TWLWIFI_DEBUG
 #include <calico/system/dietprint.h>
@@ -49,6 +49,12 @@ static struct {
 	void* user;
 } s_scanVars;
 
+static struct {
+	bool wpa_wait;
+	TwlWifiAssocFn cb;
+	void* user;
+} s_assocVars;
+
 static void _sdioIrqHandler(void)
 {
 	tmioIrqHandler(&s_sdioCtl);
@@ -58,14 +64,12 @@ static void _twlwifiSetWifiReset(bool reset)
 {
 	i2cLock();
 	unsigned reg = i2cReadRegister8(I2cDev_MCU, McuReg_WifiLed);
-	unsigned oldreg = reg;
 	reg &= ~(1U<<4);
 	if (reset) {
 		reg |= 1U<<4;
 	}
 	i2cWriteRegister8(I2cDev_MCU, McuReg_WifiLed, reg);
 	i2cUnlock();
-	dietPrint("MCU[0x30]: %.2X -> %.2X\n", oldreg, reg);
 }
 
 static bool _twlwifiGetWifiReset(void)
@@ -167,6 +171,10 @@ static void _twlwifiOnAssoc(Ar6kDev* dev, Ar6kWmiEvtConnected* info)
 	} else {
 		s_wpaState.ie_len = 0;
 	}
+
+	if (s_assocVars.cb && !s_assocVars.wpa_wait) {
+		s_assocVars.cb(s_assocVars.user, true, 0);
+	}
 }
 
 static void _twlwifiOnDeassoc(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info)
@@ -174,6 +182,16 @@ static void _twlwifiOnDeassoc(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info)
 	dietPrint("[TWLWIFI] Deassociated\n");
 	dietPrint("  IEEE reason = %u\n", info->reason_ieee);
 	dietPrint("  Reason = %u\n", info->reason);
+
+	if (s_assocVars.cb) {
+		s_assocVars.cb(s_assocVars.user, false, info->reason_ieee);
+		s_assocVars.cb = NULL;
+	}
+}
+
+MEOW_WEAK void _netbufRx(NetBuf* pPacket, int rssi)
+{
+	netbufFree(pPacket);
 }
 
 static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
@@ -188,9 +206,9 @@ static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
 			netbufFree(pPacket);
 		}
 	} else {
-		// Regular packet -> TODO: callback
+		// Regular packet
 		dietPrint("[RX:%2d] eth=%.4X len=%u\n", rssi, ethertype, pPacket->len);
-		netbufFree(pPacket);
+		_netbufRx(pPacket, rssi);
 	}
 }
 
@@ -240,6 +258,10 @@ static void _twlwifiWpaInstallKey(WpaState* st, bool is_group, unsigned slot, un
 
 	if (is_group) {
 		dietPrint("[TWLWIFI] WPA negotiated!\n");
+		if (s_assocVars.cb && s_assocVars.wpa_wait) {
+			s_assocVars.cb(s_assocVars.user, true, 0);
+			s_assocVars.wpa_wait = false;
+		}
 	}
 }
 
@@ -392,7 +414,7 @@ bool twlwifiIsScanning(void)
 	return s_scanVars.bssTable != NULL;
 }
 
-bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
+bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiAssocFn cb, void* user)
 {
 	static const Ar6kWmiProbedSsid dummy_probed_ssid = { 0 };
 	static const Ar6kWmiScanParams dummy_scan_params = {
@@ -484,6 +506,10 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 	conn_params.channel_mhz = wlanChannelToFreq(bss->channel);
 	memcpy(conn_params.bssid, bss->bssid, 6);
 
+	s_assocVars.wpa_wait = false;
+	s_assocVars.cb = cb;
+	s_assocVars.user = user;
+
 	switch (bss->auth_type) {
 		default:
 		case WlanBssAuthType_Open: {
@@ -536,6 +562,7 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 		case WlanBssAuthType_WPA2_PSK_AES: {
 			static const u8 authtype[] = { Ar6kWmiAuthType_WPA_PSK, Ar6kWmiAuthType_WPA2_PSK, Ar6kWmiAuthType_WPA_PSK, Ar6kWmiAuthType_WPA2_PSK };
 			static const u8 cipher[] = { Ar6kWmiCipherType_TKIP, Ar6kWmiCipherType_TKIP, Ar6kWmiCipherType_AES, Ar6kWmiCipherType_AES };
+			s_assocVars.wpa_wait = true;
 
 			// Set params
 			conn_params.auth_mode_ieee = Ar6kWmiAuthModeIeee_Open;

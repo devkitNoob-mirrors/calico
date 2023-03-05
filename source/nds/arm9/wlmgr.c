@@ -81,6 +81,11 @@ static int _wlmgrThreadMain(void* arg)
 					s_wlmgrState.scan_buf = NULL;
 					break;
 				}
+
+				case WlMgrEvent_Disconnected: {
+					arg0 = imm;
+					break;
+				}
 			}
 
 			// Call user event callback
@@ -163,8 +168,17 @@ void wlmgrStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter)
 	pxiSendWithData(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_StartScan, 0), &buf_addr, 1);
 }
 
-void wlmgrAssociate(WlanBssDesc* bss, WlanAuthData* auth)
+void wlmgrAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 {
+	armDCacheFlush((void*)bss, sizeof(*bss));
+	armDCacheFlush((void*)auth, sizeof(*auth));
+
+	PxiWlMgrArgAssociate arg = {
+		.bss  = bss,
+		.auth = auth,
+	};
+
+	pxiSendWithData(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_Associate, 0), (const u32*)&arg, sizeof(arg)/sizeof(u32));
 }
 
 void wlmgrDeassociate(void)

@@ -12,6 +12,11 @@ typedef enum PxiWlMgrCmd {
 	PxiWlMgrCmd_Deassociate = 4,
 } PxiWlMgrCmd;
 
+typedef struct PxiWlMgrArgAssociate {
+	WlanBssDesc const* bss;
+	WlanAuthData const* auth;
+} PxiWlMgrArgAssociate;
+
 MEOW_CONSTEXPR u32 pxiWlMgrMakeCmd(PxiWlMgrCmd type, unsigned imm)
 {
 	return (type & 0x1f) | (imm << 5);

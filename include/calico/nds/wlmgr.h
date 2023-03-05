@@ -41,7 +41,7 @@ WlMgrState wlmgrGetState(void);
 void wlmgrStart(WlMgrMode mode);
 void wlmgrStop(void);
 void wlmgrStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter);
-void wlmgrAssociate(WlanBssDesc* bss, WlanAuthData* auth);
+void wlmgrAssociate(WlanBssDesc const* bss, WlanAuthData const* auth);
 void wlmgrDeassociate(void);
 
 void wlmgrSetRawRxHandler(WlMgrRawRxFn cb, void* user);

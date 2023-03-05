@@ -103,6 +103,27 @@ static void _wlmgrScanComplete(void* user, WlanBssDesc* bss_list, unsigned bss_c
 	mailboxTrySend(&s_wlmgrState.mbox, WLMGR_MAIL_EVENT | (pkt << 2));
 }
 
+static void _wlmgrOnAssoc(void* user, bool success, unsigned reason)
+{
+	u32 pkt;
+	if (success) {
+		pkt = pxiWlMgrMakeEvent(WlMgrEvent_NewState, WlMgrState_Associated);
+	} else {
+		pkt = pxiWlMgrMakeEvent(WlMgrEvent_Disconnected, reason);
+	}
+	mailboxTrySend(&s_wlmgrState.mbox, WLMGR_MAIL_EVENT | (pkt << 2));
+}
+
+void _netbufRx(NetBuf* pPacket, int rssi)
+{
+	if (s_wlmgrState.state == WlMgrState_Associated) {
+		uptr addr = (uptr)pPacket - MM_MAINRAM;
+		pxiSend(PxiChannel_NetBuf, addr >> 5);
+	} else {
+		netbufFree(pPacket);
+	}
+}
+
 static int _wlmgrThreadMain(void* arg)
 {
 	u32 mbox_slots[WLMGR_NUM_MAIL_SLOTS];
@@ -214,6 +235,21 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 			}
 			break;
 		}
+
+		case PxiWlMgrCmd_Associate: {
+			if (s_wlmgrState.state == WlMgrState_Idle) {
+				PxiWlMgrArgAssociate* arg = (PxiWlMgrArgAssociate*)body;
+				if (s_wlmgrState.using_twlwifi) {
+					rc = twlwifiAssociate(arg->bss, arg->auth, _wlmgrOnAssoc, NULL);
+				} else {
+					// XX: Mitsumi
+				}
+				if (rc) {
+					_wlmgrSetState(WlMgrState_Associating);
+				}
+			}
+			break;
+		}
 	}
 
 	if (!rc) {
@@ -262,7 +298,6 @@ void _wlmgrTxProcess(void)
 	for (; pPacket; pPacket = pNext) {
 		pNext = pPacket->link.next;
 
-		dietPrint("[WLMGR] tx %p\n", pPacket);
 		if (s_wlmgrState.state == WlMgrState_Associated) {
 			if (s_wlmgrState.using_twlwifi) {
 				twlwifiTx(pPacket);
