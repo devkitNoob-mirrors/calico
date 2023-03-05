@@ -15,6 +15,7 @@
 #define WLMGR_MAIL_EXIT      0
 #define WLMGR_MAIL_PXI       1
 #define WLMGR_MAIL_PM        2
+#define WLMGR_MAIL_EVENT     3
 
 static Thread s_wlmgrThread;
 alignas(8) static u8 s_wlmgrThreadStack[2048];
@@ -22,6 +23,7 @@ alignas(8) static u8 s_wlmgrThreadStack[2048];
 static struct {
 	NetBufListNode tx_queue;
 	WlMgrState state;
+	Mailbox mbox;
 	Mailbox pxi_mbox;
 	bool using_twlwifi;
 } s_wlmgrState;
@@ -95,27 +97,57 @@ static void _wlmgrPmEventHandler(void* user, PmEvent event)
 	}
 }
 
+static void _wlmgrScanComplete(void* user, WlanBssDesc* bss_list, unsigned bss_count)
+{
+	u32 pkt = pxiWlMgrMakeEvent(WlMgrEvent_ScanComplete, bss_count);
+	mailboxTrySend(&s_wlmgrState.mbox, WLMGR_MAIL_EVENT | (pkt << 2));
+}
+
 static int _wlmgrThreadMain(void* arg)
 {
-	Mailbox mbox;
 	u32 mbox_slots[WLMGR_NUM_MAIL_SLOTS];
 	u32 pxi_mbox_slots[PXI_WLMGR_NUM_CREDITS];
-	mailboxPrepare(&mbox, mbox_slots, WLMGR_NUM_MAIL_SLOTS);
+	mailboxPrepare(&s_wlmgrState.mbox, mbox_slots, WLMGR_NUM_MAIL_SLOTS);
 	mailboxPrepare(&s_wlmgrState.pxi_mbox, pxi_mbox_slots, PXI_WLMGR_NUM_CREDITS);
 
-	pxiSetHandler(PxiChannel_NetBuf, _wlmgrTxPxiHandler, &mbox);
-	pxiSetHandler(PxiChannel_WlMgr, _wlmgrCmdPxiHandler, &mbox);
+	pxiSetHandler(PxiChannel_NetBuf, _wlmgrTxPxiHandler, &s_wlmgrState.mbox);
+	pxiSetHandler(PxiChannel_WlMgr, _wlmgrCmdPxiHandler, &s_wlmgrState.mbox);
 
 	PmEventCookie pm_cookie;
-	pmAddEventHandler(&pm_cookie, _wlmgrPmEventHandler, &mbox);
+	pmAddEventHandler(&pm_cookie, _wlmgrPmEventHandler, &s_wlmgrState.mbox);
 
 	for (;;) {
-		u32 mail = mailboxRecv(&mbox);
-		if (mail == WLMGR_MAIL_PM || mail == WLMGR_MAIL_EXIT) {
+		u32 mail = mailboxRecv(&s_wlmgrState.mbox);
+		unsigned mail_type = mail & 3;
+		if (mail_type == WLMGR_MAIL_PM || mail_type == WLMGR_MAIL_EXIT) {
 			// XX: Wind down and deactivate wireless hardware
 		}
-		if (mail == WLMGR_MAIL_EXIT) {
+		if (mail_type == WLMGR_MAIL_EXIT) {
 			break;
+		}
+
+		// Process wireless events
+		if (mail_type == WLMGR_MAIL_EVENT) {
+			u32 evt_packet = mail >> 2;
+			WlMgrEvent evt = pxiWlMgrEventGetType(evt_packet);
+
+			if (evt == WlMgrEvent_NewState) {
+				// Process simple state changes
+				_wlmgrSetState((WlMgrState)pxiWlMgrEventGetImm(evt_packet));
+			} else {
+				// Relay other events
+				pxiSend(PxiChannel_WlMgr, evt_packet);
+
+				// Perform state change if needed
+				switch (evt) {
+					default: break;
+
+					case WlMgrEvent_ScanComplete:
+					case WlMgrEvent_Disconnected:
+						_wlmgrSetState(WlMgrState_Idle);
+						break;
+				}
+			}
 		}
 
 		// Process PXI commands
@@ -161,6 +193,23 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 				} else {
 					_wlmgrSetState(WlMgrState_Stopped);
 					pmSetSleepAllowed(true);
+				}
+			}
+			break;
+		}
+
+		case PxiWlMgrCmd_StartScan: {
+			if (s_wlmgrState.state == WlMgrState_Idle) {
+				uptr buf_addr = *(uptr*)body;
+				WlanBssScanFilter filter = *(WlanBssScanFilter*)buf_addr;
+				WlanBssDesc* out_table = (WlanBssDesc*)buf_addr;
+				if (s_wlmgrState.using_twlwifi) {
+					rc = twlwifiStartScan(out_table, &filter, _wlmgrScanComplete, NULL);
+				} else {
+					// XX: Mitsumi
+				}
+				if (rc) {
+					_wlmgrSetState(WlMgrState_Scanning);
 				}
 			}
 			break;

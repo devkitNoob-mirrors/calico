@@ -1,4 +1,6 @@
+#include <string.h>
 #include <calico/types.h>
+#include <calico/arm/cache.h>
 #include <calico/system/thread.h>
 #include <calico/system/mailbox.h>
 #include <calico/nds/pm.h>
@@ -6,8 +8,6 @@
 #include <calico/nds/wlmgr.h>
 #include "../transfer.h"
 #include "../pxi/wlmgr.h"
-
-#include <calico/system/dietprint.h>
 
 #define WLMGR_NUM_MAIL_SLOTS 4
 
@@ -23,6 +23,8 @@ static struct {
 
 	WlMgrRawRxFn rx_cb;
 	void* rx_user;
+
+	WlanBssDesc* scan_buf;
 } s_wlmgrState;
 
 static void _wlmgrRxPxiHandler(void* user, u32 data)
@@ -69,8 +71,14 @@ static int _wlmgrThreadMain(void* arg)
 			switch (evt) {
 				default: break;
 				case WlMgrEvent_NewState: {
-					dietPrint("[WLMGR] new state %u\n", imm);
 					s_wlmgrState.state = (WlMgrState)imm;
+					break;
+				}
+
+				case WlMgrEvent_ScanComplete: {
+					arg0 = (uptr)s_wlmgrState.scan_buf;
+					arg1 = imm;
+					s_wlmgrState.scan_buf = NULL;
 					break;
 				}
 			}
@@ -140,6 +148,19 @@ void wlmgrStop(void)
 
 void wlmgrStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter)
 {
+	// Check output buffer alignment
+	u32 buf_addr = (u32)out_table;
+	if (buf_addr & (ARM_CACHE_LINE_SZ-1)) {
+		return;
+	}
+
+	// Copy filter to output buffer
+	memcpy((void*)buf_addr, filter, sizeof(*filter));
+	armDCacheFlush((void*)buf_addr, WLAN_MAX_BSS_ENTRIES*sizeof(WlanBssDesc));
+
+	// Send command
+	s_wlmgrState.scan_buf = out_table;
+	pxiSendWithData(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_StartScan, 0), &buf_addr, 1);
 }
 
 void wlmgrAssociate(WlanBssDesc* bss, WlanAuthData* auth)
