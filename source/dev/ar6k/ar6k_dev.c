@@ -295,7 +295,21 @@ int ar6kDevThreadMain(Ar6kDev* dev)
 		tmioAckPortCardIrq(dev->sdio->ctl, dev->sdio->port.num);
 	}
 
+	// Disable IRQs
+	_ar6kDevSetIrqEnable(dev, false);
+	sdioCardSetIrqEnable(dev->sdio, 1, false);
+
+	// XX: Official sw flushes out pending packets from the mailbox after disabling IRQs.
+	// Is this really necessary, considering subsequent ar6k usage will soft-reset the device anyway?
+
 	return 0;
+}
+
+void ar6kDevThreadCancel(Ar6kDev* dev)
+{
+	while (!mailboxTrySend(&dev->irq_mbox, 0)) {
+		threadSleep(1000);
+	}
 }
 
 static bool _ar6kDevSetAddrWinReg(Ar6kDev* dev, u32 reg, u32 addr)

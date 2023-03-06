@@ -294,7 +294,7 @@ bool twlwifiInit(void)
 	// Initialize the SDIO card interface
 	if (!sdioCardInit(&s_sdioCard, &s_sdioCtl, 0)) {
 		dietPrint("[TWLWIFI] SDIO init failed\n");
-		return false;
+		goto _tmioCleanup;
 	}
 
 	// Initialize DMA for SDIO
@@ -303,7 +303,7 @@ bool twlwifiInit(void)
 	// Initialize the Atheros wireless device
 	if (!ar6kDevInit(&s_ar6kDev, &s_sdioCard, s_ar6kWorkBuf)) {
 		dietPrint("[TWLWIFI] AR6K init failed\n");
-		return false;
+		goto _tmioCleanup;
 	}
 
 	// Start the Atheros interrupt thread
@@ -313,7 +313,7 @@ bool twlwifiInit(void)
 	// Wait for WMI to be ready
 	if (!ar6kWmiStartup(&s_ar6kDev)) {
 		dietPrint("[TWLWIFI] AR6K WMI startup fail\n");
-		return false;
+		goto _ar6kCleanup;
 	}
 
 	// Prepare and start the WPA supplicant thread
@@ -336,6 +336,28 @@ bool twlwifiInit(void)
 	s_wpaState.ie_data = s_wpaIeBuf;
 
 	return true;
+
+_ar6kCleanup:
+	ar6kDevThreadCancel(&s_ar6kDev);
+	threadJoin(&s_sdioIrqThread);
+_tmioCleanup:
+	tmioThreadCancel(&s_sdioCtl);
+	irqDisable2(IRQ2_TMIO1);
+	threadJoin(&s_sdioThread);
+	return false;
+}
+
+void twlwifiExit(void)
+{
+	twlwifiDeassociate();
+	wpaFinalize(&s_wpaState);
+	threadJoin(&s_wpaSupplicantThread);
+	ar6kWmiHostExitNotify(&s_ar6kDev);
+	ar6kDevThreadCancel(&s_ar6kDev);
+	threadJoin(&s_sdioIrqThread);
+	tmioThreadCancel(&s_sdioCtl);
+	irqDisable2(IRQ2_TMIO1);
+	threadJoin(&s_sdioThread);
 }
 
 bool twlwifiStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter, TwlWifiScanCompleteFn cb, void* user)

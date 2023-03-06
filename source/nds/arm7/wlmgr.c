@@ -30,6 +30,7 @@ static struct {
 
 MEOW_NOINLINE static void _wlmgrPxiProcess(Mailbox* mb);
 MEOW_NOINLINE static void _wlmgrTxProcess(void);
+MEOW_NOINLINE static void _wlmgrStop(void);
 MEOW_NOINLINE MEOW_CODE32 static void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsigned num_words);
 
 MEOW_INLINE void _wlmgrSendEvent(WlMgrEvent evt, unsigned imm)
@@ -141,14 +142,15 @@ static int _wlmgrThreadMain(void* arg)
 		u32 mail = mailboxRecv(&s_wlmgrState.mbox);
 		unsigned mail_type = mail & 3;
 		if (mail_type == WLMGR_MAIL_PM || mail_type == WLMGR_MAIL_EXIT) {
-			// XX: Wind down and deactivate wireless hardware
+			// Wind down and deactivate wireless hardware
+			_wlmgrStop();
 		}
 		if (mail_type == WLMGR_MAIL_EXIT) {
 			break;
 		}
 
 		// Process wireless events
-		if (mail_type == WLMGR_MAIL_EVENT) {
+		if (mail_type == WLMGR_MAIL_EVENT && s_wlmgrState.state >= WlMgrState_Idle) {
 			u32 evt_packet = mail >> 2;
 			WlMgrEvent evt = pxiWlMgrEventGetType(evt_packet);
 
@@ -216,6 +218,12 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 					pmSetSleepAllowed(true);
 				}
 			}
+			break;
+		}
+
+		case PxiWlMgrCmd_Stop: {
+			_wlmgrStop();
+			rc = true;
 			break;
 		}
 
@@ -321,5 +329,19 @@ void _wlmgrTxProcess(void)
 		}
 
 		netbufFree(pPacket);
+	}
+}
+
+void _wlmgrStop(void)
+{
+	if (s_wlmgrState.state >= WlMgrState_Idle) {
+		_wlmgrSetState(WlMgrState_Stopping);
+		if (s_wlmgrState.using_twlwifi) {
+			twlwifiExit();
+		} else {
+			// XX: mitsumi
+		}
+		_wlmgrSetState(WlMgrState_Stopped);
+		pmSetSleepAllowed(true);
 	}
 }

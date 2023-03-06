@@ -22,6 +22,7 @@ typedef enum Ar6kWmiCmdId {
 	Ar6kWmiCmdId_Extension                = 0x002e,
 	Ar6kWmiCmdId_SetWscStatus             = 0x0041,
 	Ar6kWmiCmdId_SetFrameRate             = 0x0048,
+	Ar6kWmiCmdId_HostExitNotify           = 0x0049,
 	Ar6kWmiCmdId_SetBitRate               = 0xf000,
 } Ar6kWmiCmdId;
 
@@ -414,4 +415,9 @@ MEOW_INLINE bool ar6kWmiSetWscStatus(Ar6kDev* dev, bool enable)
 MEOW_INLINE bool ar6kWmiSetErrorReportBitmask(Ar6kDev* dev, u32 bitmask)
 {
 	return ar6kWmiSimpleCmdWithParam32(dev, Ar6kWmiCmdId_TargetErrorReportBitmask, bitmask);
+}
+
+MEOW_INLINE bool ar6kWmiHostExitNotify(Ar6kDev* dev)
+{
+	return ar6kWmiSimpleCmd(dev, Ar6kWmiCmdId_HostExitNotify);
 }

@@ -55,6 +55,7 @@ struct Ar6kDev {
 
 bool ar6kDevInit(Ar6kDev* dev, SdioCard* sdio, void* workbuf);
 int ar6kDevThreadMain(Ar6kDev* dev);
+void ar6kDevThreadCancel(Ar6kDev* dev);
 
 bool ar6kDevReadRegDiag(Ar6kDev* dev, u32 addr, u32* out);
 bool ar6kDevWriteRegDiag(Ar6kDev* dev, u32 addr, u32 value);

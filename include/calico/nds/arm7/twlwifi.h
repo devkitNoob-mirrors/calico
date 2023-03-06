@@ -10,6 +10,7 @@ typedef void (*TwlWifiScanCompleteFn)(void* user, WlanBssDesc* bss_list, unsigne
 typedef void (*TwlWifiAssocFn)(void* user, bool success, unsigned reason);
 
 bool twlwifiInit(void);
+void twlwifiExit(void);
 bool twlwifiStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter, TwlWifiScanCompleteFn cb, void* user);
 bool twlwifiIsScanning(void);
 bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiAssocFn cb, void* user);

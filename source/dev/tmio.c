@@ -226,7 +226,7 @@ void tmioIrqHandler(TmioCtl* ctl)
 	threadUnblockOneByValue(&s_tmioIrqQueue, (u32)ctl);
 }
 
-void tmioThreadMain(TmioCtl* ctl)
+int tmioThreadMain(TmioCtl* ctl)
 {
 	dietPrint("TMIO thread start %p\n", ctl);
 
@@ -237,6 +237,9 @@ void tmioThreadMain(TmioCtl* ctl)
 		// Receive transaction request
 		TmioTx* tx = (TmioTx*)mailboxRecv(&ctl->mbox);
 		ctl->cur_tx = tx;
+		if_unlikely (!tx) {
+			break;
+		}
 
 		unsigned cmd_id = tx->type & 0x3f;
 		dietPrint("TMIO cmd%2u arg=%.8lx\n", cmd_id, tx->arg);
@@ -429,6 +432,8 @@ void tmioThreadMain(TmioCtl* ctl)
 		ctl->cur_tx = NULL;
 		threadUnblockOneByValue(&s_tmioTxEndQueue, (u32)tx);
 	}
+
+	return 0;
 }
 
 bool tmioTransact(TmioCtl* ctl, TmioTx* tx)
@@ -448,6 +453,13 @@ bool tmioTransact(TmioCtl* ctl, TmioTx* tx)
 
 	armIrqUnlockByPsr(st);
 	return tx->status == 0;
+}
+
+void tmioThreadCancel(TmioCtl* ctl)
+{
+	while (!mailboxTrySend(&ctl->mbox, 0)) {
+		threadSleep(1000);
+	}
 }
 
 typedef union _TmioXferBuf {

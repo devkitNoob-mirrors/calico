@@ -15,6 +15,7 @@ typedef enum WlMgrMode {
 typedef enum WlMgrState {
 	WlMgrState_Stopped       = 0,
 	WlMgrState_Starting      = 1,
+	WlMgrState_Stopping      = WlMgrState_Starting,
 	WlMgrState_Idle          = 2,
 	WlMgrState_Scanning      = 3,
 	WlMgrState_Associating   = 4,

@@ -98,7 +98,8 @@ void tmioSetPortCardIrqHandler(TmioCtl* ctl, unsigned port, TmioCardIrqHandler i
 void tmioAckPortCardIrq(TmioCtl* ctl, unsigned port);
 
 void tmioIrqHandler(TmioCtl* ctl);
-void tmioThreadMain(TmioCtl* ctl);
+int tmioThreadMain(TmioCtl* ctl);
+void tmioThreadCancel(TmioCtl* ctl);
 
 bool tmioTransact(TmioCtl* ctl, TmioTx* tx);
 
