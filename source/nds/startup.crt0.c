@@ -156,6 +156,7 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 	crt0FillMem32(MM_ENV_FREE_D000, 0, MM_ENV_FREE_D000_SZ);
 	crt0FillMem32(MM_ENV_FREE_F000, 0, MM_ENV_FREE_F000_SZ);
 	crt0FillMem32(MM_ENV_FREE_FBE0, 0, MM_ENV_FREE_FBE0_SZ);
+	crt0FillMem32(MM_ENV_FREE_FCF0, 0, MM_ENV_FREE_FCF0_SZ);
 	crt0FillMem32(MM_ENV_FREE_FF60, 0, MM_ENV_FREE_FF60_SZ);
 
 	// Configure GBA/NDS GPIO (GPIO mode, SI (RTC) irq enable, pull-up on SI)

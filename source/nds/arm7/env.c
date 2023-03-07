@@ -14,8 +14,12 @@
 
 MEOW_INLINE unsigned _envGetUserSettingsNvramOffset(void)
 {
-	u16 off_div8 = 0;
-	nvramReadDataBytes(&off_div8, 0x20, sizeof(u16));
+	u16 off_div8 = g_envExtraInfo->nvram_offset_div8;
+	if (!off_div8) {
+		nvramReadDataBytes(&off_div8, 0x20, sizeof(u16));
+		g_envExtraInfo->nvram_offset_div8 = off_div8;
+		nvramReadDataBytes(&g_envExtraInfo->nvram_console_type, 0x1d, sizeof(u8));
+	}
 	return off_div8*8;
 }
 

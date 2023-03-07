@@ -66,8 +66,8 @@
 #define MM_ENV_USER_SETTINGS      0x2fffc80
 
 // Free area
-#define MM_ENV_FREE_FD00          0x2fffd00
-#define MM_ENV_FREE_FD00_SZ       0x68
+#define MM_ENV_FREE_FCF0          0x2fffcf0
+#define MM_ENV_FREE_FCF0_SZ       0x78
 
 // DSi hardware info (sourced from HWINFO_S.dat)
 #define MM_ENV_TWL_HWINFO_S       0x2fffd68

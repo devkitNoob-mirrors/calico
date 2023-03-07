@@ -9,6 +9,7 @@
 #define g_envNdsArgvHeader ((EnvNdsArgvHeader*)     MM_ENV_ARGV_HEADER)
 #define g_envNdsBootstub   ((EnvNdsBootstubHeader*) MM_ENV_HB_BOOTSTUB)
 #define g_envUserSettings  ((EnvUserSettings*)      MM_ENV_USER_SETTINGS)
+#define g_envExtraInfo     ((EnvExtraInfo*)         MM_ENV_FREE_FCF0)
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
 
 typedef struct EnvNdsHeader {
@@ -315,6 +316,22 @@ typedef struct EnvUserSettingsNvram {
 
 	u16 ext_crc16;
 } EnvUserSettingsNvram;
+
+typedef enum EnvConsoleType {
+	EnvConsoleType_DS         = 0xff,
+	EnvConsoleType_DSLite     = 0x20,
+	EnvConsoleType_DSi        = 0x57,
+	EnvConsoleType_iQueDS     = 0x43,
+	EnvConsoleType_iQueDSLite = 0x63,
+} EnvConsoleType;
+
+typedef struct EnvExtraInfo {
+	u16 nvram_offset_div8;
+	u8  nvram_console_type; // EnvConsoleType
+	u8  wlmgr_rssi;
+	u8  wlmgr_macaddr[6];
+	u16 wlmgr_channel_mask;
+} EnvExtraInfo;
 
 typedef struct EnvTwlDeviceListEntry {
 	char drive_letter;
