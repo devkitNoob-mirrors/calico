@@ -1,6 +1,7 @@
 #include <calico/types.h>
 #include <calico/nds/system.h>
 #include <calico/nds/arm7/pmic.h>
+#include <calico/nds/arm7/nvram.h>
 #include <calico/nds/arm7/codec.h>
 #include <calico/nds/arm7/i2c.h>
 #include <calico/nds/arm7/mcu.h>
@@ -45,4 +46,12 @@ void pmSoundSetAmpPower(bool enable)
 		pmicWriteRegister(PmicReg_Control, reg);
 	}
 	spiUnlock();
+}
+
+bool pmReadNvram(void* data, u32 addr, u32 len)
+{
+	spiLock();
+	bool rc = nvramReadDataBytes(data, addr, len);
+	spiUnlock();
+	return rc;
 }

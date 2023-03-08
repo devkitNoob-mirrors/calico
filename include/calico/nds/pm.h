@@ -107,3 +107,4 @@ bool pmMainLoop(void);
 #define PM_BATT_LEVEL(_x) ((_x)&0x7f)
 
 unsigned pmGetBatteryState(void);
+bool pmReadNvram(void* data, u32 addr, u32 len);

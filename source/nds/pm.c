@@ -110,6 +110,13 @@ static int _pmPxiThreadMain(void* arg)
 				pxiReply(PxiChannel_Power, pmGetBatteryState());
 				break;
 
+			case PxiPmMsg_ReadNvram: {
+				void* data = (void*)mailboxRecv(&mb);
+				u32 addr = mailboxRecv(&mb);
+				u32 len = mailboxRecv(&mb);
+				pxiReply(PxiChannel_Power, pmReadNvram(data, addr, len));
+				break;
+			}
 #endif
 
 		}
