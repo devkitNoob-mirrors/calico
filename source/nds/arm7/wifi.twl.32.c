@@ -6,6 +6,7 @@
 #include <calico/dev/ar6k.h>
 #include <calico/dev/wpa.h>
 #include <calico/nds/bios.h>
+#include <calico/nds/env.h>
 #include <calico/nds/ndma.h>
 #include <calico/nds/arm7/gpio.h>
 #include <calico/nds/arm7/i2c.h>
@@ -334,6 +335,10 @@ bool twlwifiInit(void)
 	s_wpaState.cb_tx = _twlwifiWpaTx;
 	s_wpaState.cb_install_key = _twlwifiWpaInstallKey;
 	s_wpaState.ie_data = s_wpaIeBuf;
+
+	// Copy wireless interface settings
+	memcpy(g_envExtraInfo->wlmgr_macaddr, s_ar6kDev.macaddr, 6);
+	g_envExtraInfo->wlmgr_channel_mask = s_ar6kDev.wmi_channel_mask;
 
 	return true;
 
