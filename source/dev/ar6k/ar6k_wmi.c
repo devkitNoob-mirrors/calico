@@ -384,6 +384,8 @@ bool ar6kWmiSetChannelParams(Ar6kDev* dev, u8 scan_param, u32 chan_mask)
 				cmd->channel_mhz[i++] = wlanChannelToFreq(j);
 			}
 		}
+	} else {
+		cmd->phy_mode = Ar6kWmiPhyMode_11G;
 	}
 
 	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_SetChannelParams, pPacket);

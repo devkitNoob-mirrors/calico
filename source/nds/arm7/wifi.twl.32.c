@@ -14,7 +14,7 @@
 #include <calico/nds/arm7/twlwifi.h>
 #include <string.h>
 
-//#define TWLWIFI_DEBUG
+#define TWLWIFI_DEBUG
 
 #ifdef TWLWIFI_DEBUG
 #include <calico/system/dietprint.h>
@@ -208,7 +208,7 @@ static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
 		}
 	} else {
 		// Regular packet
-		dietPrint("[RX:%2d] eth=%.4X len=%u\n", rssi, ethertype, pPacket->len);
+		//dietPrint("[RX:%2d] eth=%.4X len=%u\n", rssi, ethertype, pPacket->len);
 		_netbufRx(pPacket, rssi);
 	}
 }
@@ -253,9 +253,13 @@ static void _twlwifiWpaInstallKey(WpaState* st, bool is_group, unsigned slot, un
 		memset(key.rsc, 0, WPA_RSC_LEN);
 	}
 
+	ar6kWmiSimpleCmdWithParam8(&s_ar6kDev, Ar6kWmiCmdId_Synchronize, 0);
+
 	if (!ar6kWmiAddCipherKey(&s_ar6kDev, &key)) {
 		dietPrint("[TWLWIFI] %s key%u fail\n", is_group ? "group" : "pairwise", slot);
 	}
+
+	ar6kWmiSimpleCmdWithParam8(&s_ar6kDev, Ar6kWmiCmdId_Synchronize, 0);
 
 	if (is_group) {
 		dietPrint("[TWLWIFI] WPA negotiated!\n");
@@ -451,7 +455,7 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiA
 		.maxact_chdwell_time_ms = 200,
 		.pas_chdwell_time_ms = 200,
 		.short_scan_ratio = 0,
-		.scan_ctrl_flags = AR6K_WMI_SCAN_CONNECT | AR6K_WMI_SCAN_ACTIVE,
+		.scan_ctrl_flags = AR6K_WMI_SCAN_CONNECT | AR6K_WMI_SCAN_ACTIVE | AR6K_WMI_SCAN_ROAM,
 		.minact_chdwell_time_ms = 200,
 		._pad = 0,
 		.max_dfsch_act_time_ms = 0,
@@ -498,7 +502,7 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiA
 		return false;
 	}
 
-	if (!ar6kWmiSetChannelParams(&s_ar6kDev, 0, 1U << bss->channel)) {
+	if (!ar6kWmiSetChannelParams(&s_ar6kDev, 0, 0)) {
 		return false;
 	}
 
