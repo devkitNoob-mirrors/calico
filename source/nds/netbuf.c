@@ -21,7 +21,7 @@ MEOW_INLINE void _netbufFlushHdr(NetBuf* nb)
 
 #define s_netbufMgr ((_NetbufMgr*) MM_ENV_FREE_FBE0)
 
-static const u16 s_netbufListSizes[NETBUF_NUM_SUBPOOLS] = { 128, 256, 512, 1024, 1536 };
+static const u16 s_netbufListSizes[NETBUF_NUM_SUBPOOLS] = { 128, 256, 512, 1024, 2048 };
 
 typedef struct _NetBufPool {
 	SMutex lock;
