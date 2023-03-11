@@ -71,8 +71,9 @@ static int _wlmgrThreadMain(void* arg)
 			switch (evt) {
 				default: break;
 				case WlMgrEvent_NewState: {
-					s_wlmgrState.state = (WlMgrState)imm;
 					arg0 = imm;
+					arg1 = s_wlmgrState.state;
+					s_wlmgrState.state = (WlMgrState)imm;
 					break;
 				}
 
