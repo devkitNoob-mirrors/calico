@@ -82,7 +82,8 @@ SECTIONS {
 	PROVIDE_HIDDEN( __crt0_end   = ADDR(.crt0) + SIZEOF(.crt0) );
 
 	/* Ensure crt0 does not overlap initial bootstrap */
-	ASSERT( __crt0_end <= ADDR(.bootstub), "Error: crt0 section overlaps initial bootstrap" )
+	ASSERT( __crt0_end <= ADDR(.bootstub) || __crt0_start >= ADDR(.bootstub) + SIZEOF(.bootstub),
+		"Error: crt0 section overlaps initial bootstrap" )
 
 	/* ARM exception vectors (start of ITCM) */
 	.vectors : {
