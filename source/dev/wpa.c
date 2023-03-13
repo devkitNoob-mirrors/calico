@@ -2,7 +2,7 @@
 #include <calico/dev/wpa.h>
 #include <string.h>
 
-#define WPA_DEBUG
+//#define WPA_DEBUG
 
 #ifdef WPA_DEBUG
 #include <calico/system/dietprint.h>

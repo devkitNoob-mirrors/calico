@@ -7,7 +7,7 @@
 #include "../../transfer.h"
 #include "../../pxi/sound.h"
 
-#define SOUND_DEBUG
+//#define SOUND_DEBUG
 
 #ifdef SOUND_DEBUG
 #include <calico/system/dietprint.h>

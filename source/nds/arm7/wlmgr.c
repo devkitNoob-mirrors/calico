@@ -9,7 +9,13 @@
 #include "../transfer.h"
 #include "../pxi/wlmgr.h"
 
+//#define WLMGR_DEBUG
+
+#ifdef WLMGR_DEBUG
 #include <calico/system/dietprint.h>
+#else
+#define dietPrint(...) ((void)0)
+#endif
 
 #define WLMGR_NUM_MAIL_SLOTS 4
 #define WLMGR_MAIL_EXIT      0

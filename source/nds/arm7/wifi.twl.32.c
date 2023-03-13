@@ -14,7 +14,7 @@
 #include <calico/nds/arm7/twlwifi.h>
 #include <string.h>
 
-#define TWLWIFI_DEBUG
+//#define TWLWIFI_DEBUG
 
 #ifdef TWLWIFI_DEBUG
 #include <calico/system/dietprint.h>
