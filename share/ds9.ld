@@ -161,6 +161,7 @@ SECTIONS {
 	/* ARM exception table */
 	.ARM.extab : {
 		*(.ARM.extab* .gnu.linkonce.armextab.*)
+		. = ALIGN(4);
 	} >main AT>lma9 :main = 0xff
 
 	/* ARM exception index table (replaces .eh_frame on AArch32) */
