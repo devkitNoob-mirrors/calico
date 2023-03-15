@@ -20,6 +20,7 @@ typedef enum Ar6kWmiCmdId {
 	Ar6kWmiCmdId_AddCipherKey             = 0x0016,
 	Ar6kWmiCmdId_TargetErrorReportBitmask = 0x0022,
 	Ar6kWmiCmdId_Extension                = 0x002e,
+	Ar6kWmiCmdId_SetKeepAlive             = 0x003d,
 	Ar6kWmiCmdId_SetWscStatus             = 0x0041,
 	Ar6kWmiCmdId_SetFrameRate             = 0x0048,
 	Ar6kWmiCmdId_HostExitNotify           = 0x0049,
@@ -194,8 +195,8 @@ typedef enum Ar6kWmiScanType {
 } Ar6kWmiScanType;
 
 typedef struct Ar6kWmiCmdStartScan {
-	u8 force_bg_scan;           // bool
-	u8 is_legacy;               // bool - "for legacy Cisco AP compatibility"
+	u32 force_bg_scan;          // bool
+	u32 is_legacy;              // bool - "for legacy Cisco AP compatibility"
 	u32 home_dwell_time_ms;     // "Maximum duration in the home channel"
 	u32 force_scan_interval_ms; // "Time interval between scans"
 	u8 scan_type;               // Ar6kWmiScanType
@@ -405,6 +406,11 @@ MEOW_INLINE bool ar6kWmiGetChannelList(Ar6kDev* dev)
 MEOW_INLINE bool ar6kWmiSetPowerMode(Ar6kDev* dev, Ar6kWmiPowerMode mode)
 {
 	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetPowerMode, mode);
+}
+
+MEOW_INLINE bool ar6kWmiSetKeepAlive(Ar6kDev* dev, u8 interval)
+{
+	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetKeepAlive, interval);
 }
 
 MEOW_INLINE bool ar6kWmiSetWscStatus(Ar6kDev* dev, bool enable)

@@ -479,7 +479,7 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiA
 		.max_msdu             = 0xd0,
 		.traffic_class        = 0,
 		.traffic_dir          = Ar6kWmiTrafficDir_Bidir,
-		.rx_queue_num         = 0,
+		.rx_queue_num         = 0xff,
 		.traffic_type         = Ar6kWmiTrafficType_Periodic,
 		.voice_ps_cap         = Ar6kWmiVoicePSCap_DisableForThisAC,
 		.tsid                 = 5,
@@ -514,9 +514,13 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiA
 		return false;
 	}
 
-	if (!ar6kWmiSetPowerMode(&s_ar6kDev, Ar6kWmiPowerMode_Recommended)) {
+	ar6kWmiSimpleCmdWithParam8(&s_ar6kDev, Ar6kWmiCmdId_Synchronize, 0);
+
+	if (!ar6kWmiSetPowerMode(&s_ar6kDev, Ar6kWmiPowerMode_MaxPerformance)) {
 		return false;
 	}
+
+	ar6kWmiSimpleCmdWithParam8(&s_ar6kDev, Ar6kWmiCmdId_Synchronize, 0);
 
 	if (!ar6kWmiCreatePstream(&s_ar6kDev, &pstream_params)) {
 		return false;
@@ -605,6 +609,10 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiA
 			wpaReset(&s_wpaState, auth->wpa_psk);
 			break;
 		}
+	}
+
+	if (!ar6kWmiSetKeepAlive(&s_ar6kDev, 0)) {
+		return false;
 	}
 
 	if (!ar6kWmiConnect(&s_ar6kDev, &conn_params)) {

@@ -312,15 +312,17 @@ bool ar6kWmiConnect(Ar6kDev* dev, Ar6kWmiConnectParams const* params)
 
 bool ar6kWmiCreatePstream(Ar6kDev* dev, Ar6kWmiPstreamConfig const* config)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiPstreamConfig));
-	*netbufPushTrailerType(pPacket, Ar6kWmiPstreamConfig) = *config;
+	u32 pkt_size = sizeof(Ar6kWmiPstreamConfig)-1;
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(pkt_size);
+	memcpy(netbufPushTrailer(pPacket, pkt_size), config, pkt_size);
 	return _ar6kWmiSendCmdPacket(dev, Ar6kWmiCmdId_CreatePstream, pPacket);
 }
 
 bool ar6kWmiStartScan(Ar6kDev* dev, Ar6kWmiScanType type, u32 home_dwell_time_ms)
 {
-	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(sizeof(Ar6kWmiCmdStartScan));
-	Ar6kWmiCmdStartScan* cmd = netbufPushTrailerType(pPacket, Ar6kWmiCmdStartScan);
+	u32 packet_size = offsetof(Ar6kWmiCmdStartScan, channel_mhz);
+	NetBuf* pPacket = _ar6kWmiAllocCmdPacket(packet_size);
+	Ar6kWmiCmdStartScan* cmd = (Ar6kWmiCmdStartScan*)netbufPushTrailer(pPacket, packet_size);
 	// XX: maybe make some more of these configurable?
 	cmd->force_bg_scan = 0;
 	cmd->is_legacy = 0;
