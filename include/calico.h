@@ -32,6 +32,10 @@
 
 #if !__ASSEMBLER__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "calico/arm/common.h"
 #if __ARM_ARCH >= 5
 #include "calico/arm/cache.h"
@@ -102,6 +106,10 @@
 #include "calico/nds/arm9/vram.h"
 #endif
 
+#endif
+
+#if defined(__cplusplus)
+}
 #endif
 
 #endif
