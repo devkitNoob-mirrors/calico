@@ -180,6 +180,12 @@ bool ar6kWmiStartup(Ar6kDev* dev)
 		return false;
 	}
 
+	// Disable heartbeat mechanism
+	if (!ar6kWmiSetHbTimeout(dev, 0)) {
+		dietPrint("[AR6K] can't disable heartbeat\n");
+		return false;
+	}
+
 	// Retrieve channel list
 	if (!ar6kWmiGetChannelList(dev)) {
 		dietPrint("[AR6K] can't get chnlist\n");

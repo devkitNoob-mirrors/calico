@@ -22,6 +22,7 @@ typedef enum Ar6kWmiCmdId {
 	Ar6kWmiCmdId_Extension                = 0x002e,
 	Ar6kWmiCmdId_SetKeepAlive             = 0x003d,
 	Ar6kWmiCmdId_SetWscStatus             = 0x0041,
+	Ar6kWmiCmdId_SetHbTimeout             = 0x0047,
 	Ar6kWmiCmdId_SetFrameRate             = 0x0048,
 	Ar6kWmiCmdId_HostExitNotify           = 0x0049,
 	Ar6kWmiCmdId_SetBitRate               = 0xf000,
@@ -416,6 +417,11 @@ MEOW_INLINE bool ar6kWmiSetKeepAlive(Ar6kDev* dev, u8 interval)
 MEOW_INLINE bool ar6kWmiSetWscStatus(Ar6kDev* dev, bool enable)
 {
 	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetWscStatus, enable?1:0);
+}
+
+MEOW_INLINE bool ar6kWmiSetHbTimeout(Ar6kDev* dev, u32 timeout)
+{
+	return ar6kWmiSimpleCmdWithParam32(dev, Ar6kWmiCmdId_SetHbTimeout, timeout);
 }
 
 MEOW_INLINE bool ar6kWmiSetErrorReportBitmask(Ar6kDev* dev, u32 bitmask)
