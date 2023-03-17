@@ -168,7 +168,14 @@ void tmioAckPortCardIrq(TmioCtl* ctl, unsigned port)
 	if (port != 0) return;
 	ArmIrqState st = armIrqLockByPsr();
 
-	if (ctl->cardirq_deferred) {
+	if (ctl->cardirq_deferred && !ctl->cardirq_ack_deferred) {
+		if (ctl->cur_tx) {
+			ctl->cardirq_ack_deferred = true;
+			armIrqUnlockByPsr(st);
+			dietPrint("[TMIO] Deferring SDIO IRQ ack\n");
+			return;
+		}
+
 		ctl->cardirq_deferred = false;
 		if (ctl->port_isr[0].cardirq != NULL) {
 			REG_TMIO_SDIO_STAT = ~1;
@@ -223,7 +230,77 @@ void tmioIrqHandler(TmioCtl* ctl)
 		}
 	}
 
-	threadUnblockOneByValue(&s_tmioIrqQueue, (u32)ctl);
+	TmioTx* tx = ctl->cur_tx;
+	if (tx) do {
+		// Read transaction IRQ bits
+		u32 bits = REG_TMIO_STAT & (~REG_TMIO_MASK) & TX_IRQ_BITS;
+
+		// Update status
+		REG_TMIO_STATLO = ~bits; // acknowledge bits (by writing 0)
+		REG_TMIO_STATHI = (~bits)>>16;
+		tx->status |= bits;
+
+		// If errors occurred, cancel any pending block transfers
+		if (tx->status & ERROR_IRQ_BITS) {
+			// Cancel any pending block transfers
+			ctl->num_pending_blocks = 0;
+			REG_TMIO_CNT32 |= TMIO_CNT32_FIFO_CLEAR;
+
+			// Cancel the transaction
+			tx->status &= ERROR_IRQ_BITS;
+		} else {
+			// Read response if needed
+			if (bits & TMIO_STAT_CMD_RESPEND) {
+				switch (tx->type & TMIO_CMD_RESP_MASK) {
+					default: break;
+
+					case TMIO_CMD_RESP_48:
+					case TMIO_CMD_RESP_48_BUSY:
+					case TMIO_CMD_RESP_48_NOCRC:
+						tx->resp.value[0] = REG_TMIO_CMDRESP.value[0];
+						break;
+
+					case TMIO_CMD_RESP_136: {
+						TmioResp resp = REG_TMIO_CMDRESP;
+
+						unsigned cmd_id = TMIO_CMD_INDEX(REG_TMIO_CMD);
+						if_likely (cmd_id != 2 && cmd_id != 10) {
+							// Regular 136-bit response, needs some shifting...
+							tx->resp.value[0] = (resp.value[0]<<8);
+							tx->resp.value[1] = (resp.value[1]<<8) | (resp.value[0]>>24);
+							tx->resp.value[2] = (resp.value[2]<<8) | (resp.value[1]>>24);
+							tx->resp.value[3] = (resp.value[3]<<8) | (resp.value[2]>>24);
+						} else {
+							// Special case for cmd2/cmd10 (all_get_cid/get_cid)
+							tx->resp = resp;
+						}
+
+						break;
+					}
+				}
+
+				// If the command doesn't contain a block transfer, simulate DATAEND
+				if (!(tx->type & TMIO_CMD_TX)) {
+					tx->status |= TMIO_STAT_CMD_DATAEND;
+				}
+			}
+
+			// Process data end if needed.
+			// Even if TMIO is now idle, the FIFO may still have in-flight data.
+			// Wait for any pending blocks to be finished before concluding this transaction.
+			// Note that this is not applicable to pure DMA transfers - the user is
+			// responsible for waiting for DMA to finish after a successful transaction.
+			if ((tx->status & TMIO_STAT_CMD_DATAEND) && !ctl->num_pending_blocks) {
+				// Command is done, clear bits in the transaction struct
+				tx->status &= ERROR_IRQ_BITS;
+			}
+		}
+
+		// Wake up thread if the transaction is done
+		if (!(tx->status & TMIO_STAT_CMD_BUSY)) {
+			threadUnblockOneByValue(&s_tmioIrqQueue, (u32)ctl);
+		}
+	} while (0);
 }
 
 int tmioThreadMain(TmioCtl* ctl)
@@ -342,67 +419,17 @@ int tmioThreadMain(TmioCtl* ctl)
 		REG_TMIO_CMD = tx->type;
 
 		// Wait for the command to be done processing
-		do {
-			threadBlock(&s_tmioIrqQueue, (u32)ctl);
-
-			u32 stat = REG_TMIO_STAT;
-			u32 bits = stat & TX_IRQ_BITS;
-
-			// Update status
-			REG_TMIO_STATLO = ~bits; // acknowledge bits (by writing 0)
-			REG_TMIO_STATHI = (~bits)>>16;
-			tx->status |= bits;
-			if (!(stat & TMIO_STAT_CMD_BUSY)) {
-				// If errors occurred, cancel any pending block transfers
-				if (tx->status & ERROR_IRQ_BITS) {
-					ctl->num_pending_blocks = 0;
-					REG_TMIO_CNT32 |= TMIO_CNT32_FIFO_CLEAR;
-				}
-
-				// Even if TMIO is now idle, the FIFO may still have in-flight data.
-				// Wait for any pending blocks to be finished before concluding this transaction.
-				// Note that this is not applicable to pure DMA transfers - the user is
-				// responsible for waiting for DMA to finish after a successful transaction.
-				if (!ctl->num_pending_blocks) {
-					// Command is done, clear bits in the transaction struct
-					tx->status &= ERROR_IRQ_BITS;
-				}
-			}
-
-			// Read response if needed
-			if (bits & TMIO_STAT_CMD_RESPEND) {
-				switch (tx->type & TMIO_CMD_RESP_MASK) {
-					default: break;
-
-					case TMIO_CMD_RESP_48:
-					case TMIO_CMD_RESP_48_BUSY:
-					case TMIO_CMD_RESP_48_NOCRC:
-						tx->resp.value[0] = REG_TMIO_CMDRESP.value[0];
-						break;
-
-					case TMIO_CMD_RESP_136: {
-						TmioResp resp = REG_TMIO_CMDRESP;
-
-						if_likely (cmd_id != 2 && cmd_id != 10) {
-							// Regular 136-bit response, needs some shifting...
-							tx->resp.value[0] = (resp.value[0]<<8);
-							tx->resp.value[1] = (resp.value[1]<<8) | (resp.value[0]>>24);
-							tx->resp.value[2] = (resp.value[2]<<8) | (resp.value[1]>>24);
-							tx->resp.value[3] = (resp.value[3]<<8) | (resp.value[2]>>24);
-						} else {
-							// Special case for cmd2/cmd10 (all_get_cid/get_cid)
-							tx->resp = resp;
-						}
-
-						break;
-					}
-				}
-			}
-		} while (tx->status & TMIO_STAT_CMD_BUSY);
+		threadBlock(&s_tmioIrqQueue, (u32)ctl);
 
 		// Disable transaction-related interrupts
 		REG_TMIO_MASKLO |= TX_IRQ_BITS;
 		REG_TMIO_MASKHI |= TX_IRQ_BITS>>16;
+
+		// Ensure TMIO is idle
+		while (REG_TMIO_STAT & TMIO_STAT_CMD_BUSY) {
+			dietPrint("[TMIO] Spurious busy");
+			threadSleep(1000);
+		}
 
 		// Disable interrupt if block transfer callback is used
 		if (isr_bits) {
@@ -430,6 +457,15 @@ int tmioThreadMain(TmioCtl* ctl)
 
 		// Notify that we're done with this transaction
 		ctl->cur_tx = NULL;
+
+		// Handle deferred SDIO IRQ acks
+		// (must be done *after* clearing ctl->cur_tx)
+		if (ctl->cardirq_ack_deferred) {
+			ctl->cardirq_ack_deferred = false;
+			dietPrint("[TMIO] Deferred SDIO IRQ ack\n");
+			tmioAckPortCardIrq(ctl, 0);
+		}
+
 		threadUnblockOneByValue(&s_tmioTxEndQueue, (u32)tx);
 	}
 

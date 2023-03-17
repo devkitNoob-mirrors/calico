@@ -34,6 +34,7 @@ struct TmioCtl {
 
 	u16 num_pending_blocks;
 	bool cardirq_deferred;
+	bool cardirq_ack_deferred;
 
 	struct {
 		TmioInsRemHandler insrem;
