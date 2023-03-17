@@ -160,7 +160,7 @@ void netbufFree(NetBuf* nb)
 
 #ifdef ARM9
 	// Discard cache lines falling within the data area
-	armICacheInvalidate(nb+1, nb->capacity);
+	armDCacheInvalidate(nb+1, nb->capacity);
 #endif
 
 	smutexLock(&p->lock);
