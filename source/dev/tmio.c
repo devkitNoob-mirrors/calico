@@ -278,19 +278,15 @@ void tmioIrqHandler(TmioCtl* ctl)
 						break;
 					}
 				}
-
-				// If the command doesn't contain a block transfer, simulate DATAEND
-				if (!(tx->type & TMIO_CMD_TX)) {
-					tx->status |= TMIO_STAT_CMD_DATAEND;
-				}
 			}
 
-			// Process data end if needed.
-			// Even if TMIO is now idle, the FIFO may still have in-flight data.
-			// Wait for any pending blocks to be finished before concluding this transaction.
-			// Note that this is not applicable to pure DMA transfers - the user is
+			// Check if the command has finished
+			// XX: Normally DATAEND is used to check if a block transfer, however TMIO
+			//     sometimes misses asserting a DATAEND IRQ (even if it is later reflected in STAT).
+			//     For this reason, use the pending block counter to track completion.
+			// Also note that above is not applicable to pure DMA transfers - the user is
 			// responsible for waiting for DMA to finish after a successful transaction.
-			if ((tx->status & TMIO_STAT_CMD_DATAEND) && !ctl->num_pending_blocks) {
+			if ((tx->status & TMIO_STAT_CMD_RESPEND) && !ctl->num_pending_blocks) {
 				// Command is done, clear bits in the transaction struct
 				tx->status &= ERROR_IRQ_BITS;
 			}
@@ -320,6 +316,12 @@ int tmioThreadMain(TmioCtl* ctl)
 
 		unsigned cmd_id = tx->type & 0x3f;
 		dietPrint("TMIO cmd%2u arg=%.8lx\n", cmd_id, tx->arg);
+
+		// Ensure TMIO is idle
+		while (REG_TMIO_STAT & TMIO_STAT_CMD_BUSY) {
+			dietPrint("[TMIO] Spurious busy");
+			threadSleep(1000);
+		}
 
 		// Invoke transaction callback if needed
 		if (tx->callback) {
@@ -424,12 +426,6 @@ int tmioThreadMain(TmioCtl* ctl)
 		// Disable transaction-related interrupts
 		REG_TMIO_MASKLO |= TX_IRQ_BITS;
 		REG_TMIO_MASKHI |= TX_IRQ_BITS>>16;
-
-		// Ensure TMIO is idle
-		while (REG_TMIO_STAT & TMIO_STAT_CMD_BUSY) {
-			dietPrint("[TMIO] Spurious busy");
-			threadSleep(1000);
-		}
 
 		// Disable interrupt if block transfer callback is used
 		if (isr_bits) {
