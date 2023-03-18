@@ -8,6 +8,7 @@
 #define g_envCardTwlHeader ((EnvTwlHeader*)         MM_ENV_CARD_TWL_HEADER)
 #define g_envNdsArgvHeader ((EnvNdsArgvHeader*)     MM_ENV_ARGV_HEADER)
 #define g_envNdsBootstub   ((EnvNdsBootstubHeader*) MM_ENV_HB_BOOTSTUB)
+#define g_envBootParam     ((EnvBootParam*)         MM_ENV_BOOT_PARAM)
 #define g_envUserSettings  ((EnvUserSettings*)      MM_ENV_USER_SETTINGS)
 #define g_envExtraInfo     ((EnvExtraInfo*)         MM_ENV_FREE_FCF0)
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
@@ -237,6 +238,20 @@ typedef struct EnvNdsBootstubHeader {
 	void (*arm7_entrypoint)(void);
 } EnvNdsBootstubHeader;
 
+typedef enum EnvBootSrc {
+	EnvBootSrc_Unknown  = 0, // Unspecified or homebrew flashcard
+	EnvBootSrc_Card     = 1, // Booted from a real NDS card in Slot 1
+	EnvBootSrc_Wireless = 2, // Booted from DS Download Play or dslink
+	EnvBootSrc_TwlBlk   = 3, // Booted from DSi SD card or NAND (DSiWare)
+	EnvBootSrc_Ram      = 4, // Booted directly from RAM
+} EnvBootSrc;
+
+typedef struct EnvBootParam {
+	u16 boot_src; // EnvBootSrc
+
+	u8 _pad_0x02[MM_ENV_BOOT_PARAM_SZ - 2]; // used by DS Download Play
+} EnvBootParam;
+
 #define ENV_USER_SETTINGS_VERSION     5
 #define ENV_USER_SETTINGS_VERSION_EXT 1
 
@@ -331,6 +346,8 @@ typedef struct EnvExtraInfo {
 	u8  wlmgr_rssi;
 	u8  wlmgr_macaddr[6];
 	u16 wlmgr_channel_mask;
+	u8  pm_chainload_flag;
+	u8  _pad_0x0D;
 } EnvExtraInfo;
 
 typedef struct EnvTwlDeviceListEntry {

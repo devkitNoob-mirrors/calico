@@ -127,6 +127,35 @@ static int _pmPxiThreadMain(void* arg)
 
 #if defined(ARM7)
 
+MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToNextApp(void)
+{
+	// Back up DSi mode flag
+	bool is_twl = systemIsTwlMode();
+	armCompilerBarrier();
+
+	// Copy new ARM7 binary to WRAM if needed
+	if (g_envAppNdsHeader->arm7_ram_address >= MM_A7WRAM) {
+		vu32* dst = (vu32*)g_envAppNdsHeader->arm7_ram_address; // volatile to avoid memcpy optimization
+		u32* src = (u32*)(MM_MAINRAM + MM_MAINRAM_SZ_NTR - 512*1024);
+		u32 count = (g_envAppNdsHeader->arm7_size + 3) / 4;
+		do {
+			*dst++ = *src++;
+		} while (count--);
+	}
+
+	// Set up MBK regs if needed
+	if (is_twl) {
+		MEOW_REG(u32, IO_MBK_SLOTWRPROT) = g_envAppTwlHeader->mbk9_setting;
+		MEOW_REG(u32, IO_MBK_MAP_A) = g_envAppTwlHeader->arm7_wram_setting[0];
+		MEOW_REG(u32, IO_MBK_MAP_B) = g_envAppTwlHeader->arm7_wram_setting[1];
+		MEOW_REG(u32, IO_MBK_MAP_C) = g_envAppTwlHeader->arm7_wram_setting[2];
+	}
+
+	// Jump to ARM7 entrypoint
+	((void(*)(void))g_envAppNdsHeader->arm7_entrypoint)();
+	for (;;); // just in case
+}
+
 MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToBootstub(void)
 {
 	// Remap WRAM_A to the location used by DSi-enhanced (hybrid) apps
@@ -143,6 +172,13 @@ MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToBoots
 MEOW_WEAK void rtcSyncTime(void)
 {
 	// Dummy function used in case the RTC code isn't linked in
+}
+
+#elif defined(ARM9)
+
+MEOW_WEAK void systemUserExit(void)
+{
+	// Nothing
 }
 
 #endif
@@ -164,6 +200,9 @@ void __SYSCALL(exit)(int rc)
 
 #if defined(ARM9)
 
+	// Call user deinitialization function
+	systemUserExit();
+
 	// Disable all interrupts
 	armIrqLockByPsr();
 	irqLock();
@@ -173,18 +212,32 @@ void __SYSCALL(exit)(int rc)
 		for (;;);
 	}
 
-	// Flush caches
+	// Flush data cache
 	armDCacheFlushAll();
-	armICacheInvalidateAll();
+
+	// Retrieve jump target address
+	void (* jump_target)(void);
+	if (g_envExtraInfo->pm_chainload_flag) {
+		jump_target = (void(*)(void)) g_envAppNdsHeader->arm9_entrypoint;
+
+		// Perform PXI sync sequence
+		while (PXI_SYNC_RECV(REG_PXI_SYNC) != 1);
+		REG_PXI_SYNC = PXI_SYNC_SEND(1);
+		while (PXI_SYNC_RECV(REG_PXI_SYNC) != 0);
+		REG_PXI_SYNC = PXI_SYNC_SEND(0);
+	} else {
+		jump_target = g_envNdsBootstub->arm9_entrypoint;
+	}
 
 	// Disable PU and caches
 	u32 cp15_cr;
 	__asm__ __volatile__ ("mrc p15, 0, %0, c1, c0, 0" : "=r" (cp15_cr));
 	cp15_cr &= ~(CP15_CR_PU_ENABLE | CP15_CR_DCACHE_ENABLE | CP15_CR_ICACHE_ENABLE | CP15_CR_ROUND_ROBIN);
-	__asm__ __volatile__ ("mcr p15, 0, %0, c1, c0, 0" :: "r" (cp15_cr));
+	__asm__ __volatile__ ("mcr p15, 0, %0, c1, c0, 0" :: "r" (cp15_cr) : "memory");
 
-	// Jump to ARM9 bootstub entrypoint
-	g_envNdsBootstub->arm9_entrypoint();
+	// Jump to ARM9 entrypoint
+	jump_target();
+	for (;;); // just in case
 
 #elif defined(ARM7)
 
@@ -225,7 +278,11 @@ void __SYSCALL(exit)(int rc)
 	}
 
 	// Jump to new ARM7 entrypoint
-	_pmJumpToBootstub();
+	if (g_envExtraInfo->pm_chainload_flag) {
+		_pmJumpToNextApp();
+	} else {
+		_pmJumpToBootstub();
+	}
 
 #endif
 }
@@ -354,11 +411,12 @@ static bool _pmWasOrderedToSleep(void)
 
 bool pmHasResetJumpTarget(void)
 {
-	return g_envNdsBootstub->magic == ENV_NDS_BOOTSTUB_MAGIC;
+	return g_envExtraInfo->pm_chainload_flag || g_envNdsBootstub->magic == ENV_NDS_BOOTSTUB_MAGIC;
 }
 
 void pmClearResetJumpTarget(void)
 {
+	g_envExtraInfo->pm_chainload_flag = 1;
 	g_envNdsBootstub->magic = 0;
 }
 
