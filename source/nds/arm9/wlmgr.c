@@ -11,8 +11,19 @@
 
 #define WLMGR_NUM_MAIL_SLOTS 4
 
+void _netbufPrvInitPools(void* start, const u16* tx_counts, const u16* rx_counts);
+
 static Thread s_wlmgrThread;
 alignas(8) static u8 s_wlmgrThreadStack[2048];
+
+alignas(ARM_CACHE_LINE_SZ)
+static u8 s_wlmgrDefaultPacketHeap[WLMGR_MIN_PACKET_MEM_SZ + 7*(sizeof(NetBuf) + 2048)];
+
+const WlMgrInitConfig g_wlmgrDefaultConfig = {
+	.pktmem    = s_wlmgrDefaultPacketHeap,
+	.pktmem_sz = sizeof(s_wlmgrDefaultPacketHeap),
+	.pktmem_allocmap = (1U<<3)-1,
+};
 
 static struct {
 	WlMgrState state;
@@ -118,9 +129,61 @@ static int _wlmgrThreadMain(void* arg)
 	return 0;
 }
 
-void wlmgrInit(void* work_mem, size_t work_mem_sz, u8 thread_prio)
+static bool _wlmgrInitNetBuf(const WlMgrInitConfig* config)
 {
-	// TODO: do something with the work mem (_netbufPrvInitPools)
+	// Validate params
+	size_t avail_sz = config->pktmem_sz;
+	if (((u32)config->pktmem & (ARM_CACHE_LINE_SZ-1)) || avail_sz < WLMGR_MIN_PACKET_MEM_SZ) {
+		return false;
+	}
+
+	// Initialize tx/rx packet counts
+	u16 tx_counts[5] = { 16, 5, 5, 2, 1 };
+	u16 rx_counts[5] = {  8, 8, 5, 2, 1 };
+	avail_sz -= WLMGR_MIN_PACKET_MEM_SZ;
+
+	// Distribute all remaining memory
+	u32 pattern = config->pktmem_allocmap;
+	while (avail_sz >= sizeof(NetBuf) + 0x80) {
+		unsigned i;
+		size_t max_packet_sz = avail_sz - sizeof(NetBuf);
+		if (max_packet_sz >= 0x800) {
+			i = 4;
+		} else if (max_packet_sz >= 0x400) {
+			i = 3;
+		} else if (max_packet_sz >= 0x200) {
+			i = 2;
+		} else if (max_packet_sz >= 0x100) {
+			i = 1;
+		} else /* if (max_packet_sz >= 0x80) */ {
+			i = 0;
+		}
+
+		if (pattern&1) {
+			tx_counts[i] ++;
+		} else {
+			rx_counts[i] ++;
+		}
+
+		avail_sz -= sizeof(NetBuf) + (0x80<<i);
+		pattern = (pattern>>1) | (pattern<<30); // ROR 1
+	}
+
+	_netbufPrvInitPools(config->pktmem, tx_counts, rx_counts);
+	return true;
+}
+
+bool wlmgrInit(const WlMgrInitConfig* config, u8 thread_prio)
+{
+	static bool initted = false;
+	if (initted) {
+		return true;
+	}
+
+	// Initialize netbuf system
+	if (!config || !_wlmgrInitNetBuf(config)) {
+		return false;
+	}
 
 	// Bring up event/rx thread
 	threadPrepare(&s_wlmgrThread, _wlmgrThreadMain, NULL, &s_wlmgrThreadStack[sizeof(s_wlmgrThreadStack)], thread_prio);
@@ -128,6 +191,9 @@ void wlmgrInit(void* work_mem, size_t work_mem_sz, u8 thread_prio)
 
 	// Wait for ARM7 to be available
 	pxiWaitRemote(PxiChannel_WlMgr);
+
+	initted = true;
+	return true;
 }
 
 void wlmgrSetEventHandler(WlMgrEventFn cb, void* user)

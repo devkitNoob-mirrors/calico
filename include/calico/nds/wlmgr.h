@@ -32,10 +32,31 @@ typedef enum WlMgrEvent {
 
 #if defined(ARM9)
 
+#define WLMGR_MIN_PACKET_MEM_SZ (53*sizeof(NetBuf) + 0x4d00)
+#define WLMGR_DEFAULT_THREAD_PRIO 0x10
+
+typedef struct WlMgrInitConfig {
+	void*  pktmem;
+	size_t pktmem_sz;
+	u32    pktmem_allocmap;
+} WlMgrInitConfig;
+
 typedef void (*WlMgrEventFn)(void* user, WlMgrEvent event, uptr arg0, uptr arg1);
 typedef void (*WlMgrRawRxFn)(void* user, NetBuf* pPacket);
 
-void wlmgrInit(void* work_mem, size_t work_mem_sz, u8 thread_prio);
+bool wlmgrInit(const WlMgrInitConfig* config, u8 thread_prio);
+
+MEOW_INLINE const WlMgrInitConfig* wlmgrGetDefaultConfig(void)
+{
+	extern const WlMgrInitConfig g_wlmgrDefaultConfig;
+	return &g_wlmgrDefaultConfig;
+}
+
+MEOW_INLINE bool wlmgrInitDefault(void)
+{
+	return wlmgrInit(wlmgrGetDefaultConfig(), WLMGR_DEFAULT_THREAD_PRIO);
+}
+
 void wlmgrSetEventHandler(WlMgrEventFn cb, void* user);
 WlMgrState wlmgrGetState(void);
 
