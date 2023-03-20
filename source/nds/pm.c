@@ -416,7 +416,7 @@ bool pmHasResetJumpTarget(void)
 
 void pmClearResetJumpTarget(void)
 {
-	g_envExtraInfo->pm_chainload_flag = 1;
+	g_envExtraInfo->pm_chainload_flag = 0;
 	g_envNdsBootstub->magic = 0;
 }
 
