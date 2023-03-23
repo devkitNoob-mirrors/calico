@@ -10,6 +10,7 @@ MEMORY {
 	lma9i   : ORIGIN = 0x2400000, LENGTH = 0x280000
 
 	/* Runtime memory layout for code/data areas (VMAs) */
+	dldi    : ORIGIN = 0x380b000, LENGTH = 0x4000   /* DLDI (on ARM7 WRAM) */
 	vectors : ORIGIN = 0x0000000, LENGTH = 0x20     /* Vectors */
 	itcm    : ORIGIN = 0x1ff8020, LENGTH = 0x7fe0   /* ITCM (minus vectors) */
 	main    : ORIGIN = 0x2000c00, LENGTH = 0xfcb400 /* Main RAM (usable area for ARM9) */
@@ -20,6 +21,7 @@ PHDRS {
 	/* ELF program headers for the ARM9 binary */
 	stub    PT_LOAD FLAGS(7);
 	crt0    PT_LOAD FLAGS(7);
+	dldi    PT_LOAD FLAGS(7);
 	vectors PT_LOAD FLAGS(7);
 	itcm    PT_LOAD FLAGS(7);
 	dtcm    PT_LOAD FLAGS(7);
@@ -84,6 +86,13 @@ SECTIONS {
 	/* Ensure crt0 does not overlap initial bootstrap */
 	ASSERT( __crt0_end <= ADDR(.bootstub) || __crt0_start >= ADDR(.bootstub) + SIZEOF(.bootstub),
 		"Error: crt0 section overlaps initial bootstrap" )
+
+	/* DLDI area (copied to ARM7) */
+	.dldi : {
+		KEEP( *(.dldi) )
+	} >dldi AT>lma9 :dldi = 0x00
+
+	PROVIDE_HIDDEN( __dldi_lma = SIZEOF(.dldi) ? LOADADDR(.dldi) : 0 );
 
 	/* ARM exception vectors (start of ITCM) */
 	.vectors : {

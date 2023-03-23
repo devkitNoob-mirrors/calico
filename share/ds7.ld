@@ -12,7 +12,7 @@ MEMORY {
 	/* Runtime memory layout for code/data areas (VMAs) */
 	main    : ORIGIN = 0x2fcc000, LENGTH = 0x28000 /* Main RAM (usable area for ARM7) */
 	twlwram : ORIGIN = 0x37c0000, LENGTH = 0x38000 /* DSi exclusive ARM7 WRAM (minus 32KB used as part of below) */
-	wram    : ORIGIN = 0x37f8000, LENGTH = 0x17e80 /* ARM7 WRAM (minus stacks/reserved BIOS memory) */
+	wram    : ORIGIN = 0x37f8000, LENGTH = 0x17000 /* ARM7 WRAM (minus stacks/reserved BIOS memory) */
 }
 
 PHDRS {
@@ -28,7 +28,8 @@ PHDRS {
 }
 
 /* Default initial stack locations and BIOS variables */
-PROVIDE_HIDDEN( __sp_usr     = ORIGIN(wram) + LENGTH(wram) );
+PROVIDE_HIDDEN( __sys_start  = ORIGIN(wram) + LENGTH(wram) );
+PROVIDE_HIDDEN( __sp_usr     = __sys_start + 0xe80         );
 PROVIDE_HIDDEN( __sp_irq     = __sp_usr + 0x100            );
 PROVIDE_HIDDEN( __sp_svc     = __sp_irq + 0x40             );
 PROVIDE_HIDDEN( __irq_flags2 = __sp_svc + 0x00             );
@@ -46,6 +47,8 @@ SECTIONS {
 			/* libc functions that are only used during crt0 */
 			.text.build_argv
 			.text.__libc_init_array
+			/* Other functions */
+			.text._blkShelterDldi
 		)
 		*.crt0.* (.text .stub .text.* .gnu.linkonce.t.*)
 		*.crt0.* (.glue_7t .glue_7 .vfp11_veneer .v4_bx)

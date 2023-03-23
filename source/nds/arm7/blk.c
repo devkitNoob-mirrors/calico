@@ -1,16 +1,19 @@
 #include <calico/types.h>
 #include <calico/system/thread.h>
 #include <calico/system/mailbox.h>
+#include <calico/dev/dldi.h>
 #include <calico/dev/blk.h>
 #include <calico/nds/system.h>
 #include <calico/nds/pxi.h>
 #include <calico/nds/arm7/twlblk.h>
 
+#include "../crt0.h"
 #include "../transfer.h"
 #include "../pxi/blkdev.h"
 
 static BlkDevCallbackFn s_blkDevCallback;
 
+static DldiDiscIface* s_dldiDiscIface;
 static bool s_blkHasTwl;
 
 static Mailbox s_blkPxiMailbox;
@@ -82,8 +85,8 @@ MEOW_NOINLINE bool blkDevIsPresent(BlkDevice dev)
 		default:
 			return false;
 
-		//case BlkDevice_Dldi: // TODO
-		//	return false;
+		case BlkDevice_Dldi:
+			return s_dldiDiscIface && s_dldiDiscIface->is_inserted();
 
 		case BlkDevice_TwlSdCard:
 			return s_blkHasTwl && twlSdIsInserted();
@@ -99,6 +102,15 @@ MEOW_NOINLINE bool blkDevInit(BlkDevice dev)
 	switch (dev) {
 		default:
 			return false;
+
+		case BlkDevice_Dldi: {
+			bool rc = s_dldiDiscIface && s_dldiDiscIface->startup();
+			if (rc) {
+				// XX: detect disc size using MBR
+				s_transferRegion->blkdev_sector_count[BlkDevice_Dldi] = UINT32_MAX;
+			}
+			return rc;
+		}
 
 		case BlkDevice_TwlSdCard:
 			return s_blkHasTwl && twlSdInit();
@@ -130,6 +142,9 @@ MEOW_NOINLINE bool blkDevReadSectors(BlkDevice dev, void* buffer, u32 first_sect
 		default:
 			return false;
 
+		case BlkDevice_Dldi:
+			return s_dldiDiscIface && s_dldiDiscIface->read_sectors(first_sector, num_sectors, buffer);
+
 		case BlkDevice_TwlSdCard:
 			return s_blkHasTwl && twlSdReadSectors(buffer, first_sector, num_sectors);
 
@@ -147,7 +162,46 @@ MEOW_NOINLINE bool blkDevWriteSectors(BlkDevice dev, const void* buffer, u32 fir
 		default:
 			return false;
 
+		case BlkDevice_Dldi:
+			return s_dldiDiscIface && s_dldiDiscIface->write_sectors(first_sector, num_sectors, buffer);
+
 		case BlkDevice_TwlSdCard:
 			return s_blkHasTwl && twlSdWriteSectors(buffer, first_sector, num_sectors);
 	}
+}
+
+void _blkShelterDldi(void)
+{
+	// Check if we have a valid ARM9 module header
+	Crt0Header9* mod9 = (Crt0Header9*)(g_envAppNdsHeader->arm9_entrypoint + 4);
+	if (mod9->base.magic != CRT0_MAGIC_ARM9) {
+		return;
+	}
+
+	// Check the ARM9 module contains a valid DLDI driver
+	uptr dldi_lma = mod9->dldi_addr;
+	if (dldi_lma < g_envAppNdsHeader->arm9_ram_address || dldi_lma >= g_envAppNdsHeader->arm9_ram_address + g_envAppNdsHeader->arm9_size) {
+		return;
+	}
+
+	// Check the DLDI driver is not a stub driver
+	DldiHeader* dldi_hdr = (DldiHeader*)dldi_lma;
+	if (!(dldi_hdr->disc.features & DLDI_FEATURE_CAN_READ)) {
+		return;
+	}
+
+	// Check the DLDI driver does not overlap used WRAM
+	extern char __wram_bss_end[];
+	extern char __sys_start[];
+	uptr avail_sz = (uptr)__sys_start - dldi_hdr->dldi_start;
+	uptr dldi_sz = 1U << dldi_hdr->driver_sz_log2;
+	if (dldi_hdr->dldi_start < (uptr)__wram_bss_end || dldi_sz > avail_sz) {
+		return;
+	}
+
+	// Move DLDI to WRAM
+	crt0CopyMem32(dldi_hdr->dldi_start, dldi_lma, dldi_sz);
+
+	// Remember pointer to DLDI disc interface
+	s_dldiDiscIface = &((DldiHeader*)dldi_hdr->dldi_start)->disc;
 }

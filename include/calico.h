@@ -26,6 +26,7 @@
 #include "calico/nds/mm.h"
 #include "calico/nds/mm_env.h"
 #include "calico/nds/io.h"
+#include "calico/dev/dldi_defs.h"
 #else
 #error "Unknown/unsupported platform"
 #endif
@@ -71,6 +72,7 @@ extern "C" {
 #include "calico/nds/pm.h"
 
 #include "calico/dev/blk.h"
+#include "calico/dev/dldi.h"
 #include "calico/dev/wlan.h"
 #include "calico/nds/wlmgr.h"
 

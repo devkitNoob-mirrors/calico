@@ -11,6 +11,7 @@
 #if defined(ARM7)
 #include <calico/nds/arm7/gpio.h>
 #endif
+#include "crt0.h"
 
 bool g_isTwlMode;
 #if defined(ARM7)
@@ -37,27 +38,6 @@ void build_argv(EnvNdsArgvHeader*);
 extern char __heap_start[], __heap_end[];
 
 #endif
-
-void crt0CopyMem32(uptr dst, uptr src, uptr size);
-void crt0FillMem32(uptr dst, u32 value, uptr size);
-
-typedef struct Crt0LoadListEntry {
-	uptr start;
-	uptr end;
-	uptr bss_end;
-} Crt0LoadListEntry;
-
-typedef struct Crt0LoadList {
-	uptr lma;
-	Crt0LoadListEntry const* start;
-	Crt0LoadListEntry const* end;
-} Crt0LoadList;
-
-typedef struct Crt0Header {
-	u32 magic;
-	Crt0LoadList ll_ntr;
-	Crt0LoadList ll_twl;
-} Crt0Header;
 
 MEOW_NOINLINE void crt0ProcessLoadList(Crt0LoadList const* ll)
 {
@@ -111,6 +91,10 @@ static void crt0SetupArgv(bool is_twl)
 		// Terminate argv list
 		g_envNdsArgvHeader->argv[g_envNdsArgvHeader->argc] = NULL;
 	}
+}
+
+MEOW_WEAK void _blkShelterDldi(void)
+{
 }
 
 #endif
@@ -227,6 +211,9 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 #if defined(ARM9)
 	// Call pre-libc system startup routine
 	systemStartup();
+#elif defined(ARM7)
+	// Shelter DLDI driver from ARM9 executable
+	_blkShelterDldi();
 #endif
 
 	// Call global constructors

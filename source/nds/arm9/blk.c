@@ -9,6 +9,10 @@
 #include "../transfer.h"
 #include "../pxi/blkdev.h"
 
+// Ensure DLDI stub is linked in
+extern char __dldi_start[];
+char* const __dldi_ref = __dldi_start;
+
 static BlkDevCallbackFn s_blkDevCallback;
 
 static Mailbox s_blkPxiMailbox;
