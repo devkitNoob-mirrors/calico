@@ -348,6 +348,8 @@ typedef struct EnvExtraInfo {
 	u16 wlmgr_channel_mask;
 	u8  pm_chainload_flag;
 	u8  _pad_0x0D;
+	u16 dldi_features;
+	u32 dldi_io_type;
 } EnvExtraInfo;
 
 typedef struct EnvTwlDeviceListEntry {

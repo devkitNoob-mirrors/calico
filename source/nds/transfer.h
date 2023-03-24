@@ -42,4 +42,6 @@ typedef struct TransferRegion {
 
 	u16 sound_active_ch_mask;
 	u16 sound_reserved;
+
+	u16 exmemcnt_mirror;
 } TransferRegion;

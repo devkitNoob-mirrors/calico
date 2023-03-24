@@ -3,6 +3,7 @@
 #include <calico/arm/cache.h>
 #endif
 #include <calico/nds/mm.h>
+#include <calico/nds/system.h>
 #include <calico/nds/dma.h>
 #include <calico/nds/ndma.h>
 #include <calico/nds/timer.h>
@@ -154,6 +155,9 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 		REG_GPIO_CNT = GPIO_CNT_DIR_OUT(GPIO_PIN_SOUND_ENABLE) | GPIO_CNT_PIN(GPIO_PIN_SOUND_ENABLE);
 		REG_GPIO_IRQ = GPIO_IRQ_ENABLE(GPIO_PIN_MCUIRQ);
 	}
+#elif defined(ARM9)
+	// By default, ARM7 owns GBA/NDS slots & has Main RAM priority
+	REG_EXMEMCNT |= EXMEMCNT_GBA_SLOT_ARM7 | EXMEMCNT_NDS_SLOT_ARM7 | EXMEMCNT_MAIN_RAM_PRIO_ARM7;
 #endif
 
 	// Process load lists

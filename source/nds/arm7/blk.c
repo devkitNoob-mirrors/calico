@@ -186,7 +186,8 @@ void _blkShelterDldi(void)
 
 	// Check the DLDI driver is not a stub driver
 	DldiHeader* dldi_hdr = (DldiHeader*)dldi_lma;
-	if (!(dldi_hdr->disc.features & DLDI_FEATURE_CAN_READ)) {
+	u32 dldi_features = dldi_hdr->disc.features;
+	if (!(dldi_features & DLDI_FEATURE_CAN_READ)) {
 		return;
 	}
 
@@ -204,4 +205,18 @@ void _blkShelterDldi(void)
 
 	// Remember pointer to DLDI disc interface
 	s_dldiDiscIface = &((DldiHeader*)dldi_hdr->dldi_start)->disc;
+
+	// Expose info about the loaded DLDI driver
+	g_envExtraInfo->dldi_features = dldi_features;
+	g_envExtraInfo->dldi_io_type  = s_dldiDiscIface->io_type;
+
+	// Declare which EXMEMCNT bits we need for DLDI access on the ARM7
+	u16 exmemcnt_bits = 0;
+	if (dldi_features & DLDI_FEATURE_SLOT_GBA) {
+		exmemcnt_bits |= EXMEMCNT_GBA_SLOT_ARM7;
+	}
+	if (dldi_features & DLDI_FEATURE_SLOT_NDS) {
+		exmemcnt_bits |= EXMEMCNT_NDS_SLOT_ARM7;
+	}
+	s_transferRegion->exmemcnt_mirror |= exmemcnt_bits;
 }
