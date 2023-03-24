@@ -43,7 +43,8 @@ __dldi_start:
 	.word  .Ldummy_func @ shutdown
 
 .Ldummy_func:
-	bx lr
+	mov r0, #0
+	bx  lr
 
 .pool
 .space (1<<DLDI_ALLOCATED_SPACE) - (. - __dldi_start)

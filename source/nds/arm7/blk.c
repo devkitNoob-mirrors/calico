@@ -195,7 +195,7 @@ void _blkShelterDldi(void)
 	extern char __sys_start[];
 	uptr avail_sz = (uptr)__sys_start - dldi_hdr->dldi_start;
 	uptr dldi_sz = 1U << dldi_hdr->driver_sz_log2;
-	if (dldi_hdr->dldi_start < (uptr)__wram_bss_end || dldi_sz > avail_sz) {
+	if (dldi_hdr->dldi_start < (uptr)__wram_bss_end || dldi_hdr->dldi_start >= (uptr)__sys_start || dldi_sz > avail_sz) {
 		return;
 	}
 

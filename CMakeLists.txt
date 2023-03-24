@@ -109,6 +109,8 @@ if(NINTENDO_DS)
 			source/nds/arm9/mpu_setup.crt0.s
 			source/nds/arm9/sys_startup.c
 
+			source/dev/dldi_stub.s
+
 			source/nds/arm9/arm7_debug.c
 			source/nds/arm9/pm_arm9.c
 			source/nds/arm9/touch.c
