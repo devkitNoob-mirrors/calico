@@ -39,7 +39,7 @@ static void threadUpdateDynamicPrio(Thread* t)
 		}
 
 		// Update the holder thread's dynamic priority as well
-		t = (Thread*)t->token;
+		t = ((Mutex*)t->token)->owner;
 	}
 }
 
