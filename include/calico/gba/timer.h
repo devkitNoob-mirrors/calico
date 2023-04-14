@@ -37,21 +37,21 @@ MEOW_CONSTEXPR u16 timerCalcReload(unsigned prescaler, unsigned freq)
 	return period < 0x10000 ? (0x10000-period) : 0;
 }
 
-MEOW_INLINE void timerStop(unsigned id)
+MEOW_INLINE void timerEnd(unsigned id)
 {
 	REG_TMxCNT_H(id) = 0;
 }
 
-MEOW_INLINE void timerStart(unsigned id, unsigned prescaler, unsigned freq, bool wantIrq)
+MEOW_INLINE void timerBegin(unsigned id, unsigned prescaler, unsigned freq, bool wantIrq)
 {
-	timerStop(id);
+	timerEnd(id);
 	REG_TMxCNT_L(id) = timerCalcReload(prescaler, freq);
 	REG_TMxCNT_H(id) = prescaler | TIMER_ENABLE | (wantIrq ? TIMER_ENABLE_IRQ : 0);
 }
 
-MEOW_INLINE void timerStartCascade(unsigned id, bool wantIrq)
+MEOW_INLINE void timerBeginCascade(unsigned id, bool wantIrq)
 {
-	timerStop(id);
+	timerEnd(id);
 	REG_TMxCNT_L(id) = 0;
 	REG_TMxCNT_H(id) = TIMER_CASCADE | TIMER_ENABLE | (wantIrq ? TIMER_ENABLE_IRQ : 0);
 }
