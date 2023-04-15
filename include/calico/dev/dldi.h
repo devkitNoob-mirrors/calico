@@ -1,17 +1,6 @@
 #pragma once
-#include "../types.h"
 #include "dldi_defs.h"
-
-typedef struct DldiDiscIface {
-	u32 io_type;
-	u32 features;
-	bool (* startup)(void);
-	bool (* is_inserted)(void);
-	bool (* read_sectors)(u32 sectors, u32 num_sectors, void* buffer);
-	bool (* write_sectors)(u32 sectors, u32 num_sectors, const void* buffer);
-	bool (* clear_status)(void);
-	bool (* shutdown)(void);
-} DldiDiscIface;
+#include "disc_io.h"
 
 typedef struct DldiHeader {
 	u32  magic_num;
@@ -32,5 +21,5 @@ typedef struct DldiHeader {
 	uptr bss_start;
 	uptr bss_end;
 
-	DldiDiscIface disc;
+	DISC_INTERFACE disc;
 } DldiHeader;

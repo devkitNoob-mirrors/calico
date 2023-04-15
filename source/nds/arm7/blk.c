@@ -13,7 +13,7 @@
 
 static BlkDevCallbackFn s_blkDevCallback;
 
-static DldiDiscIface* s_dldiDiscIface;
+static DISC_INTERFACE* s_dldiDiscIface;
 static bool s_blkHasTwl;
 
 static Mailbox s_blkPxiMailbox;
@@ -86,7 +86,7 @@ MEOW_NOINLINE bool blkDevIsPresent(BlkDevice dev)
 			return false;
 
 		case BlkDevice_Dldi:
-			return s_dldiDiscIface && s_dldiDiscIface->is_inserted();
+			return s_dldiDiscIface && s_dldiDiscIface->isInserted();
 
 		case BlkDevice_TwlSdCard:
 			return s_blkHasTwl && twlSdIsInserted();
@@ -143,7 +143,7 @@ MEOW_NOINLINE bool blkDevReadSectors(BlkDevice dev, void* buffer, u32 first_sect
 			return false;
 
 		case BlkDevice_Dldi:
-			return s_dldiDiscIface && s_dldiDiscIface->read_sectors(first_sector, num_sectors, buffer);
+			return s_dldiDiscIface && s_dldiDiscIface->readSectors(first_sector, num_sectors, buffer);
 
 		case BlkDevice_TwlSdCard:
 			return s_blkHasTwl && twlSdReadSectors(buffer, first_sector, num_sectors);
@@ -163,7 +163,7 @@ MEOW_NOINLINE bool blkDevWriteSectors(BlkDevice dev, const void* buffer, u32 fir
 			return false;
 
 		case BlkDevice_Dldi:
-			return s_dldiDiscIface && s_dldiDiscIface->write_sectors(first_sector, num_sectors, buffer);
+			return s_dldiDiscIface && s_dldiDiscIface->writeSectors(first_sector, num_sectors, buffer);
 
 		case BlkDevice_TwlSdCard:
 			return s_blkHasTwl && twlSdWriteSectors(buffer, first_sector, num_sectors);
@@ -208,7 +208,7 @@ void _blkShelterDldi(void)
 
 	// Expose info about the loaded DLDI driver
 	g_envExtraInfo->dldi_features = dldi_features;
-	g_envExtraInfo->dldi_io_type  = s_dldiDiscIface->io_type;
+	g_envExtraInfo->dldi_io_type  = s_dldiDiscIface->ioType;
 
 	// Declare which EXMEMCNT bits we need for DLDI access on the ARM7
 	u16 exmemcnt_bits = 0;

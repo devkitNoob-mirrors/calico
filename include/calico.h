@@ -72,6 +72,7 @@ extern "C" {
 #include "calico/nds/pm.h"
 
 #include "calico/dev/blk.h"
+#include "calico/dev/disc_io.h"
 #include "calico/dev/dldi.h"
 #include "calico/dev/wlan.h"
 #include "calico/nds/wlmgr.h"
