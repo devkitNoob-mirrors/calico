@@ -1,5 +1,5 @@
 
-catnip_package(calico)
+catnip_package(calico DEFAULT ds7_release ds9_release)
 
 catnip_add_preset(gba_release TOOLSET GBA BUILD_TYPE Release)
 

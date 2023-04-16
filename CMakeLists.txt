@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.13)
 
 set(DKP_PLATFORM_BOOTSTRAP TRUE)
 set(DKP_GBA_PLATFORM_LIBRARY calico)
-set(DKP_NDS_PLATFORM_LIBRARY calico)
 
 project(calico
 	VERSION 0.0.1
@@ -15,14 +14,11 @@ endif()
 
 if(NINTENDO_GBA)
 	set(PLATFORM_SUFFIX "_gba")
-	set(ARM7 TRUE)
 elseif(NINTENDO_DS)
-	if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv4t")
+	if(ARM7)
 		set(PLATFORM_SUFFIX "_ds7")
-		set(ARM7 TRUE)
-	elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv5te")
+	elseif(ARM9)
 		set(PLATFORM_SUFFIX "_ds9")
-		set(ARM9 TRUE)
 	else()
 		message(FATAL_ERROR "Invalid NDS processor, must be armv4t or armv5te")
 	endif()
