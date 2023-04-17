@@ -187,6 +187,7 @@ bool wlmgrInit(const WlMgrInitConfig* config, u8 thread_prio)
 
 	// Bring up event/rx thread
 	threadPrepare(&s_wlmgrThread, _wlmgrThreadMain, NULL, &s_wlmgrThreadStack[sizeof(s_wlmgrThreadStack)], thread_prio);
+	threadAttachLocalStorage(&s_wlmgrThread, NULL);
 	threadStart(&s_wlmgrThread);
 
 	// Wait for ARM7 to be available

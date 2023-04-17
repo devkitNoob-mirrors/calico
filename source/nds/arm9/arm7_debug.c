@@ -5,7 +5,7 @@
 #include "../transfer.h"
 
 static Thread s_arm7DebugThread;
-alignas(8) static u8 s_arm7DebugStack[1024];
+alignas(8) static u8 s_arm7DebugStack[2048];
 
 static int _arm7DebugThread(void* data)
 {
@@ -36,5 +36,6 @@ static int _arm7DebugThread(void* data)
 void installArm7DebugSupport(Arm7DebugFn fn, u8 thread_prio)
 {
 	threadPrepare(&s_arm7DebugThread, _arm7DebugThread, fn, &s_arm7DebugStack[sizeof(s_arm7DebugStack)], thread_prio);
+	threadAttachLocalStorage(&s_arm7DebugThread, NULL);
 	threadStart(&s_arm7DebugThread);
 }

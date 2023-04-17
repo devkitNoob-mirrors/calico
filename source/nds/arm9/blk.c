@@ -18,7 +18,7 @@ static BlkDevCallbackFn s_blkDevCallback;
 static Mailbox s_blkPxiMailbox;
 static u32 s_blkPxiMailboxData[1];
 static Thread s_blkPxiThread;
-alignas(8) static u8 s_blkPxiThreadStack[1024];
+alignas(8) static u8 s_blkPxiThreadStack[2048];
 
 MEOW_CONSTEXPR bool _blkIsValidAddr(const void* addr, u32 alignment)
 {
@@ -68,6 +68,7 @@ void blkSetDevCallback(BlkDevCallbackFn fn)
 		mailboxPrepare(&s_blkPxiMailbox, s_blkPxiMailboxData, sizeof(s_blkPxiMailboxData)/sizeof(u32));
 		pxiSetMailbox(PxiChannel_BlkDev, &s_blkPxiMailbox);
 		threadPrepare(&s_blkPxiThread, _blkPxiThread, NULL, &s_blkPxiThreadStack[sizeof(s_blkPxiThreadStack)], 0x08);
+		threadAttachLocalStorage(&s_blkPxiThread, NULL);
 		threadStart(&s_blkPxiThread);
 	}
 
