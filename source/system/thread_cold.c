@@ -1,3 +1,6 @@
+// Avoid a hard dependency on _impure_data if it is never referenced
+#define __ATTRIBUTE_IMPURE_DATA__ __attribute__((weak))
+
 #include "thread-priv.h"
 
 #if defined(__GBA__) || (defined(__NDS__) && defined(ARM7))
@@ -22,6 +25,7 @@ void _threadInit(void)
 	// Set up main thread (which is also the current one)
 	s_firstThread          = &s_mainThread;
 	s_curThread            = &s_mainThread;
+	s_mainThread.impure    = &_impure_data;
 	s_mainThread.next      = &s_idleThread;
 	s_mainThread.status    = ThrStatus_Running;
 	s_mainThread.prio      = MAIN_THREAD_PRIO;
@@ -41,6 +45,7 @@ void _threadInit(void)
 #else
 #error "This ARM7 platform is not yet supported"
 #endif
+	s_idleThread.impure    = &_impure_data;
 	s_idleThread.status    = ThrStatus_Running;
 	s_idleThread.prio      = THREAD_MIN_PRIO+1;
 	s_idleThread.baseprio  = s_idleThread.prio;
@@ -56,6 +61,7 @@ void threadPrepare(Thread* t, ThreadFunc entrypoint, void* arg, void* stack_top,
 	t->ctx.r[14]  = (u32)threadExit;
 	t->ctx.r[15]  = (u32)entrypoint;
 	t->ctx.psr    = ARM_PSR_MODE_SYS;
+	t->impure     = &_impure_data;
 	t->status     = ThrStatus_Running;
 	t->prio       = prio & THREAD_MIN_PRIO;
 	t->baseprio   = t->prio;
@@ -65,6 +71,46 @@ void threadPrepare(Thread* t, ThreadFunc entrypoint, void* arg, void* stack_top,
 		t->ctx.r[15] &= ~1;
 		t->ctx.psr   |= ARM_PSR_T;
 	}
+}
+
+size_t threadGetLocalStorageSize(void)
+{
+	size_t needed_sz = 0;
+	if (&_impure_data) {
+		needed_sz += sizeof(struct _reent);
+	}
+	return needed_sz;
+}
+
+void threadAttachLocalStorage(Thread* t, void* storage)
+{
+	// Do nothing if impure data isn't linked in
+	struct _reent* parent = (struct _reent*)threadGetSelf()->impure;
+	if (!parent) {
+		return;
+	}
+
+	// If storage wasn't passed, allocate reent struct from the thread's stack
+	if (!storage) {
+		t->ctx.r[13] -= sizeof(struct _reent);
+		t->ctx.r[13] &= ~7;
+		storage = (void*)t->ctx.r[13];
+	}
+
+	// Inherit standard streams from current thread
+	__FILE *_stdin  = parent->_stdin;
+	__FILE *_stdout = parent->_stdout;
+	__FILE *_stderr = parent->_stderr;
+
+	// Initialize the new reent struct
+	struct _reent* r = (struct _reent*)storage;
+	_REENT_INIT_PTR(r);
+	r->_stdin  = _stdin;
+	r->_stdout = _stdout;
+	r->_stderr = _stderr;
+
+	// Attach reent struct to thread
+	t->impure = r;
 }
 
 void threadStart(Thread* t)

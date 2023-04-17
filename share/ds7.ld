@@ -100,6 +100,7 @@ SECTIONS {
 			.text.exit
 			.text.__call_exitprocs
 			.text.__do_global_dtors_aux
+			.text.__libc_fini_array
 			.text._exit
 			.text._pmJumpToBootstub /* must be outside ARM7 WRAM */
 			.text._pmJumpToNextApp  /* as above */
@@ -111,7 +112,7 @@ SECTIONS {
 
 		*.16.o (.rodata .rodata.* .gnu.linkonce.r.*)
 		*.16.o (.rodata1)
-		*(.data.impure_data) /* Likewise for this */
+		*(.data._impure_data) /* Likewise for this */
 		*.16.o (.data .data.* .gnu.linkonce.d.*)
 		*.16.o (.data1)
 		. = ALIGN(4);

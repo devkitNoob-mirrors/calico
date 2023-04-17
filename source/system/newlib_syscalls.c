@@ -23,6 +23,21 @@ MEOW_INLINE time_t _getUnixTime(void)
 // Dummy symbol referenced by crt0 so that this object file is pulled in by the linker
 const u32 __newlib_syscalls = 0xdeadbeef;
 
+// exit calls this handler; avoid a hard dependency on findfp by providing a weak global
+void (*__stdio_exit_handler)(void) MEOW_WEAK;
+
+// exit calls this function; avoid a hard dependency on atexit by providing a simple weak implementation
+MEOW_WEAK void __call_exitprocs(int rc, void* dso)
+{
+	extern void __libc_fini_array(void);
+	__libc_fini_array();
+}
+
+struct _reent* __SYSCALL(getreent)(void)
+{
+	return (struct _reent*)threadGetSelf()->impure;
+}
+
 int __SYSCALL(gettod_r)(struct _reent* ptr, struct timeval* tp, struct timezone* tz)
 {
 	if (tp) {

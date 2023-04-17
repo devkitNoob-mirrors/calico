@@ -35,6 +35,9 @@ typedef int (* ThreadFunc)(void* arg);
 struct Thread {
 	ArmContext ctx;
 
+	void* tp;
+	void* impure;
+
 	Thread* next;
 	ThrStatus status;
 	u8 prio, baseprio;
@@ -70,6 +73,8 @@ typedef struct ThrSchedState {
 //void threadInit(void);
 
 void threadPrepare(Thread* t, ThreadFunc entrypoint, void* arg, void* stack_top, u8 prio);
+size_t threadGetLocalStorageSize(void);
+void threadAttachLocalStorage(Thread* t, void* storage);
 void threadStart(Thread* t);
 void threadFree(Thread* t);
 void threadJoin(Thread* t);
