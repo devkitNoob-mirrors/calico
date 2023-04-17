@@ -183,9 +183,17 @@ MEOW_WEAK void systemUserExit(void)
 
 #endif
 
+MEOW_WEAK void systemErrorExit(int rc)
+{
+	// Nothing
+}
+
 void __SYSCALL(exit)(int rc)
 {
-	MEOW_DUMMY(rc); // TODO: Do something useful with this
+	// Call error exit handler if needed
+	if (rc != 0) {
+		systemErrorExit(rc);
+	}
 
 	// Call event handlers
 	_pmCallEventHandlers(PmEvent_OnReset);
