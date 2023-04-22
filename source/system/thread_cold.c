@@ -3,6 +3,14 @@
 
 #include "thread-priv.h"
 
+typedef struct TlsInfo {
+	void*  start;
+	size_t total_sz;
+	size_t load_sz;
+} TlsInfo;
+
+extern TlsInfo __tls_info MEOW_WEAK;
+
 #if defined(__GBA__) || (defined(__NDS__) && defined(ARM7))
 void svcHalt(void);
 
@@ -15,6 +23,15 @@ extern u32 __sp_usr[];
 static Thread s_mainThread, s_idleThread;
 static ThrListNode s_joinThreads, s_sleepThreads;
 
+MEOW_INLINE void* _threadGetMainTp(void)
+{
+	if (&__tls_info) {
+		return (char*)__tls_info.start - 2*sizeof(void*);
+	} else {
+		return NULL;
+	}
+}
+
 static void _threadTickTask(TickTask* task)
 {
 	threadUnblockAllByValue(&s_sleepThreads, (u32)task);
@@ -25,6 +42,7 @@ void _threadInit(void)
 	// Set up main thread (which is also the current one)
 	s_firstThread          = &s_mainThread;
 	s_curThread            = &s_mainThread;
+	s_mainThread.tp        = _threadGetMainTp();
 	s_mainThread.impure    = &_impure_data;
 	s_mainThread.next      = &s_idleThread;
 	s_mainThread.status    = ThrStatus_Running;
@@ -45,7 +63,8 @@ void _threadInit(void)
 #else
 #error "This ARM7 platform is not yet supported"
 #endif
-	s_idleThread.impure    = &_impure_data;
+	s_idleThread.tp        = s_mainThread.tp;
+	s_idleThread.impure    = s_mainThread.impure;
 	s_idleThread.status    = ThrStatus_Running;
 	s_idleThread.prio      = THREAD_MIN_PRIO+1;
 	s_idleThread.baseprio  = s_idleThread.prio;
@@ -61,7 +80,8 @@ void threadPrepare(Thread* t, ThreadFunc entrypoint, void* arg, void* stack_top,
 	t->ctx.r[14]  = (u32)threadExit;
 	t->ctx.r[15]  = (u32)entrypoint;
 	t->ctx.psr    = ARM_PSR_MODE_SYS;
-	t->impure     = &_impure_data;
+	t->tp         = s_mainThread.tp;
+	t->impure     = s_mainThread.impure;
 	t->status     = ThrStatus_Running;
 	t->prio       = prio & THREAD_MIN_PRIO;
 	t->baseprio   = t->prio;
@@ -76,41 +96,61 @@ void threadPrepare(Thread* t, ThreadFunc entrypoint, void* arg, void* stack_top,
 size_t threadGetLocalStorageSize(void)
 {
 	size_t needed_sz = 0;
+	if (&__tls_info) {
+		needed_sz += __tls_info.total_sz;
+	}
 	if (&_impure_data) {
 		needed_sz += sizeof(struct _reent);
 	}
-	return needed_sz;
+	return (needed_sz + 7) &~ 7;
 }
 
 void threadAttachLocalStorage(Thread* t, void* storage)
 {
-	// Do nothing if impure data isn't linked in
-	struct _reent* parent = (struct _reent*)threadGetSelf()->impure;
-	if (!parent) {
+	// Retrieve needed storage size - return early if 0
+	size_t needed_sz = threadGetLocalStorageSize();
+	if (!needed_sz) {
 		return;
 	}
 
 	// If storage wasn't passed, allocate reent struct from the thread's stack
 	if (!storage) {
-		t->ctx.r[13] -= sizeof(struct _reent);
-		t->ctx.r[13] &= ~7;
+		t->ctx.r[13] -= needed_sz;
 		storage = (void*)t->ctx.r[13];
 	}
 
-	// Inherit standard streams from current thread
-	__FILE *_stdin  = parent->_stdin;
-	__FILE *_stdout = parent->_stdout;
-	__FILE *_stderr = parent->_stderr;
+	// Zerofill storage
+	armFillMem32(storage, 0, needed_sz);
 
-	// Initialize the new reent struct
-	struct _reent* r = (struct _reent*)storage;
-	_REENT_INIT_PTR(r);
-	r->_stdin  = _stdin;
-	r->_stdout = _stdout;
-	r->_stderr = _stderr;
+	// Handle TLS segment if present
+	if (&__tls_info) {
+		// Attach thread pointer
+		t->tp = (char*)storage - 2*sizeof(void*);
 
-	// Attach reent struct to thread
-	t->impure = r;
+		// Copy initializer data if needed
+		if (__tls_info.load_sz) {
+			armCopyMem32(storage, __tls_info.start, __tls_info.load_sz);
+		}
+	}
+
+	// Handle impure data if present
+	if (&_impure_data) {
+		// Attach reent struct to thread
+		struct _reent* r = (struct _reent*)((char*)storage + needed_sz - sizeof(struct _reent));
+		t->impure = r;
+
+		// Inherit standard streams from current thread
+		struct _reent* parent = (struct _reent*)threadGetSelf()->impure;
+		__FILE* _stdin  = parent->_stdin;
+		__FILE* _stdout = parent->_stdout;
+		__FILE* _stderr = parent->_stderr;
+
+		// Initialize the new reent struct
+		_REENT_INIT_PTR_ZEROED(r);
+		r->_stdin  = _stdin;
+		r->_stdout = _stdout;
+		r->_stderr = _stderr;
+	}
 }
 
 void threadStart(Thread* t)

@@ -10,11 +10,14 @@ MEMORY {
 	lma9i   : ORIGIN = 0x2400000, LENGTH = 0x280000
 
 	/* Runtime memory layout for code/data areas (VMAs) */
-	dldi    : ORIGIN = 0x380b000, LENGTH = 0x4000   /* DLDI (on ARM7 WRAM) */
 	vectors : ORIGIN = 0x0000000, LENGTH = 0x20     /* Vectors */
 	itcm    : ORIGIN = 0x1ff8020, LENGTH = 0x7fe0   /* ITCM (minus vectors) */
 	main    : ORIGIN = 0x2000c00, LENGTH = 0xfcb400 /* Main RAM (usable area for ARM9) */
 	dtcm    : ORIGIN = 0x2ff0000, LENGTH = 0x3e80   /* DTCM (minus stacks/reserved BIOS memory) */
+	dldi    : ORIGIN = 0x380b000, LENGTH = 0x4000   /* DLDI (on ARM7 WRAM) */
+
+	/* Special TLS address space */
+	tls     : ORIGIN = 0, LENGTH = 1K
 }
 
 PHDRS {
@@ -26,6 +29,7 @@ PHDRS {
 	itcm    PT_LOAD FLAGS(7);
 	dtcm    PT_LOAD FLAGS(7);
 	main    PT_LOAD FLAGS(7);
+	tls     PT_LOAD FLAGS(7);
 	ldlist  PT_LOAD FLAGS(7);
 
 	/* ELF program headers for the ARM9i binary */
@@ -204,6 +208,15 @@ SECTIONS {
 		*(.gnu_extab*)
 	} >main AT>lma9 :main = 0xff
 
+	/* TLS metadata */
+	.tinfo : ALIGN(4) {
+		LONG(__tls_start)
+		LONG(SIZEOF(.main.tls))
+		LONG(SIZEOF(.tdata))
+	} >main AT>lma9 :main = 0xff
+
+	PROVIDE_HIDDEN( __tls_info = ADDR(.tinfo) );
+
 	/* Table of special constructors that run before _init */
 	.preinit_array : {
 		PROVIDE_HIDDEN( __preinit_array_start = . );
@@ -231,6 +244,35 @@ SECTIONS {
 	PROVIDE_HIDDEN( __main_lma   = LOADADDR(.main)                         );
 	PROVIDE_HIDDEN( __main_start = ADDR(.main)                             );
 	PROVIDE_HIDDEN( __main_end   = ADDR(.fini_array) + SIZEOF(.fini_array) );
+
+	/* TLS static data area */
+	.tdata : {
+		*(.tdata .tdata.* .gnu.linkonce.td.*)
+		. = ALIGN(4);
+	} >tls AT>lma9 :tls = 0xff
+
+	/* TLS BSS area */
+	.tbss (NOLOAD) : {
+		*(.tbss .tbss.* .gnu.linkonce.tb.*)
+		*(.tcommon)
+		. = ALIGN(4);
+	} >tls :NONE
+
+	/* TLS sanity checks */
+	ASSERT( ALIGNOF(.tdata) <= 8 || ALIGNOF(.tbss) <= 8,
+		"Error: TLS is overaligned (up to 8-byte alignment is supported)" )
+	ASSERT( ADDR(.tbss) + SIZEOF(.tbss) <= ORIGIN(tls) + LENGTH(tls),
+		"Error: TLS section too large" )
+
+	/* Main thread TLS area */
+	.main.tls (NOLOAD) : ALIGN(8) {
+		. += ADDR(.tbss) + SIZEOF(.tbss) - ADDR(.tdata);
+	} >main :NONE
+
+	/* Information for main thread TLS area */
+	PROVIDE_HIDDEN( __tls_lma   = LOADADDR(.tdata)                 );
+	PROVIDE_HIDDEN( __tls_start = ADDR(.main.tls)                  );
+	PROVIDE_HIDDEN( __tls_end   = ADDR(.main.tls) + SIZEOF(.tdata) );
 
 	/* Main BSS area */
 	.main.bss (NOLOAD) : {
@@ -290,6 +332,8 @@ SECTIONS {
 		"Error: Invalid gap between ITCM and DTCM LMAs" )
 	ASSERT( __dtcm_lma + SIZEOF(.dtcm) == __main_lma,
 		"Error: Invalid gap between DTCM and main RAM LMAs" )
+	ASSERT( LOADADDR(.fini_array) + SIZEOF(.fini_array) == __tls_lma,
+		"Error: Invalid gap between main RAM and TLS LMAs" )
 	ASSERT( ADDR(.fini_array) - __main_start == LOADADDR(.fini_array) - __main_lma,
 		"Error: Invalid LMAs in sections within main RAM" )
 
@@ -305,6 +349,10 @@ SECTIONS {
 
 		LONG(__main_start)
 		LONG(__main_end)
+		LONG(__main_end)
+
+		LONG(__tls_start)
+		LONG(__tls_end)
 		LONG(__main_bss_end)
 	} >lma9 :ldlist = 0xff
 

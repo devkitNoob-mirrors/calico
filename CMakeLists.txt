@@ -60,6 +60,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 	source/arm/arm-copy-fill.32.s
 	source/arm/arm-context.32.s
+	source/arm/arm-readtp.32.s
 	source/arm/arm-shims.32.c
 )
 
