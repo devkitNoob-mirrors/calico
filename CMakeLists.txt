@@ -98,6 +98,8 @@ if(NINTENDO_DS)
 
 		source/nds/netbuf.c
 		source/dev/wlan.c
+
+		source/nds/nitrorom.c
 	)
 
 	if(ARM9)

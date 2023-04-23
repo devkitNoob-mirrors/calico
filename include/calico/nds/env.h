@@ -189,18 +189,18 @@ typedef struct EnvNdsBanner {
 	u16 twl_anim_seq[64];
 } EnvNdsBanner;
 
-typedef struct EnvNdsFileNameTableDirEntry {
-	u32 file_table_offset; // relative to self
+typedef struct EnvNdsDirTableEntry {
+	u32 subtable_offset; // relative to FNT start
 	u16 file_id_base;
 	union {
 		u16 num_dirs;
 		u16 parent_id;
 	};
-} EnvNdsFileNameTableDirEntry;
+} EnvNdsDirTableEntry;
 
 typedef struct EnvNdsFileTableEntry {
-	u32 rom_start_offset;
-	u32 rom_end_offset;
+	u32 start_offset; // relative to IMG start
+	u32 end_offset;
 } EnvNdsFileTableEntry;
 
 typedef struct EnvNdsOverlay {
