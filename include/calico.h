@@ -76,6 +76,8 @@ extern "C" {
 #include "calico/dev/dldi.h"
 #include "calico/dev/wlan.h"
 #include "calico/nds/wlmgr.h"
+
+#include "calico/nds/ntrcard.h"
 #include "calico/nds/nitrorom.h"
 
 #ifdef ARM7

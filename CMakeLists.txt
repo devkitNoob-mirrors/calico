@@ -99,6 +99,7 @@ if(NINTENDO_DS)
 		source/nds/netbuf.c
 		source/dev/wlan.c
 
+		source/nds/ntrcard.c
 		source/nds/nitrorom.c
 	)
 
