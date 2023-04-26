@@ -18,6 +18,7 @@ bool nitroromOpen(NitroRom* nr, const NitroRomParams* params, const NitroRomIfac
 
 	NitroRomDir root_dir;
 	if (!nitroromRead(nr, params->fnt_offset, &root_dir, sizeof(root_dir))) {
+		nr->iface = NULL;
 		return false;
 	}
 
@@ -46,6 +47,7 @@ bool nitroromOpen(NitroRom* nr, const NitroRomParams* params, const NitroRomIfac
 	if (!nr->file_table || !nr->dir_table) {
 		free(nr->file_table);
 		free(nr->dir_table);
+		nr->iface = NULL;
 		return false;
 	}
 
@@ -57,6 +59,7 @@ void nitroromClose(NitroRom* nr)
 	free(nr->file_table);
 	free(nr->dir_table);
 	nr->iface->close(nr->user);
+	nr->iface = NULL;
 }
 
 bool nitroromReadIter(NitroRomIter* iter, NitroRomIterEntry* entry)

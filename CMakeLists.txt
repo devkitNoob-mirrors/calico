@@ -117,6 +117,7 @@ if(NINTENDO_DS)
 			source/nds/arm9/sound.c
 			source/nds/arm9/blk.c
 			source/nds/arm9/wlmgr.c
+			source/nds/arm9/nitrorom.c
 		)
 	endif()
 

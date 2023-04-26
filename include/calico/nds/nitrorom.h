@@ -53,6 +53,10 @@ struct NitroRomIterEntry {
 	u16  name_len;
 };
 
+#ifdef ARM9
+NitroRom* nitroromGetSelf(void);
+#endif
+
 bool nitroromOpen(NitroRom* nr, const NitroRomParams* params, const NitroRomIface* iface, void* user);
 
 void nitroromClose(NitroRom* nr);
