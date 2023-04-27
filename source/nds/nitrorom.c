@@ -109,6 +109,11 @@ int nitroromResolvePath(NitroRom* nr, u16 base_dir, const char* path)
 	u16 cur_id = base_dir;
 	const char* next_path = NULL;
 
+	// Check for absolute paths
+	if (path[0] == '/') {
+		cur_id = NITROROM_ROOT_DIR;
+	}
+
 	for (;; path = next_path) {
 		// Skip slashes
 		while (*path == '/') path ++;
