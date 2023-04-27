@@ -12,7 +12,7 @@ MEMORY {
 	/* Runtime memory layout for code/data areas (VMAs) */
 	vectors : ORIGIN = 0x0000000, LENGTH = 0x20     /* Vectors */
 	itcm    : ORIGIN = 0x1ff8020, LENGTH = 0x7fe0   /* ITCM (minus vectors) */
-	main    : ORIGIN = 0x2000c00, LENGTH = 0xfcb400 /* Main RAM (usable area for ARM9) */
+	main    : ORIGIN = 0x2000c00, LENGTH = 0xf7f400 /* Main RAM (usable area for ARM9) */
 	dtcm    : ORIGIN = 0x2ff0000, LENGTH = 0x3e80   /* DTCM (minus stacks/reserved BIOS memory) */
 	dldi    : ORIGIN = 0x380b000, LENGTH = 0x4000   /* DLDI (on ARM7 WRAM) */
 
@@ -286,12 +286,12 @@ SECTIONS {
 	PROVIDE_HIDDEN( __main_bss_start = ADDR(.main.bss)                     );
 	PROVIDE_HIDDEN( __main_bss_end   = ADDR(.main.bss) + SIZEOF(.main.bss) );
 
-	/* Ensure BSS fits within the DS's main RAM */
+	/* Ensure BSS fits within the DS's main RAM allotted to ARM9 */
 	. = .;
-	ASSERT( . <= 0x23f0000, "Error: BSS section overflows DS memory size (4 MB)" )
+	ASSERT( . <= 0x2380000, "Error: BSS section overflows DS ARM9 memory size (3.5 MB)" )
 
 	/* DSi exclusive code/data section */
-	.twl . : {
+	.twl ALIGN(32) : {
 		*(.twl .twl.*)
 		*.twl.* (.text .stub .text.* .gnu.linkonce.t.*)
 		*.twl.* (.glue_7t .glue_7 .vfp11_veneer .v4_bx)
@@ -308,7 +308,7 @@ SECTIONS {
 	PROVIDE_HIDDEN( __twl_end   = ADDR(.twl) + SIZEOF(.twl) );
 
 	/* DSi exclusive BSS area */
-	.twl.bss (NOLOAD) : {
+	.twl.bss . (NOLOAD) : {
 		*(.twl_bss .twl_bss.*)
 		*.twl.* (.dynbss)
 		*.twl.* (.bss .bss.* .gnu.linkonce.b.*)
