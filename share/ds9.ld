@@ -286,9 +286,12 @@ SECTIONS {
 	PROVIDE_HIDDEN( __main_bss_start = ADDR(.main.bss)                     );
 	PROVIDE_HIDDEN( __main_bss_end   = ADDR(.main.bss) + SIZEOF(.main.bss) );
 
-	/* Ensure BSS fits within the DS's main RAM allotted to ARM9 */
+	/* Define start of main heap in DS mode */
 	. = .;
-	ASSERT( . <= 0x2380000, "Error: BSS section overflows DS ARM9 memory size (3.5 MB)" )
+	PROVIDE_HIDDEN( __heap_start_ntr = . );
+
+	/* Ensure DS-mode sections fit within the DS's main RAM allotted to ARM9 */
+	ASSERT( . <= 0x2380000, "Error: DS-mode sections overflow DS ARM9 memory size (3.5 MB)" )
 
 	/* DSi exclusive code/data section */
 	.twl ALIGN(32) : {
@@ -320,10 +323,9 @@ SECTIONS {
 	PROVIDE_HIDDEN( __twl_bss_start = ADDR(.twl.bss)                    );
 	PROVIDE_HIDDEN( __twl_bss_end   = ADDR(.twl.bss) + SIZEOF(.twl.bss) );
 
-	/* Define start of main heap (different on DS/DSi) */
-	/* The end of main heap is defined at runtime by the ARM7 */
-	PROVIDE_HIDDEN( __heap_start_ntr = __main_bss_end );
-	PROVIDE_HIDDEN( __heap_start_twl = __twl_bss_end  );
+	/* Define start of main heap in DSi mode */
+	. = .;
+	PROVIDE_HIDDEN( __heap_start_twl = . );
 
 	/* Ensure we can craft loadlists */
 	PROVIDE_HIDDEN( __loadlist_lma = __itcm_lma );
