@@ -110,6 +110,8 @@ extern "C" {
 #include "calico/nds/arm9/sound.h"
 
 #include "calico/nds/arm9/vram.h"
+
+#include "calico/nds/arm9/ovl.h"
 #endif
 
 #endif
