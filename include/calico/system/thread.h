@@ -79,7 +79,7 @@ void threadStart(Thread* t);
 void threadFree(Thread* t);
 void threadJoin(Thread* t);
 
-void threadYield(bool generous);
+void threadYield(void);
 u32  threadIrqWait(bool next_irq, IrqMask mask);
 #if MEOW_IRQ_NUM_HANDLERS > 32
 u32  threadIrqWait2(bool next_irq, IrqMask mask);

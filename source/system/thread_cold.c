@@ -184,13 +184,14 @@ void threadJoin(Thread* t)
 	armIrqUnlockByPsr(st);
 }
 
-void threadYield(bool generous)
+void threadYield(void)
 {
 	ArmIrqState st = armIrqLockByPsr();
 
 	Thread* t = threadFindRunnable(s_curThread->next);
-	if (t == &s_idleThread || (!generous && t->prio > s_curThread->prio))
+	if (t->prio > s_curThread->prio)
 		t = threadFindRunnable(s_firstThread);
+
 	if (t != s_curThread)
 		threadSwitchTo(t, st);
 	else
@@ -239,7 +240,7 @@ void threadExit(int rc)
 	s_curThread->status = ThrStatus_Finished;
 	s_curThread->rc = rc;
 	// TODO: exit callback goes here
-	threadUnblock(&s_joinThreads, -1, ThrUnblockMode_ByValue, (u32)s_curThread);
+	threadUnblockAllByValue(&s_joinThreads, (u32)s_curThread);
 	s_curThread = threadFindRunnable(s_firstThread);
 	armContextLoad(&s_curThread->ctx);
 }
