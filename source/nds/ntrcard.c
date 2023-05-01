@@ -166,7 +166,7 @@ MEOW_INLINE unsigned _ntrcardCanAccess(int dma_ch, uptr addr)
 	bool ret = _ntrcardIsAligned(dma_ch, addr);
 #ifdef ARM9
 	if (ret && dma_ch >= 0) {
-		ret = !(addr < MM_MAINRAM || (addr >= MM_DTCM && addr < MM_TWLWRAM_BANK_SZ));
+		ret = !(addr < MM_MAINRAM || (addr >= MM_DTCM && addr < MM_TWLWRAM_MAP));
 	}
 #endif
 	return ret;
