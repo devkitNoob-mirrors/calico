@@ -51,6 +51,7 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 		}
 
 		case PxiSoundCmd_Synchronize: {
+			_soundUpdateSharedState();
 			pxiReply(PxiChannel_Sound, 0);
 			break;
 		}
@@ -89,6 +90,7 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 
 			if (arg->start) {
 				soundChStart(arg->ch);
+				s_transferRegion->sound_active_ch_mask |= 1U << arg->ch;
 			}
 			break;
 		}
@@ -100,6 +102,7 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 
 			if (arg->start) {
 				soundChStart(ch);
+				s_transferRegion->sound_active_ch_mask |= 1U << ch;
 			}
 			break;
 		}

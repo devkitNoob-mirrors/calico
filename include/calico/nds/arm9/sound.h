@@ -5,6 +5,8 @@
 
 #include "../sound.h"
 
+#define SOUND_START (1U<<4)
+
 MEOW_EXTERN_C_START
 
 void soundInit(void);

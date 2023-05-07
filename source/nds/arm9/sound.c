@@ -4,6 +4,7 @@
 #include "../transfer.h"
 #include "../pxi/sound.h"
 
+static bool s_soundInit, s_soundAutoUpdate;
 static ThrListNode s_soundPxiCreditWaitList;
 static u16 s_soundPxiCredits;
 
@@ -54,6 +55,11 @@ MEOW_INLINE void _soundIssueCmdAsync(PxiSoundCmd cmd, unsigned imm, const void* 
 
 void soundInit(void)
 {
+	if (s_soundInit) {
+		return;
+	}
+
+	s_soundInit = true;
 	s_soundPxiCredits = PXI_SOUND_NUM_CREDITS;
 	pxiSetHandler(PxiChannel_Sound, _soundPxiHandler, NULL);
 	pxiWaitRemote(PxiChannel_Sound);
@@ -73,11 +79,20 @@ void soundSetPower(bool enable)
 
 void soundSetAutoUpdate(bool enable)
 {
+	if (s_soundAutoUpdate == enable) {
+		return;
+	}
+
+	s_soundAutoUpdate = enable;
 	_soundIssueCmdAsync(PxiSoundCmd_SetAutoUpdate, enable ? 1 : 0, NULL, 0);
 }
 
 unsigned soundGetActiveChannels(void)
 {
+	if (!s_soundAutoUpdate) {
+		soundSynchronize();
+	}
+
 	return s_transferRegion->sound_active_ch_mask;
 }
 
@@ -109,7 +124,7 @@ void soundPreparePcm(
 		.sad    = ((u32)sad - MM_MAINRAM) / 4,
 		.mode   = mode,
 		.vol    = vol,
-		.start  = 0,
+		.start  = (ch & SOUND_START) != 0,
 
 		.timer  = timer,
 		.pnt    = pnt,
@@ -133,7 +148,7 @@ void soundPreparePsg(unsigned ch, unsigned vol, unsigned pan, unsigned timer, So
 		.voldiv = voldiv,
 		.duty   = duty,
 		.ch     = ch-8,
-		.start  = 0,
+		.start  = (ch & SOUND_START) != 0,
 	};
 
 	_soundIssueCmdAsync(PxiSoundCmd_PreparePsg, pan, &arg, sizeof(arg));
