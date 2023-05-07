@@ -53,8 +53,8 @@
 
 #ifdef ARM9
 #define MM_VRAM_BG_A   (MM_VRAM)
-#define MM_VRAM_OBJ_A  (MM_VRAM+0x200000)
-#define MM_VRAM_BG_B   (MM_VRAM+0x400000)
+#define MM_VRAM_BG_B   (MM_VRAM+0x200000)
+#define MM_VRAM_OBJ_A  (MM_VRAM+0x400000)
 #define MM_VRAM_OBJ_B  (MM_VRAM+0x600000)
 
 #define MM_VRAM_A      (MM_VRAM+0x800000)
