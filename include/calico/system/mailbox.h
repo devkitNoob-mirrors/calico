@@ -2,6 +2,8 @@
 #include "../types.h"
 #include "thread.h"
 
+MEOW_EXTERN_C_START
+
 typedef struct Mailbox {
 	u32* slots;
 	u8 num_slots;
@@ -23,3 +25,5 @@ bool mailboxTrySend(Mailbox* mb, u32 message);
 bool mailboxTryRecv(Mailbox* mb, u32* out);
 
 u32 mailboxRecv(Mailbox* mb);
+
+MEOW_EXTERN_C_END

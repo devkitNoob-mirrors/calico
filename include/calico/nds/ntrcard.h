@@ -45,6 +45,8 @@
 #define NTRCARD_ROMCNT_START        (1U<<31)
 #define NTRCARD_ROMCNT_BUSY         NTRCARD_ROMCNT_START
 
+MEOW_EXTERN_C_START
+
 typedef enum NtrCardSpiBaud {
 	NtrCardSpiBaud_4MHz = 0,
 	NtrCardSpiBaud_2MHz,
@@ -70,3 +72,5 @@ void ntrcardClose(void);
 
 bool ntrcardRomReadSector(int dma_ch, u32 offset, void* buf);
 bool ntrcardRomRead(int dma_ch, u32 offset, void* buf, u32 size);
+
+MEOW_EXTERN_C_END

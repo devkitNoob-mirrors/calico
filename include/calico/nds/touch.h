@@ -5,6 +5,8 @@
 
 #include "../types.h"
 
+MEOW_EXTERN_C_START
+
 typedef struct MEOW_STRUCT_ALIGN(4) TouchData {
 	u16 px, py;
 	u16 rawx, rawy;
@@ -17,3 +19,5 @@ void touchLoadCalibration(void);
 #endif
 
 bool touchRead(TouchData* out);
+
+MEOW_EXTERN_C_END

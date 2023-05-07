@@ -31,6 +31,8 @@
 
 #define MEOW_IRQ_NUM_HANDLERS 16
 
+MEOW_EXTERN_C_START
+
 typedef unsigned IrqState;
 typedef u16 IrqMask;
 
@@ -49,3 +51,5 @@ MEOW_INLINE void irqUnlock(IrqState state)
 	REG_IME = state;
 	armCompilerBarrier();
 }
+
+MEOW_EXTERN_C_END

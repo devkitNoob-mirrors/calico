@@ -2,6 +2,8 @@
 #include "../../types.h"
 #include "../env.h"
 
+MEOW_EXTERN_C_START
+
 typedef EnvNdsOverlay OvlParams;
 typedef void (*OvlStaticFn)(void);
 
@@ -21,3 +23,5 @@ MEOW_INLINE bool ovlLoadAndActivate(unsigned ovl_id)
 	}
 	return ok;
 }
+
+MEOW_EXTERN_C_END

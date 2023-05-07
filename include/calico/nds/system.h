@@ -20,8 +20,12 @@
 #define EXMEMCNT_MAIN_RAM_PRIO_ARM9   (0U<<15)
 #define EXMEMCNT_MAIN_RAM_PRIO_ARM7   (1U<<15)
 
+MEOW_EXTERN_C_START
+
 MEOW_INLINE bool systemIsTwlMode(void)
 {
 	extern bool g_isTwlMode;
 	return g_isTwlMode;
 }
+
+MEOW_EXTERN_C_END

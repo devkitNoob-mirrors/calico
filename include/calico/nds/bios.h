@@ -12,6 +12,8 @@
 #define SVC_RSA_BUFFER_SZ    0x80
 #define SVC_SHA1_DIGEST_SZ   0x14
 
+MEOW_EXTERN_C_START
+
 /* TODO: ABI. This is intended to be returned as r0/r1
 typedef struct SvcDivResult {
 	s32 quotient;
@@ -74,3 +76,5 @@ void svcSha1DigestTWL(void* digest, SvcSha1Context* ctx);
 void svcSha1CalcTWL(void* digest, const void* data, size_t size);
 bool svcSha1VerifyTWL(const void* lhs, const void* rhs);
 void svcSha1RandomTWL(void* output, size_t out_size, const void* seed, size_t seed_size);
+
+MEOW_EXTERN_C_END

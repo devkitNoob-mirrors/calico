@@ -19,6 +19,8 @@
 #define AR6K_HTC_FLAG_NEED_CREDIT_UPDATE (1U<<0)
 #define AR6K_HTC_FLAG_RECV_TRAILER       (1U<<1)
 
+MEOW_EXTERN_C_START
+
 typedef enum Ar6kHtcEndpointId {
 	Ar6kHtcEndpointId_Control = 0, // Always used for control messages
 	Ar6kHtcEndpointId_First   = 1,
@@ -127,3 +129,5 @@ typedef struct Ar6kHtcCtrlCmdConnSrvReply {
 bool ar6kHtcInit(Ar6kDev* dev);
 Ar6kHtcSrvStatus ar6kHtcConnectService(Ar6kDev* dev, Ar6kHtcSrvId service_id, u16 flags, Ar6kHtcEndpointId* out_ep);
 bool ar6kHtcSetupComplete(Ar6kDev* dev);
+
+MEOW_EXTERN_C_END

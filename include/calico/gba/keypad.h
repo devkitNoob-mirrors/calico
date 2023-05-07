@@ -39,6 +39,8 @@
 #define KEY_MASK_EXT 0x3c00
 #endif
 
+MEOW_EXTERN_C_START
+
 typedef struct Keypad {
 	u16 cur;
 	u16 old;
@@ -100,3 +102,5 @@ MEOW_INLINE u16 keypadUp(Keypad const* k)
 {
 	return k->old & ~k->cur;
 }
+
+MEOW_EXTERN_C_END

@@ -30,6 +30,8 @@
 #error "ARM9 or ARM7 must be defined"
 #endif
 
+MEOW_EXTERN_C_START
+
 typedef enum PmEvent {
 	PmEvent_OnSleep      = 0,
 	PmEvent_OnWakeup     = 1,
@@ -108,3 +110,5 @@ bool pmMainLoop(void);
 
 unsigned pmGetBatteryState(void);
 bool pmReadNvram(void* data, u32 addr, u32 len);
+
+MEOW_EXTERN_C_END

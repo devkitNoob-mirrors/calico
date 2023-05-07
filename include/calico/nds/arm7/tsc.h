@@ -6,6 +6,8 @@
 #include "../../types.h"
 #include "spi.h"
 
+MEOW_EXTERN_C_START
+
 typedef enum TscPowerMode {
 	TscPowerMode_Auto  = 0U<<0,
 	TscPowerMode_AdcOn = 1U<<0,
@@ -56,3 +58,5 @@ MEOW_CONSTEXPR u8 tscMakeCmd(TscChannel ch, TscConvMode conv, TscPowerMode pm)
 
 void tscInit(void);
 TscResult tscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_diff);
+
+MEOW_EXTERN_C_END

@@ -4,6 +4,8 @@
 
 #define AR6K_WMI_PROTOCOL_VER 2
 
+MEOW_EXTERN_C_START
+
 typedef enum Ar6kWmiCmdId {
 	Ar6kWmiCmdId_Connect                  = 0x0001,
 	Ar6kWmiCmdId_Disconnect               = 0x0003,
@@ -433,3 +435,5 @@ MEOW_INLINE bool ar6kWmiHostExitNotify(Ar6kDev* dev)
 {
 	return ar6kWmiSimpleCmd(dev, Ar6kWmiCmdId_HostExitNotify);
 }
+
+MEOW_EXTERN_C_END

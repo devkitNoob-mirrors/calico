@@ -5,6 +5,8 @@
 #define NITROROM_ROOT_DIR 0xf000
 #define NITROROM_NAME_MAX 0x7f
 
+MEOW_EXTERN_C_START
+
 typedef struct NitroRom          NitroRom;
 typedef struct NitroRomParams    NitroRomParams;
 typedef struct NitroRomIface     NitroRomIface;
@@ -106,3 +108,5 @@ MEOW_INLINE void nitroromRewindIter(NitroRomIter* iter)
 }
 
 int nitroromResolvePath(NitroRom* nr, u16 base_dir, const char* path);
+
+MEOW_EXTERN_C_END

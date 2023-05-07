@@ -33,10 +33,6 @@
 
 #if !__ASSEMBLER__
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 #include "calico/arm/common.h"
 #if __ARM_ARCH >= 5
 #include "calico/arm/cache.h"
@@ -74,6 +70,7 @@ extern "C" {
 #include "calico/dev/blk.h"
 #include "calico/dev/disc_io.h"
 #include "calico/dev/dldi.h"
+#include "calico/dev/netbuf.h"
 #include "calico/dev/wlan.h"
 #include "calico/nds/wlmgr.h"
 
@@ -114,10 +111,6 @@ extern "C" {
 #include "calico/nds/arm9/ovl.h"
 #endif
 
-#endif
-
-#if defined(__cplusplus)
-}
 #endif
 
 #endif

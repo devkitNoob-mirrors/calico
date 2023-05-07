@@ -16,6 +16,8 @@
 #define SPICNT_IRQ_ENABLE (1U << 14)
 #define SPICNT_ENABLE     (1U << 15)
 
+MEOW_EXTERN_C_START
+
 typedef enum SpiBaudrate {
 	SpiBaud_4MHz = 0,
 	SpiBaud_2MHz,
@@ -79,3 +81,5 @@ MEOW_INLINE u8 spiRawReadByte(void)
 {
 	return spiRawWriteReadByte(0);
 }
+
+MEOW_EXTERN_C_END

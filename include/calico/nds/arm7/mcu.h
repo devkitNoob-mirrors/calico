@@ -12,6 +12,8 @@
 #define MCU_IRQ_BATTERY_LOW     (1U << 5)
 #define MCU_IRQ_VOLBTN          (1U << 6)
 
+MEOW_EXTERN_C_START
+
 typedef enum McuRegister {
 	McuReg_Version  = 0x00,
 	McuReg_Unk01    = 0x01,
@@ -69,3 +71,5 @@ void mcuInit(void);
 void mcuIrqSet(unsigned irq_mask, McuIrqHandler fn);
 void mcuIssueReset(void) MEOW_NORETURN;
 void mcuIssueShutdown(void) MEOW_NORETURN;
+
+MEOW_EXTERN_C_END

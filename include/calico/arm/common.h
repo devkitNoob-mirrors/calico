@@ -5,6 +5,8 @@
 #include "cp15.h"
 #endif
 
+MEOW_EXTERN_C_START
+
 typedef struct ArmContext {
 	u32 r[16];
 	u32 psr;
@@ -120,3 +122,5 @@ MEOW_EXTERN32 void armFillMem32(void* dst, u32 value, size_t size);
 
 MEOW_EXTERN32 u32 armContextSave(ArmContext* ctx, ArmIrqState st, u32 ret);
 MEOW_EXTERN32 void armContextLoad(const ArmContext* ctx) MEOW_NORETURN;
+
+MEOW_EXTERN_C_END

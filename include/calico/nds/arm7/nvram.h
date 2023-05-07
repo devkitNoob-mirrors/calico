@@ -11,6 +11,8 @@
 #define NVRAM_STATUS_WIP (1U<<0) // Write In Progress
 #define NVRAM_STATUS_WEL (1U<<1) // Write Enable Latch
 
+MEOW_EXTERN_C_START
+
 typedef enum NvramCmd {
 	NvramCmd_WriteEnable       = 0x06,
 	NvramCmd_WriteDisable      = 0x04,
@@ -29,3 +31,5 @@ typedef enum NvramCmd {
 bool nvramWaitReady(void);
 bool nvramReadJedec(u32* out);
 bool nvramReadDataBytes(void* data, u32 addr, u32 len);
+
+MEOW_EXTERN_C_END

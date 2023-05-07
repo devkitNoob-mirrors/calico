@@ -13,6 +13,8 @@
 #define g_envExtraInfo     ((EnvExtraInfo*)         MM_ENV_FREE_FCF0)
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
 
+MEOW_EXTERN_C_START
+
 typedef struct EnvNdsHeader {
 	char title[12];
 	char gamecode[4];
@@ -370,3 +372,5 @@ typedef struct EnvTwlDeviceList {
 #if defined(ARM7)
 void envReadNvramSettings(void);
 #endif
+
+MEOW_EXTERN_C_END

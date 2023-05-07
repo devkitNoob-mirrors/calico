@@ -19,6 +19,8 @@
 #define SVC_SET_UNIT_16      (0<<26)
 #define SVC_SET_UNIT_32      (1<<26)
 
+MEOW_EXTERN_C_START
+
 /* TODO: ABI. This is intended to be returned as r0/r1
 typedef struct SvcDivResult {
 	s32 quotient;
@@ -90,3 +92,5 @@ void svcSoundBias(bool enable);
 u32 svcMidiKey2Freq(const void* wave, u8 key, u8 finetune);
 u32 svcMultiBoot(const void* param, u32 mode); // todo: add types
 void svcHardReset(void) MEOW_NORETURN;
+
+MEOW_EXTERN_C_END

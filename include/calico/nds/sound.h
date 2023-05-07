@@ -11,6 +11,8 @@
 #define SOUND_UPDATE_HZ     192
 #define SOUND_NUM_CHANNELS  16
 
+MEOW_EXTERN_C_START
+
 typedef enum SoundOutSrc {
 	SoundOutSrc_Mixer  = 0,
 	SoundOutSrc_Ch1    = 1,
@@ -53,3 +55,5 @@ MEOW_CONSTEXPR unsigned soundTimerFromHz(unsigned hz)
 {
 	return (SOUND_CLOCK + hz/2) / hz;
 }
+
+MEOW_EXTERN_C_END

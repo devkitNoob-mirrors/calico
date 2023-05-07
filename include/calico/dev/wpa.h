@@ -13,6 +13,8 @@
 #define WPA_AES_MAX_ROUNDS   14
 #define WPA_AES_WRAP_BLK_LEN 8
 
+MEOW_EXTERN_C_START
+
 typedef struct WpaAesContext {
 	alignas(4) u8 round_keys[1+WPA_AES_MAX_ROUNDS][WPA_AES_BLOCK_LEN];
 	u32 num_rounds;
@@ -124,3 +126,5 @@ MEOW_INLINE bool wpaFinalize(WpaState* st)
 {
 	return mailboxTrySend(&st->mbox, 0);
 }
+
+MEOW_EXTERN_C_END

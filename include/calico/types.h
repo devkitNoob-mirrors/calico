@@ -37,6 +37,16 @@ typedef volatile sptr vsptr; ///< Pointer-sized volatile signed integer.
 #define MEOW_WEAK       __attribute__((weak))
 #define MEOW_DUMMY(_x)  (void)(_x)
 
+#if defined(__cplusplus)
+#define MEOW_EXTERN_C       extern "C"
+#define MEOW_EXTERN_C_START MEOW_EXTERN_C {
+#define MEOW_EXTERN_C_END   }
+#else
+#define MEOW_EXTERN_C
+#define MEOW_EXTERN_C_START
+#define MEOW_EXTERN_C_END
+#endif
+
 #if __thumb__
 #define MEOW_CODE32 __attribute__((target("arm")))
 #else

@@ -4,6 +4,8 @@
 #include "irq.h"
 #include "tick.h"
 
+MEOW_EXTERN_C_START
+
 typedef struct Thread Thread;
 
 typedef struct ThrListNode {
@@ -147,3 +149,5 @@ MEOW_INLINE void threadWaitForVBlank(void)
 }
 
 #endif
+
+MEOW_EXTERN_C_END

@@ -21,6 +21,8 @@
 #define RTC_STATUS2_INT2_EN       (1U<<6)
 #define RTC_STATUS2_TEST          (1U<<7)
 
+MEOW_EXTERN_C_START
+
 typedef enum RtcRegister {
 	// Available on all models (Seiko S-35180)
 	RtcReg_Status1    = 0x0,
@@ -93,3 +95,5 @@ MEOW_INLINE u32 rtcReadUnixTime(void)
 	rtcReadDateTime(&t);
 	return rtcDateTimeToUnix(&t);
 }
+
+MEOW_EXTERN_C_END

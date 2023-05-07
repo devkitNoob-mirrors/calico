@@ -2,6 +2,8 @@
 #include "../types.h"
 #include "thread.h"
 
+MEOW_EXTERN_C_START
+
 typedef struct Mutex {
 	Thread* owner;
 } Mutex;
@@ -35,3 +37,5 @@ MEOW_INLINE void rmutexUnlock(RMutex* m)
 		mutexUnlock(&m->mutex);
 	}
 }
+
+MEOW_EXTERN_C_END

@@ -24,6 +24,8 @@
 #define TIMER_ENABLE_IRQ     (1<<6)
 #define TIMER_ENABLE         (1<<7)
 
+MEOW_EXTERN_C_START
+
 MEOW_CONSTEXPR unsigned timerCalcPeriod(unsigned prescaler, unsigned freq)
 {
 	unsigned basefreq = TIMER_FREQ;
@@ -60,3 +62,5 @@ MEOW_INLINE u16 timerRead(unsigned id)
 {
 	return REG_TMxCNT_L(id);
 }
+
+MEOW_EXTERN_C_END

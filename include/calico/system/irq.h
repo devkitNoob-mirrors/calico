@@ -9,6 +9,8 @@
 #error "Unsupported platform."
 #endif
 
+MEOW_EXTERN_C_START
+
 typedef void (*IrqHandler)(void);
 
 extern volatile IrqMask __irq_flags;
@@ -60,3 +62,5 @@ MEOW_INLINE void irqDisable2(IrqMask mask)
 }
 
 #endif
+
+MEOW_EXTERN_C_END

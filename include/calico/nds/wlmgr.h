@@ -7,6 +7,8 @@
 #include "../dev/netbuf.h"
 #include "../dev/wlan.h"
 
+MEOW_EXTERN_C_START
+
 typedef enum WlMgrMode {
 	WlMgrMode_Infrastructure = 0,
 	WlMgrMode_LocalComms     = 1,
@@ -74,3 +76,5 @@ void wlmgrRawTx(NetBuf* pPacket);
 void wlmgrStartServer(u8 thread_prio);
 
 #endif
+
+MEOW_EXTERN_C_END

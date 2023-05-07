@@ -4,6 +4,8 @@
 
 #define TICK_FREQ (SYSTEM_CLOCK/64)
 
+MEOW_EXTERN_C_START
+
 typedef struct TickTask TickTask;
 typedef void (* TickTaskFn)(TickTask*);
 
@@ -28,3 +30,5 @@ void tickInit(void);
 u64 tickGetCount(void);
 void tickTaskStart(TickTask* t, TickTaskFn fn, u32 delay_ticks, u32 period_ticks);
 void tickTaskStop(TickTask* t);
+
+MEOW_EXTERN_C_END

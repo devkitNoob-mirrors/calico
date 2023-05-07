@@ -7,6 +7,8 @@
 #define FEATURE_SLOT_GBA        DLDI_FEATURE_SLOT_GBA
 #define FEATURE_SLOT_NDS        DLDI_FEATURE_SLOT_NDS
 
+MEOW_EXTERN_C_START
+
 typedef u32 sec_t;
 
 typedef bool (* FN_MEDIUM_STARTUP)(void);
@@ -27,3 +29,5 @@ typedef struct DISC_INTERFACE_STRUCT {
 	FN_MEDIUM_CLEARSTATUS  clearStatus;
 	FN_MEDIUM_SHUTDOWN     shutdown;
 } DISC_INTERFACE;
+
+MEOW_EXTERN_C_END

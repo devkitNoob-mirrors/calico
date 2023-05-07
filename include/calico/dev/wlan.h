@@ -8,6 +8,8 @@
 #define WLAN_WEP_128_LEN     16
 #define WLAN_WPA_PSK_LEN     32
 
+MEOW_EXTERN_C_START
+
 typedef enum WlanEid {
 	WlanEid_SSID             = 0,
 	WlanEid_SupportedRates   = 1,
@@ -106,3 +108,5 @@ MEOW_CONSTEXPR unsigned wlanChannelToFreq(unsigned ch)
 WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, void* bssid, int rssi);
 WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len);
 void wlanParseBeacon(WlanBssDesc* desc, NetBuf* pPacket);
+
+MEOW_EXTERN_C_END

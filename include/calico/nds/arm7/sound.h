@@ -46,6 +46,8 @@
 #define SOUNDxCNT_FMT(_x)      (((_x)&3)<<29)
 #define SOUNDxCNT_ENABLE       (1U<<31)
 
+MEOW_EXTERN_C_START
+
 MEOW_INLINE void soundChPreparePcm(
 	unsigned ch, unsigned vol, SoundVolDiv voldiv, unsigned pan, unsigned timer,
 	SoundMode mode, SoundFmt fmt, const void* sad, unsigned pnt, unsigned len)
@@ -105,3 +107,5 @@ MEOW_INLINE void soundChSetDuty(unsigned ch, SoundDuty duty)
 }
 
 void soundStartServer(u8 thread_prio);
+
+MEOW_EXTERN_C_END

@@ -47,6 +47,8 @@
 #define NDMA_IRQ_ENABLE    (1<<30)
 #define NDMA_ENABLE        (1<<31)
 
+MEOW_EXTERN_C_START
+
 typedef enum NdmaMode {
 	NdmaMode_Increment = 0,
 	NdmaMode_Decrement = 1,
@@ -131,3 +133,5 @@ MEOW_INLINE void ndmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 		NDMA_TX_MODE(NdmaTxMode_Immediate) |
 		NDMA_ENABLE;
 }
+
+MEOW_EXTERN_C_END

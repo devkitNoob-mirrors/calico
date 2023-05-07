@@ -5,6 +5,8 @@
 
 #include "../sound.h"
 
+MEOW_EXTERN_C_START
+
 void soundInit(void);
 void soundSynchronize(void);
 
@@ -32,3 +34,5 @@ void soundChSetVolume(unsigned ch, unsigned vol);
 void soundChSetPan(unsigned ch, unsigned pan);
 void soundChSetTimer(unsigned ch, unsigned timer);
 void soundChSetDuty(unsigned ch, SoundDuty duty);
+
+MEOW_EXTERN_C_END

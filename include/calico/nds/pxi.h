@@ -44,6 +44,8 @@
 //   11-15  Number of extra words minus 1
 //   16-31  Immediate (16-bit)
 
+MEOW_EXTERN_C_START
+
 typedef enum PxiChannel {
 	PxiChannel_System   = 0,  // Grab bag of system management functions
 	PxiChannel_Power    = 1,  // Power/environment management
@@ -167,3 +169,5 @@ MEOW_INLINE u32 pxiSendWithDataAndReceive(PxiChannel ch, u32 imm, const u32* dat
 	pxiSendWithData(ch, imm, data, num_words);
 	return pxiEndReceive(ch);
 }
+
+MEOW_EXTERN_C_END

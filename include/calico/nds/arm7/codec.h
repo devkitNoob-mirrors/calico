@@ -7,6 +7,8 @@
 #include "spi.h"
 #include "tsc.h"
 
+MEOW_EXTERN_C_START
+
 typedef enum CdcPage {
 	CdcPage_Control    = 0x00,
 	CdcPage_Sound      = 0x01,
@@ -47,3 +49,5 @@ bool cdcWriteRegArray(CdcPage page, unsigned reg, const void* data, unsigned len
 
 void cdcTscInit(void);
 TscResult cdcTscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_diff);
+
+MEOW_EXTERN_C_END

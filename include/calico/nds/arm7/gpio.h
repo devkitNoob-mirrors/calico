@@ -93,9 +93,13 @@
 #define GPIO_WL_MITSUMI  (1U<<8)
 #define GPIO_WL_MASK     (1U<<8)
 
+MEOW_EXTERN_C_START
+
 typedef enum GpioWlModule {
 	GpioWlModule_Atheros = 0,
 	GpioWlModule_Mitsumi = 1,
 } GpioWlModule;
 
 void gpioSetWlModule(GpioWlModule module);
+
+MEOW_EXTERN_C_END

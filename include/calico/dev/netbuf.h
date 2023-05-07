@@ -1,6 +1,8 @@
 #pragma once
 #include "../types.h"
 
+MEOW_EXTERN_C_START
+
 typedef struct NetBuf NetBuf;
 
 typedef enum NetEtherType {
@@ -96,3 +98,5 @@ MEOW_INLINE void* netbufPopTrailer(NetBuf* nb, unsigned size) {
 	}
 	return trailer;
 }
+
+MEOW_EXTERN_C_END

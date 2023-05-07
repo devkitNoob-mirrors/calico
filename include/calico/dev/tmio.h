@@ -4,6 +4,8 @@
 #include "../system/sysclock.h"
 #include "tmio_regs.h"
 
+MEOW_EXTERN_C_START
+
 typedef struct TmioPort TmioPort;
 typedef struct TmioResp TmioResp;
 typedef struct TmioCtl  TmioCtl;
@@ -108,3 +110,5 @@ void tmioXferRecvByCpu(TmioCtl* ctl, TmioTx* tx);
 void tmioXferSendByCpu(TmioCtl* ctl, TmioTx* tx);
 
 unsigned tmioDecodeTranSpeed(u8 tran_speed);
+
+MEOW_EXTERN_C_END

@@ -2,6 +2,8 @@
 #include "dldi_defs.h"
 #include "disc_io.h"
 
+MEOW_EXTERN_C_START
+
 typedef struct DldiHeader {
 	u32  magic_num;
 	char magic_str[DLDI_MAGIC_STRING_LEN];
@@ -23,3 +25,5 @@ typedef struct DldiHeader {
 
 	DISC_INTERFACE disc;
 } DldiHeader;
+
+MEOW_EXTERN_C_END

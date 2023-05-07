@@ -41,6 +41,8 @@ MEOW_CONSTEXPR unsigned _lcdCalcLyc(unsigned lyc)
 }
 #endif
 
+MEOW_EXTERN_C_START
+
 MEOW_INLINE void lcdSetIrqMask(unsigned mask, unsigned value)
 {
 	mask &= DISPSTAT_IE_ALL;
@@ -85,3 +87,5 @@ MEOW_INLINE unsigned lcdGetVCount(void)
 {
 	return REG_VCOUNT;
 }
+
+MEOW_EXTERN_C_END

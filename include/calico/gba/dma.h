@@ -18,6 +18,8 @@
 #define REG_DMAxFIL(_x)   MEOW_REG(u32, IO_DMAxFIL(_x))
 #endif
 
+MEOW_EXTERN_C_START
+
 typedef enum DmaMode {
 	DmaMode_Increment  = 0,
 	DmaMode_Decrement  = 1,
@@ -108,3 +110,5 @@ MEOW_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 		DMA_TIMING(DmaTiming_Immediate) |
 		DMA_ENABLE;
 }
+
+MEOW_EXTERN_C_END

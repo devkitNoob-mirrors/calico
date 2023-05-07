@@ -44,6 +44,8 @@
 #define AES_IRQ_ENABLE          (1U<<30)
 #define AES_ENABLE              (1U<<31)
 
+MEOW_EXTERN_C_START
+
 typedef struct AesBlock {
 	u32 data[AES_BLOCK_SZ_WORDS];
 } AesBlock;
@@ -121,3 +123,5 @@ MEOW_INLINE void aesSelectKeySlot(AesKeySlot slot)
 	REG_AES_CNT = (REG_AES_CNT &~ AES_KEY_SLOT(3)) | AES_KEY_SLOT(slot) | AES_KEY_SELECT;
 	while (REG_AES_CNT & AES_KEY_SCHEDULE_BUSY);
 }
+
+MEOW_EXTERN_C_END
