@@ -56,7 +56,7 @@ typedef enum DmaTiming {
 
 #define DMA_MODE_DST(_x) (((_x)&3)<<5)
 #define DMA_MODE_SRC(_x) (((_x)&3)<<7)
-#define DMA_REPEAT       (1<<9)
+#define DMA_MODE_REPEAT  (1<<9)
 #define DMA_UNIT_16      (0<<10)
 #define DMA_UNIT_32      (1<<10)
 #if defined(ARM7)
@@ -68,11 +68,11 @@ typedef enum DmaTiming {
 #define DMA_TIMING(_x)   (((_x)&7)<<11)
 #endif
 #define DMA_IRQ_ENABLE   (1<<14)
-#define DMA_ENABLE       (1<<15)
+#define DMA_START        (1<<15)
 
 MEOW_INLINE bool dmaIsBusy(unsigned id)
 {
-	return REG_DMAxCNT_H(id) & DMA_ENABLE;
+	return REG_DMAxCNT_H(id) & DMA_START;
 }
 
 MEOW_INLINE void dmaBusyWait(unsigned id)
@@ -90,7 +90,7 @@ MEOW_INLINE void dmaStartCopy32(unsigned id, void* dst, const void* src, size_t 
 		DMA_MODE_SRC(DmaMode_Increment) |
 		DMA_UNIT_32 |
 		DMA_TIMING(DmaTiming_Immediate) |
-		DMA_ENABLE;
+		DMA_START;
 }
 
 MEOW_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
@@ -108,7 +108,7 @@ MEOW_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 		DMA_MODE_SRC(DmaMode_Fixed) |
 		DMA_UNIT_32 |
 		DMA_TIMING(DmaTiming_Immediate) |
-		DMA_ENABLE;
+		DMA_START;
 }
 
 MEOW_EXTERN_C_END

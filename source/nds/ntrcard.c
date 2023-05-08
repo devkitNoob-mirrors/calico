@@ -97,7 +97,7 @@ static void _ntrcardRecvByDma(u32 romcnt, void* buf, unsigned dma_ch, u32 size)
 		DMA_MODE_SRC(DmaMode_Fixed) |
 		DMA_UNIT_32 |
 		DMA_TIMING(DmaTiming_Slot1) |
-		DMA_ENABLE;
+		DMA_START;
 
 	REG_NTRCARD_ROMCNT = romcnt;
 

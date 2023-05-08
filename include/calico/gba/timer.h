@@ -14,7 +14,7 @@
 #define REG_TMxCNT_L(_x) MEOW_REG(u16, IO_TMxCNT(_x)+0)
 #define REG_TMxCNT_H(_x) MEOW_REG(u16, IO_TMxCNT(_x)+2)
 
-#define TIMER_FREQ SYSTEM_CLOCK
+#define TIMER_BASE_FREQ SYSTEM_CLOCK
 
 #define TIMER_PRESCALER_1    (0<<0)
 #define TIMER_PRESCALER_64   (1<<0)
@@ -28,7 +28,7 @@ MEOW_EXTERN_C_START
 
 MEOW_CONSTEXPR unsigned timerCalcPeriod(unsigned prescaler, unsigned freq)
 {
-	unsigned basefreq = TIMER_FREQ;
+	unsigned basefreq = TIMER_BASE_FREQ;
 	if (prescaler) basefreq >>= prescaler*2 + 4;
 	return (basefreq + freq/2) / freq;
 }

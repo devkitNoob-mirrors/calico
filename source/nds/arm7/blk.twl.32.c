@@ -133,7 +133,7 @@ static void _twlblkDmaRead(TmioCtl* ctl, TmioTx* tx)
 		_twlblkSetupDma(3,
 			ctl->fifo_base, NdmaMode_Fixed, (uptr)tx->user, NdmaMode_Increment,
 			BLK_SECTOR_SZ_WORDS, tx->num_blocks*BLK_SECTOR_SZ_WORDS,
-			NDMA_TIMING(NdmaTiming_Tmio0) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
+			NDMA_TIMING(NdmaTiming_Tmio0) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_START);
 	} else {
 		_twlblkDmaEnd(tx);
 	}
@@ -146,7 +146,7 @@ static void _twlblkDmaWrite(TmioCtl* ctl, TmioTx* tx)
 		_twlblkSetupDma(3,
 			(uptr)tx->user, NdmaMode_Increment, ctl->fifo_base, NdmaMode_Fixed,
 			BLK_SECTOR_SZ_WORDS, tx->num_blocks*BLK_SECTOR_SZ_WORDS,
-			NDMA_TIMING(NdmaTiming_Tmio0) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
+			NDMA_TIMING(NdmaTiming_Tmio0) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_START);
 	} else {
 		_twlblkDmaEnd(tx);
 	}
@@ -235,7 +235,7 @@ static void _twlblkAesDmaRead(TmioCtl* ctl, TmioTx* tx)
 		_twlblkSetupDma(3,
 			(uptr)&REG_AES_RDFIFO, NdmaMode_Fixed, (uptr)tx->user, NdmaMode_Increment,
 			AES_FIFO_SZ_WORDS, tx->num_blocks*BLK_SECTOR_SZ_WORDS,
-			NDMA_TIMING(NdmaTiming_AesRdFifo) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
+			NDMA_TIMING(NdmaTiming_AesRdFifo) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_START);
 
 		_twlblkAesStart(tx);
 	} else {
@@ -253,7 +253,7 @@ static void _twlblkAesDmaXferRecv(TmioCtl* ctl, TmioTx* tx)
 	for (size_t i = 0; i < BLK_SECTOR_SZ; i += AES_FIFO_SZ) {
 		aesBusyWaitWrFifoReady();
 		ndmaBusyWait(2); // mostly only for show - see above comment
-		REG_NDMAxCNT(2) |= NDMA_ENABLE;
+		REG_NDMAxCNT(2) |= NDMA_START;
 	}
 }
 

@@ -105,12 +105,12 @@ static void _twlwifiSdioDma(TmioCtl* ctl, TmioTx* tx)
 			_twlwifiSetupDma(1,
 				ctl->fifo_base, NdmaMode_Fixed, (uptr)tx->user, NdmaMode_Increment,
 				SDIO_BLOCK_SZ_WORDS, tx->num_blocks*SDIO_BLOCK_SZ_WORDS,
-				NDMA_TIMING(NdmaTiming_Tmio1) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
+				NDMA_TIMING(NdmaTiming_Tmio1) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_START);
 		} else {
 			_twlwifiSetupDma(1,
 				(uptr)tx->user, NdmaMode_Increment, ctl->fifo_base, NdmaMode_Fixed,
 				SDIO_BLOCK_SZ_WORDS, tx->num_blocks*SDIO_BLOCK_SZ_WORDS,
-				NDMA_TIMING(NdmaTiming_Tmio1) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_ENABLE);
+				NDMA_TIMING(NdmaTiming_Tmio1) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_START);
 		}
 	} else if (tx->status == 0) {
 		// DMA End (OK)

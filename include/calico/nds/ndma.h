@@ -45,7 +45,7 @@
 #define NDMA_TIMING(_x)    (((_x)&0xf)<<24)
 #define NDMA_TX_MODE(_x)   (((_x)&3)<<28)
 #define NDMA_IRQ_ENABLE    (1<<30)
-#define NDMA_ENABLE        (1<<31)
+#define NDMA_START         (1<<31)
 
 MEOW_EXTERN_C_START
 
@@ -98,7 +98,7 @@ MEOW_CONSTEXPR u32 ndmaCalcBlockTimer(unsigned prescaler, unsigned freq)
 
 MEOW_INLINE bool ndmaIsBusy(unsigned id)
 {
-	return REG_NDMAxCNT(id) & NDMA_ENABLE;
+	return REG_NDMAxCNT(id) & NDMA_START;
 }
 
 MEOW_INLINE void ndmaBusyWait(unsigned id)
@@ -117,7 +117,7 @@ MEOW_INLINE void ndmaStartCopy32(unsigned id, void* dst, const void* src, size_t
 		NDMA_SRC_MODE(NdmaMode_Increment) |
 		NDMA_BLK_WORDS(1) |
 		NDMA_TX_MODE(NdmaTxMode_Immediate) |
-		NDMA_ENABLE;
+		NDMA_START;
 }
 
 MEOW_INLINE void ndmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
@@ -131,7 +131,7 @@ MEOW_INLINE void ndmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 		NDMA_SRC_MODE(NdmaMode_FillData) |
 		NDMA_BLK_WORDS(1) |
 		NDMA_TX_MODE(NdmaTxMode_Immediate) |
-		NDMA_ENABLE;
+		NDMA_START;
 }
 
 MEOW_EXTERN_C_END
