@@ -32,7 +32,15 @@ typedef enum CdcTscCtrlReg {
 	CdcTscCtrlReg_BufferMode     = 0x0e, // Normally 0x0d. Not exactly following datasheet
 	CdcTscCtrlReg_ScanModeTimer  = 0x0f,
 	CdcTscCtrlReg_DebounceTimer  = 0x12,
+	CdcTscCtrlReg_DacDataPath    = 0x3f,
+	CdcTscCtrlReg_AdcDigitalMic  = 0x51,
+	CdcTscCtrlReg_AdcDigitalVolFine = 0x52,
 } CdcTscCtrlReg;
+
+typedef enum CdcTscSndReg {
+	CdcTscSndReg_MicBias         = 0x2e,
+	CdcTscSndReg_MicPga          = 0x2f,
+} CdcTscSndReg;
 
 MEOW_INLINE bool cdcIsTwlMode(void)
 {
@@ -49,5 +57,7 @@ bool cdcWriteRegArray(CdcPage page, unsigned reg, const void* data, unsigned len
 
 void cdcTscInit(void);
 TscResult cdcTscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_diff);
+
+void cdcMicSetAmp(bool enable, unsigned gain);
 
 MEOW_EXTERN_C_END

@@ -92,6 +92,14 @@ void pmSoundSetAmpPower(bool enable);
 
 #endif
 
+enum {
+	PmMicGain_20  = 31,
+	PmMicGain_40  = 43,
+	PmMicGain_80  = 55,
+	PmMicGain_160 = 67,
+	PmMicGain_Max = 119,
+};
+
 void pmInit(void);
 void pmAddEventHandler(PmEventCookie* cookie, PmEventFn handler, void* user);
 void pmRemoveEventHandler(PmEventCookie* cookie);
@@ -109,6 +117,7 @@ bool pmMainLoop(void);
 #define PM_BATT_LEVEL(_x) ((_x)&0x7f)
 
 unsigned pmGetBatteryState(void);
+void pmMicSetAmp(bool enable, unsigned gain);
 bool pmReadNvram(void* data, u32 addr, u32 len);
 
 MEOW_EXTERN_C_END

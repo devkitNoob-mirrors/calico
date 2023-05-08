@@ -22,3 +22,13 @@ bool pmReadNvram(void* data, u32 addr, u32 len)
 	armDCacheFlush(data, len);
 	return pxiSendWithDataAndReceive(PxiChannel_Power, msg, args, 3);
 }
+
+void pmMicSetAmp(bool enable, unsigned gain)
+{
+	if (gain > PmMicGain_Max) {
+		gain = PmMicGain_Max;
+	}
+
+	u32 msg = pxiPmMakeMsg(PxiPmMsg_MicSetAmp, gain | (enable << 8));
+	pxiSendAndReceive(PxiChannel_Power, msg);
+}

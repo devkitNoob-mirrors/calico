@@ -8,12 +8,13 @@ typedef enum PxiPmMsgType {
 	PxiPmMsg_Sleep           = 1,
 	PxiPmMsg_Wakeup          = 2,
 	PxiPmMsg_ReadNvram       = 3,
+	PxiPmMsg_MicSetAmp       = 4,
 
 } PxiPmMsgType;
 
 MEOW_CONSTEXPR u32 pxiPmMakeMsg(PxiPmMsgType type, unsigned imm)
 {
-	return (type & 0xff) | ((imm & 0xff) << 8);
+	return (type & 0xff) | (imm << 8);
 }
 
 MEOW_CONSTEXPR PxiPmMsgType pxiPmGetType(u32 msg)
@@ -23,5 +24,5 @@ MEOW_CONSTEXPR PxiPmMsgType pxiPmGetType(u32 msg)
 
 MEOW_CONSTEXPR unsigned pxiPmGetImmediate(u32 msg)
 {
-	return (msg >> 8) & 0xff;
+	return msg >> 8;
 }

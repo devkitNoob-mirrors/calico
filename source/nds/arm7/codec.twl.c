@@ -234,3 +234,30 @@ TscResult cdcTscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_m
 
 	return res;
 }
+
+void cdcMicSetAmp(bool enable, unsigned gain)
+{
+	if (!mutexIsLockedByCurrentThread(&g_spiMutex)) {
+		return;
+	}
+
+	if (enable) {
+		cdcWriteReg(CdcPage_Sound, CdcTscSndReg_MicBias, 0x03); // set adc bias
+		bool adcOn = cdcReadReg(CdcPage_Control, CdcTscCtrlReg_AdcDigitalMic) & 0x80;
+		bool dacOn = cdcReadReg(CdcPage_Control, CdcTscCtrlReg_DacDataPath) & 0xc0; // DAC powered on (bit7=left, bit6=right)
+		cdcWriteReg(CdcPage_Control, CdcTscCtrlReg_AdcDigitalMic, 0x80); // turn on adc
+
+		if (!adcOn || !dacOn) {
+			mutexUnlock(&g_spiMutex);
+			threadSleep(20000); // 20ms
+			mutexLock(&g_spiMutex);
+		}
+
+		cdcWriteReg(CdcPage_Control, CdcTscCtrlReg_AdcDigitalVolFine, 0x00); // unmute adc
+		cdcWriteReg(CdcPage_Sound, CdcTscSndReg_MicPga, gain); // set gain
+	} else {
+		cdcWriteReg(CdcPage_Control, CdcTscCtrlReg_AdcDigitalVolFine, 0x80); // mute adc
+		cdcWriteReg(CdcPage_Control, CdcTscCtrlReg_AdcDigitalMic, 0x00); // turn off adc
+		cdcWriteReg(CdcPage_Sound, CdcTscSndReg_MicBias, 0x00); // set adc bias
+	}
+}

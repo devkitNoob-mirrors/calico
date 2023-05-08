@@ -84,6 +84,8 @@ static int _pmPxiThreadMain(void* arg)
 	for (;;) {
 		u32 msg = mailboxRecv(&mb);
 		PxiPmMsgType type = pxiPmGetType(msg);
+		unsigned imm = pxiPmGetImmediate(msg);
+		MEOW_DUMMY(imm);
 
 		switch (type) {
 			default: break;
@@ -115,6 +117,12 @@ static int _pmPxiThreadMain(void* arg)
 				u32 addr = mailboxRecv(&mb);
 				u32 len = mailboxRecv(&mb);
 				pxiReply(PxiChannel_Power, pmReadNvram(data, addr, len));
+				break;
+			}
+
+			case PxiPmMsg_MicSetAmp: {
+				pmMicSetAmp((imm>>8)&1, imm&0xff);
+				pxiReply(PxiChannel_Power, 0);
 				break;
 			}
 #endif

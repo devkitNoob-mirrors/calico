@@ -48,6 +48,39 @@ void pmSoundSetAmpPower(bool enable)
 	spiUnlock();
 }
 
+MEOW_CONSTEXPR PmicMicGain _pmMicGainToPmic(unsigned gain)
+{
+	if (gain < (PmMicGain_20+PmMicGain_40)/2) {
+		return PmicMicGain_20;
+	} else if (gain < (PmMicGain_40+PmMicGain_80)/2) {
+		return PmicMicGain_40;
+	} else if (gain < (PmMicGain_80+PmMicGain_160)/2) {
+		return PmicMicGain_80;
+	} else {
+		return PmicMicGain_160;
+	}
+}
+
+void pmMicSetAmp(bool enable, unsigned gain)
+{
+	if (gain > PmMicGain_Max) {
+		gain = PmMicGain_Max;
+	}
+
+	spiLock();
+	if (cdcIsTwlMode()) {
+		// Use CODEC
+		cdcMicSetAmp(enable, gain);
+	} else {
+		// Use PMIC
+		pmicWriteRegister(PmicReg_MicAmpControl, enable ? 1 : 0);
+		if (enable) {
+			pmicWriteRegister(PmicReg_MicAmpGain, _pmMicGainToPmic(gain));
+		}
+	}
+	spiUnlock();
+}
+
 bool pmReadNvram(void* data, u32 addr, u32 len)
 {
 	spiLock();
