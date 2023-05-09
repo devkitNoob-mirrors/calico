@@ -30,6 +30,13 @@ REFERENCE __newlib_syscalls
 .Lirq:  ldr pc, .Lvec_irq
 .Lfiq:  ldr pc, .Lvec_fiq
 
+.weak __arm_excpt_rst
+.weak __arm_excpt_und
+.weak __arm_excpt_svc
+.weak __arm_excpt_pabt
+.weak __arm_excpt_dabt
+.weak __arm_excpt_fiq
+
 .Lvec_rst:  .word __arm_excpt_rst
 .Lvec_und:  .word __arm_excpt_und
 .Lvec_svc:  .word __arm_excpt_svc
