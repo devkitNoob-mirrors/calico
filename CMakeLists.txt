@@ -80,6 +80,8 @@ if(NINTENDO_GBA)
 
 		source/gba/bios.s
 		source/gba/irq_handler.32.s
+
+		source/gba/dma_fill_buf.c
 	)
 endif()
 

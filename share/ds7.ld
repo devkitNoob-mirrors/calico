@@ -33,6 +33,8 @@ PROVIDE_HIDDEN( __sp_usr     = __sys_start + 0xe80         );
 PROVIDE_HIDDEN( __sp_irq     = __sp_usr + 0x100            );
 PROVIDE_HIDDEN( __sp_svc     = __sp_irq + 0x40             );
 PROVIDE_HIDDEN( __irq_flags2 = __sp_svc + 0x00             );
+PROVIDE_HIDDEN( __scfg_buf   = __sp_svc + 0x04             );
+PROVIDE_HIDDEN( __dma_fill   = __sp_svc + 0x20             );
 PROVIDE_HIDDEN( __irq_flags  = __sp_svc + 0x38             );
 PROVIDE_HIDDEN( __irq_vector = __sp_svc + 0x3c             );
 

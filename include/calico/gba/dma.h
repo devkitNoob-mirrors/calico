@@ -14,11 +14,17 @@
 #define REG_DMAxCNT(_x)   MEOW_REG(u32, IO_DMAxCNT(_x))
 #define REG_DMAxCNT_L(_x) MEOW_REG(u16, IO_DMAxCNT(_x)+0)
 #define REG_DMAxCNT_H(_x) MEOW_REG(u16, IO_DMAxCNT(_x)+2)
-#if defined(ARM9)
+#if defined(IO_DMAxFIL)
 #define REG_DMAxFIL(_x)   MEOW_REG(u32, IO_DMAxFIL(_x))
+#else
+#define REG_DMAxFIL(_x)   __dma_fill[(_x)]
 #endif
 
 MEOW_EXTERN_C_START
+
+#if !defined(IO_DMAxFIL)
+extern vu32 __dma_fill[4];
+#endif
 
 typedef enum DmaMode {
 	DmaMode_Increment  = 0,
@@ -95,12 +101,8 @@ MEOW_INLINE void dmaStartCopy32(unsigned id, void* dst, const void* src, size_t 
 
 MEOW_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 {
-#if defined(ARM9)
 	REG_DMAxFIL(id) = value;
 	REG_DMAxSAD(id) = (u32)&REG_DMAxFIL(id);
-#else
-	REG_DMAxSAD(id) = (u32)&value;
-#endif
 	REG_DMAxDAD(id) = (u32)dst;
 	REG_DMAxCNT_L(id) = size/4;
 	REG_DMAxCNT_H(id) =
