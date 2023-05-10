@@ -110,7 +110,7 @@ MEOW_INLINE void ndmaStartCopy32(unsigned id, void* dst, const void* src, size_t
 {
 	REG_NDMAxSAD(id) = (u32)src;
 	REG_NDMAxDAD(id) = (u32)dst;
-	REG_NDMAxBCNT(id) = 1 | NDMA_B_PRESCALER_1;
+	REG_NDMAxBCNT(id) = 0;
 	REG_NDMAxWCNT(id) = size/4;
 	REG_NDMAxCNT(id) =
 		NDMA_DST_MODE(NdmaMode_Increment) |
@@ -124,7 +124,7 @@ MEOW_INLINE void ndmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 {
 	REG_NDMAxFDATA(id) = value;
 	REG_NDMAxDAD(id) = (u32)dst;
-	REG_NDMAxBCNT(id) = 1 | NDMA_B_PRESCALER_1;
+	REG_NDMAxBCNT(id) = 0;
 	REG_NDMAxWCNT(id) = size/4;
 	REG_NDMAxCNT(id) =
 		NDMA_DST_MODE(NdmaMode_Increment) |

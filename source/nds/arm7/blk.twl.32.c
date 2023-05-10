@@ -103,7 +103,7 @@ MEOW_INLINE void _twlblkSetupDma(unsigned ch,
 {
 	REG_NDMAxSAD(ch) = src;
 	REG_NDMAxDAD(ch) = dst;
-	REG_NDMAxBCNT(ch) = 1 | NDMA_B_PRESCALER_1;
+	REG_NDMAxBCNT(ch) = 0;
 	REG_NDMAxTCNT(ch) = total_words;
 	REG_NDMAxWCNT(ch) = unit_words;
 	REG_NDMAxCNT(ch) =
