@@ -188,3 +188,23 @@ TscResult tscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_
 
 	return res;
 }
+
+MEOW_CODE32 unsigned tscReadChannel8(TscChannel ch)
+{
+	_tscSpiBegin(tscMakeCmd(ch, TscConvMode_8bit, TscPowerMode_Auto));
+	unsigned hi = spiRawReadByte() & 0x7f;
+	_tscSpiPreEnd();
+	unsigned lo = spiRawReadByte();
+
+	return (hi << 1) | (lo >> 7);
+}
+
+MEOW_CODE32 unsigned tscReadChannel12(TscChannel ch)
+{
+	_tscSpiBegin(tscMakeCmd(ch, TscConvMode_12bit, TscPowerMode_Auto));
+	unsigned hi = spiRawReadByte() & 0x7f;
+	_tscSpiPreEnd();
+	unsigned lo = spiRawReadByte();
+
+	return (hi << 5) | (lo >> 3);
+}

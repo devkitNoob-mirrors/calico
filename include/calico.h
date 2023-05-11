@@ -87,6 +87,7 @@
 #include "calico/nds/arm7/nvram.h"
 #include "calico/nds/arm7/tsc.h"
 #include "calico/nds/arm7/sound.h"
+#include "calico/nds/arm7/mic.h"
 
 #include "calico/nds/arm7/i2c.h"
 #include "calico/nds/arm7/mcu.h"
@@ -105,6 +106,7 @@
 #ifdef ARM9
 #include "calico/nds/arm9/arm7_debug.h"
 #include "calico/nds/arm9/sound.h"
+#include "calico/nds/arm9/mic.h"
 
 #include "calico/nds/arm9/vram.h"
 

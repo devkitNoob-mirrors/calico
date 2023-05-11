@@ -58,5 +58,7 @@ MEOW_CONSTEXPR u8 tscMakeCmd(TscChannel ch, TscConvMode conv, TscPowerMode pm)
 
 void tscInit(void);
 TscResult tscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_diff);
+unsigned tscReadChannel8(TscChannel ch);
+unsigned tscReadChannel12(TscChannel ch);
 
 MEOW_EXTERN_C_END

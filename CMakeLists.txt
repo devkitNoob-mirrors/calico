@@ -117,6 +117,7 @@ if(NINTENDO_DS)
 			source/nds/arm9/pm_arm9.c
 			source/nds/arm9/touch.c
 			source/nds/arm9/sound.c
+			source/nds/arm9/mic.c
 			source/nds/arm9/blk.c
 			source/nds/arm9/wlmgr.c
 			source/nds/arm9/nitrorom.c
@@ -137,6 +138,7 @@ if(NINTENDO_DS)
 			source/nds/arm7/env.c
 			source/nds/arm7/pm_arm7.c
 			source/nds/arm7/touch.c
+			source/nds/arm7/mic.32.c
 
 			source/nds/arm7/i2c.twl.c
 			source/nds/arm7/mcu.twl.c
