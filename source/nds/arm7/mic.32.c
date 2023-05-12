@@ -54,27 +54,27 @@ static unsigned _micReadSampleNtr(void)
 	return ret;
 }
 
-MEOW_INLINE void _micexStart(unsigned div)
+MEOW_INLINE void _micexStart(unsigned div, unsigned cnt)
 {
 	REG_MICEX_CNT = MICEX_CNT_CLEAR_FIFO;
-	REG_MICEX_CNT = MICEX_CNT_NO_R | MICEX_CNT_RATE_DIV(div) | MICEX_CNT_ENABLE;
+	REG_MICEX_CNT = cnt | MICEX_CNT_RATE_DIV(div) | MICEX_CNT_ENABLE;
 }
 
 __attribute__((section(".twl._micReadSampleTwl")))
 static unsigned _micReadSampleTwl(void)
 {
-	_micexStart(0);
+	unsigned ret;
+	if_likely (!(REG_MICEX_CNT & MICEX_CNT_FIFO_EMPTY)) {
+		ret = REG_MICEX_DATA & 0xffff;
+		s_micState.latch = ret;
 
-	// XX: Official code uses a "retry count" timeout here, however said approach
-	// is sensitive to cycle count fluctuations caused by codegen -- and GCC is
-	// so good at it that it produces code that often gives up before the hardware
-	// physically has the chance to feed us. We opt to not use a timeout at all in
-	// order to be consistent, and also accepting the risk of an infloop.
-	while (REG_MICEX_CNT & MICEX_CNT_FIFO_EMPTY);
-	unsigned data = REG_MICEX_DATA & 0xffff;
+		REG_MICEX_CNT = 0;
+		_micexStart(0, 0);
+	} else {
+		ret = s_micState.latch;
+	}
 
-	REG_MICEX_CNT = 0;
-	return data;
+	return ret;
 }
 
 static void _micTimerIsr(void)
@@ -207,6 +207,7 @@ static unsigned _micStart(bool is_16bit, MicMode mode)
 			break;
 	}
 
+	s_micState.latch = 0;
 	if (s_micState.is_dma) {
 		REG_MICEX_CNT = 0;
 
@@ -228,18 +229,25 @@ static unsigned _micStart(bool is_16bit, MicMode mode)
 		irqSet(IRQ_NDMA0, _micDmaIsr);
 		irqEnable(IRQ_NDMA0);
 
-		_micexStart(s_micState.div);
+		_micexStart(s_micState.div, MICEX_CNT_NO_R);
 	} else {
+		bool is_twl = cdcIsTwlMode();
+
 		REG_TMxCNT_H(0) = 0;
 		REG_TMxCNT_L(0) = 0x10000 - s_micState.timer;
 
-		s_micState.sample_fn = cdcIsTwlMode() ? _micReadSampleTwl : _micReadSampleNtr;
+		s_micState.sample_fn = is_twl ? _micReadSampleTwl : _micReadSampleNtr;
 		s_micState.pos = 0;
 		s_micState.len = buf_sz >> is_16bit;
 		s_micState.is_16bit = is_16bit;
 
 		irqSet(IRQ_TIMER0, _micTimerIsr);
 		irqEnable(IRQ_TIMER0);
+
+		if (is_twl) {
+			REG_MICEX_CNT = 0;
+			_micexStart(0, 0); // Use "fake stereo" mode so that 1 sample = 1 word
+		}
 
 		REG_TMxCNT_H(0) = s_micState.div | TIMER_ENABLE_IRQ | TIMER_ENABLE;
 	}
