@@ -65,14 +65,16 @@ static unsigned _micReadSampleTwl(void)
 {
 	_micexStart(0);
 
-	unsigned timeout = 0;
-	while (timeout++ < 200) {
-		if (!(REG_MICEX_CNT & MICEX_CNT_FIFO_EMPTY)) {
-			return REG_MICEX_DATA & 0xffff;
-		}
-	}
+	// XX: Official code uses a "retry count" timeout here, however said approach
+	// is sensitive to cycle count fluctuations caused by codegen -- and GCC is
+	// so good at it that it produces code that often gives up before the hardware
+	// physically has the chance to feed us. We opt to not use a timeout at all in
+	// order to be consistent, and also accepting the risk of an infloop.
+	while (REG_MICEX_CNT & MICEX_CNT_FIFO_EMPTY);
+	unsigned data = REG_MICEX_DATA & 0xffff;
 
-	return 0;
+	REG_MICEX_CNT = 0;
+	return data;
 }
 
 static void _micTimerIsr(void)
@@ -167,10 +169,10 @@ static bool _micSetDmaRate(unsigned div)
 	return true;
 }
 
-static bool _micStart(bool is_16bit, MicMode mode)
+static unsigned _micStart(bool is_16bit, MicMode mode)
 {
 	if (s_micState.active) {
-		return false;
+		return 0;
 	}
 
 	PxiMicArgStart* arg = (PxiMicArgStart*)&s_micState.param[(sizeof(s_micState.param)-sizeof(PxiMicArgStart))/sizeof(u32)];
@@ -186,7 +188,7 @@ static bool _micStart(bool is_16bit, MicMode mode)
 	}
 
 	if (!buf_sz) {
-		return false;
+		return 0;
 	}
 
 	s_micState.front.ptr = (void*)buf_addr;
@@ -243,7 +245,7 @@ static bool _micStart(bool is_16bit, MicMode mode)
 	}
 
 	s_micState.active = true;
-	return true;
+	return buf_sz;
 }
 
 static void _micStop(void)

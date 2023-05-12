@@ -91,13 +91,13 @@ bool micStart(void* buf, size_t byte_sz, MicFmt fmt, MicMode mode)
 	u32 msg = pxiMicMakeCmdMsg(PxiMicCmd_Start, u.imm);
 
 	ArmIrqState st = armIrqLockByPsr();
-	bool ok = pxiSendWithDataAndReceive(PxiChannel_Mic, msg, (u32*)&arg, sizeof(arg)/sizeof(u32)) != 0;
-	if (ok) {
-		s_micState.byte_sz = byte_sz;
+	unsigned ret = pxiSendWithDataAndReceive(PxiChannel_Mic, msg, (u32*)&arg, sizeof(arg)/sizeof(u32));
+	if (ret != 0) {
+		s_micState.byte_sz = ret;
 	}
 	armIrqUnlockByPsr(st);
 
-	return ok;
+	return ret != 0;
 }
 
 void micStop(void)
