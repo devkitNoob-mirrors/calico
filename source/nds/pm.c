@@ -24,6 +24,12 @@
 
 #include <sys/iosupport.h>
 
+#if defined(ARM9)
+#define PM_THREAD_PRIO 0x01
+#elif defined(ARM7)
+#define PM_THREAD_PRIO (MAIN_THREAD_PRIO-1)
+#endif
+
 #define PM_HINGE_SLEEP_THRESHOLD 20
 
 #define PM_FLAG_RESET_ASSERTED (1U << 0)
@@ -167,7 +173,7 @@ MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToNextA
 MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToBootstub(void)
 {
 	// Remap WRAM_A to the location used by DSi-enhanced (hybrid) apps
-	// This is needed for compatibility with libnds
+	// This is needed for compatibility with libnds v1.x infrastructure
 	if (systemIsTwlMode()) {
 		MEOW_REG(u32, IO_MBK_MAP_A) = 0x00403000;
 	}
@@ -348,7 +354,7 @@ void pmInit(void)
 #endif
 
 	// Bring up PXI thread
-	threadPrepare(&s_pmPxiThread, _pmPxiThreadMain, NULL, &s_pmPxiThreadStack[sizeof(s_pmPxiThreadStack)], 0x01);
+	threadPrepare(&s_pmPxiThread, _pmPxiThreadMain, NULL, &s_pmPxiThreadStack[sizeof(s_pmPxiThreadStack)], PM_THREAD_PRIO);
 	threadStart(&s_pmPxiThread);
 
 	// Wait for the other CPU to bring up their PXI thread
