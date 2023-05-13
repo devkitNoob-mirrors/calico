@@ -19,5 +19,9 @@ bool touchRead(TouchData* out)
 		state = s_transferRegion->touch_state;
 	} while (state != state_old);
 
+	if (!valid) {
+		*out = (TouchData){0};
+	}
+
 	return valid;
 }
