@@ -52,6 +52,23 @@ static void _soundPmEventHandler(void* user, PmEvent event)
 			_soundEnable();
 			break;
 		}
+
+		case PmEvent_OnReset: {
+			while (!mailboxTrySend(&s_soundSrvMailbox, SOUND_MAIL_EXIT)) {
+				threadSleep(1000);
+			}
+			threadJoin(&s_soundSrvThread);
+			break;
+		}
+	}
+}
+
+static void _soundReset(void)
+{
+	// Clear sound registers
+	REG_SNDCAPCNT = 0;
+	for (unsigned i = 0; i < SOUND_NUM_CHANNELS; i ++) {
+		REG_SOUNDxCNT(i) = 0;
 	}
 }
 
@@ -65,15 +82,10 @@ static int _soundSrvThreadMain(void* arg)
 	mailboxPrepare(&s_soundPxiMailbox, s_soundPxiMailboxSlots, PXI_SOUND_NUM_CREDITS);
 	pxiSetHandler(PxiChannel_Sound, _soundPxiHandler, &s_soundPxiMailbox);
 
-	// Enable sound hardware
+	// Enable and initialize sound hardware
 	g_soundState.soundcnt_cfg = SOUNDCNT_VOL(0x7f);
 	_soundEnable();
-
-	// Clear sound registers
-	REG_SNDCAPCNT = 0;
-	for (unsigned i = 0; i < SOUND_NUM_CHANNELS; i ++) {
-		REG_SOUNDxCNT(i) = 0;
-	}
+	_soundReset();
 
 	// Register PM event handler
 	pmAddEventHandler(&s_soundPmCookie, _soundPmEventHandler, NULL);
@@ -96,6 +108,9 @@ static int _soundSrvThreadMain(void* arg)
 		// Update shared state
 		_soundUpdateSharedState();
 	}
+
+	// Clean up the sound hardware
+	_soundReset();
 
 	return 0;
 }
