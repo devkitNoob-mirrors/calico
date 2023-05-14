@@ -14,7 +14,7 @@ MEOW_INLINE bool _soundBitmaskUnpack(unsigned* mask, unsigned* i)
 	return true;
 }
 
-MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStart(unsigned ch_mask)
+MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStart(unsigned ch_mask, u16 cap_mask)
 {
 	IrqState st = irqLock();
 
@@ -22,15 +22,23 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStart(unsigned ch_mask)
 		soundChStart(i);
 	}
 
+	if (cap_mask) {
+		soundCapStart(cap_mask);
+	}
+
 	irqUnlock(st);
 }
 
-MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStop(unsigned ch_mask)
+MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStop(unsigned ch_mask, u16 cap_mask)
 {
 	IrqState st = irqLock();
 
 	for (unsigned i = 0; _soundBitmaskUnpack(&ch_mask, &i);) {
 		soundChStop(i);
+	}
+
+	if (cap_mask) {
+		soundCapStop(cap_mask);
 	}
 
 	irqUnlock(st);
@@ -71,13 +79,15 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 		}
 
 		case PxiSoundCmd_Start: {
-			_soundPxiStart(imm & 0xffff);
+			PxiSoundImmStartStop u = { imm };
+			_soundPxiStart(u.ch_mask, soundExpandCapMask(u.cap_mask));
 			_soundUpdateSharedState();
 			break;
 		}
 
 		case PxiSoundCmd_Stop: {
-			_soundPxiStop(imm & 0xffff);
+			PxiSoundImmStartStop u = { imm };
+			_soundPxiStop(u.ch_mask, soundExpandCapMask(u.cap_mask));
 			_soundUpdateSharedState();
 			break;
 		}
@@ -128,6 +138,23 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 		case PxiSoundCmd_SetDuty: {
 			PxiSoundImmSetDuty u = { imm };
 			soundChSetDuty(u.ch+8, (SoundDuty)u.duty);
+			break;
+		}
+
+		case PxiSoundCmd_SetMixerVolume: {
+			soundSetMixerVolume(imm);
+			break;
+		}
+
+		case PxiSoundCmd_SetMixerConfig: {
+			soundSetMixerConfigDirect(imm);
+			break;
+		}
+
+		case PxiSoundCmd_PrepareCap: {
+			PxiSoundImmPrepareCap u = { imm };
+			const PxiSoundArgPrepareCap* arg = (const PxiSoundArgPrepareCap*)body;
+			soundPrepareCapDirect(u.cap, u.config, (void*)arg->dad, arg->len);
 			break;
 		}
 	}

@@ -25,6 +25,7 @@
 #define REG_SNDCAPxLEN(_x) MEOW_REG(u16, IO_SNDCAPxLEN(_x))
 
 #define SOUNDCNT_VOL(_x)       ((_x)&0x7f)
+#define SOUNDCNT_MIXER_CFG(_x) (((_x)&0x3f)<<8)
 #define SOUNDCNT_OUT_SRC_L(_x) (((_x)&3)<<8)
 #define SOUNDCNT_OUT_SRC_R(_x) (((_x)&3)<<10)
 #define SOUNDCNT_MUTE_CH1      (1U<<12)
@@ -46,7 +47,31 @@
 #define SOUNDxCNT_FMT(_x)      (((_x)&3)<<29)
 #define SOUNDxCNT_ENABLE       (1U<<31)
 
+#define SNDCAPxCNT_CFG(_x)     ((_x)&0xf)
+#define SNDCAPxCNT_DST(_x)     ((_x)&1)
+#define SNDCAPxCNT_SRC(_x)     (((_x)&1)<<1)
+#define SNDCAPxCNT_LOOP        (1U<<2)
+#define SNDCAPxCNT_ONESHOT     (1U<<2)
+#define SNDCAPxCNT_FMT(_x)     (((_x)&1)<<3)
+#define SNDCAPxCNT_ENABLE      (1U<<7)
+
 MEOW_EXTERN_C_START
+
+MEOW_INLINE void soundSetMixerVolume(unsigned vol)
+{
+	REG_SOUNDCNTVOL = vol & 0x7f;
+}
+
+MEOW_INLINE void soundSetMixerConfigDirect(unsigned config)
+{
+	REG_SOUNDCNT = (REG_SOUNDCNT &~ SOUNDCNT_MIXER_CFG(0x3f)) | SOUNDCNT_MIXER_CFG(config);
+}
+
+MEOW_INLINE void soundSetMixerConfig(SoundOutSrc src_l, SoundOutSrc src_r, bool mute_ch1, bool mute_ch3)
+{
+	unsigned config = soundMakeMixerConfig(src_l, src_r, mute_ch1, mute_ch3);
+	soundSetMixerConfigDirect(config);
+}
 
 MEOW_INLINE void soundChPreparePcm(
 	unsigned ch, unsigned vol, SoundVolDiv voldiv, unsigned pan, unsigned timer,
@@ -104,6 +129,39 @@ MEOW_INLINE void soundChSetTimer(unsigned ch, unsigned timer)
 MEOW_INLINE void soundChSetDuty(unsigned ch, SoundDuty duty)
 {
 	REG_SOUNDxCNT(ch) = (REG_SOUNDxCNT(ch) &~ SOUNDxCNT_DUTY(7)) | SOUNDxCNT_DUTY(duty);
+}
+
+MEOW_INLINE void soundPrepareCapDirect(unsigned cap, unsigned config, void* dad, unsigned len)
+{
+	REG_SNDCAPxCNT(cap) = SNDCAPxCNT_CFG(config);
+	REG_SNDCAPxDAD(cap) = (u32)dad;
+	REG_SNDCAPxLEN(cap) = len;
+}
+
+MEOW_INLINE void soundPrepareCap(
+	unsigned cap, SoundCapDst dst, SoundCapSrc src, bool loop, SoundCapFmt fmt,
+	void* dad, unsigned len)
+{
+	unsigned config = soundMakeCapConfig(dst, src, loop, fmt);
+	soundPrepareCapDirect(cap, config, dad, len);
+}
+
+MEOW_CONSTEXPR u16 soundExpandCapMask(unsigned cap_mask)
+{
+	u16 ret = 0;
+	ret |= (cap_mask&1) * SNDCAPxCNT_ENABLE;
+	ret |= ((cap_mask>>1)&1) * (SNDCAPxCNT_ENABLE<<8);
+	return ret;
+}
+
+MEOW_CONSTEXPR void soundCapStart(u16 mask)
+{
+	REG_SNDCAPCNT |= mask;
+}
+
+MEOW_CONSTEXPR void soundCapStop(u16 mask)
+{
+	REG_SNDCAPCNT &= ~mask;
 }
 
 void soundStartServer(u8 thread_prio);

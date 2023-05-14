@@ -96,6 +96,16 @@ unsigned soundGetActiveChannels(void)
 	return s_transferRegion->sound_active_ch_mask;
 }
 
+void soundSetMixerVolume(unsigned vol)
+{
+	_soundIssueCmdAsync(PxiSoundCmd_SetMixerVolume, vol, NULL, 0);
+}
+
+void soundSetMixerConfigDirect(unsigned config)
+{
+	_soundIssueCmdAsync(PxiSoundCmd_SetMixerConfig, config, NULL, 0);
+}
+
 MEOW_INLINE SoundVolDiv _soundCalcVolDiv(unsigned* vol)
 {
 	if (*vol < 0x80) {
@@ -154,14 +164,29 @@ void soundPreparePsg(unsigned ch, unsigned vol, unsigned pan, unsigned timer, So
 	_soundIssueCmdAsync(PxiSoundCmd_PreparePsg, pan, &arg, sizeof(arg));
 }
 
-void soundStart(u16 ch_mask)
+void soundPrepareCapDirect(unsigned cap, unsigned config, void* dad, unsigned len)
 {
-	_soundIssueCmdAsync(PxiSoundCmd_Start, ch_mask, NULL, 0);
+	PxiSoundImmPrepareCap u = {
+		.cap    = cap,
+		.config = config,
+	};
+
+	PxiSoundArgPrepareCap arg = {
+		.dad = (u32)dad,
+		.len = len,
+	};
+
+	_soundIssueCmdAsync(PxiSoundCmd_PrepareCap, u.imm, &arg, sizeof(arg));
 }
 
-void soundStop(u16 ch_mask)
+void soundStart(u32 mask)
 {
-	_soundIssueCmdAsync(PxiSoundCmd_Stop, ch_mask, NULL, 0);
+	_soundIssueCmdAsync(PxiSoundCmd_Start, mask, NULL, 0);
+}
+
+void soundStop(u32 mask)
+{
+	_soundIssueCmdAsync(PxiSoundCmd_Stop, mask, NULL, 0);
 }
 
 void soundChSetVolume(unsigned ch, unsigned vol)

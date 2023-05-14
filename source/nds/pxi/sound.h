@@ -17,6 +17,9 @@ typedef enum PxiSoundCmd {
 	PxiSoundCmd_SetPan         = 9,
 	PxiSoundCmd_SetTimer       = 10,
 	PxiSoundCmd_SetDuty        = 11,
+	PxiSoundCmd_SetMixerVolume = 12,
+	PxiSoundCmd_SetMixerConfig = 13,
+	PxiSoundCmd_PrepareCap     = 14,
 } PxiSoundCmd;
 
 typedef enum PxiSoundEvent {
@@ -47,6 +50,14 @@ typedef struct PxiSoundArgPreparePsg {
 	u32 ch     : 3;
 	u32 start  : 1;
 } PxiSoundArgPreparePsg;
+
+typedef union PxiSoundImmStartStop {
+	unsigned imm;
+	struct {
+		unsigned ch_mask  : 16;
+		unsigned cap_mask : 2;
+	};
+} PxiSoundImmStartStop;
 
 typedef union PxiSoundImmSetVolume {
 	unsigned imm;
@@ -80,6 +91,19 @@ typedef union PxiSoundImmSetDuty {
 		unsigned duty : 3; // SoundDuty
 	};
 } PxiSoundImmSetDuty;
+
+typedef union PxiSoundImmPrepareCap {
+	unsigned imm;
+	struct {
+		unsigned cap    : 1;
+		unsigned config : 4;
+	};
+} PxiSoundImmPrepareCap;
+
+typedef struct PxiSoundArgPrepareCap {
+	u32 dad;
+	u32 len;
+} PxiSoundArgPrepareCap;
 
 MEOW_CONSTEXPR u32 pxiSoundMakeCmdMsg(PxiSoundCmd cmd, bool update_credits, unsigned imm)
 {
