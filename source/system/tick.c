@@ -168,5 +168,6 @@ void tickTaskStop(TickTask* t)
 		_tickTaskSchedule(s_firstTask);
 	}
 
+	t->fn = NULL;
 	irqUnlock(st);
 }
