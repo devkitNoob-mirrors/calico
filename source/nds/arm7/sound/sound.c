@@ -150,7 +150,7 @@ void _soundDisable(void)
 
 	// Disable sound mixer, backing up configuration
 	g_soundState.soundcnt_cfg = (REG_SOUNDCNT &~ SOUNDCNT_ENABLE);
-	REG_SOUNDCNT = 0;
+	REG_SOUNDCNT = g_soundState.mixer_sleep_lock ? SOUNDCNT_ENABLE : 0;
 
 	// Smoothly drop the output signal baseline
 	svcSoundBias(false, 0x80);

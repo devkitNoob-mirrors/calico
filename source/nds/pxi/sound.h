@@ -20,6 +20,7 @@ typedef enum PxiSoundCmd {
 	PxiSoundCmd_SetMixerVolume = 12,
 	PxiSoundCmd_SetMixerConfig = 13,
 	PxiSoundCmd_PrepareCap     = 14,
+	PxiSoundCmd_SetMixerSleep  = 15,
 } PxiSoundCmd;
 
 typedef enum PxiSoundEvent {

@@ -157,6 +157,11 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsig
 			soundPrepareCapDirect(u.cap, u.config, (void*)arg->dad, arg->len);
 			break;
 		}
+
+		case PxiSoundCmd_SetMixerSleep: {
+			g_soundState.mixer_sleep_lock = !(imm & 1);
+			break;
+		}
 	}
 }
 

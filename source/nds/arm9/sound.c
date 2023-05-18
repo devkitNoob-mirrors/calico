@@ -106,6 +106,11 @@ void soundSetMixerConfigDirect(unsigned config)
 	_soundIssueCmdAsync(PxiSoundCmd_SetMixerConfig, config, NULL, 0);
 }
 
+void soundSetMixerSleep(bool enable)
+{
+	_soundIssueCmdAsync(PxiSoundCmd_SetMixerSleep, enable ? 1 : 0, NULL, 0);
+}
+
 MEOW_INLINE SoundVolDiv _soundCalcVolDiv(unsigned* vol)
 {
 	if (*vol < 0x80) {

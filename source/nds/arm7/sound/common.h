@@ -19,6 +19,7 @@ typedef struct SoundState {
 	u16 soundcnt_cfg;
 	u16 channel_mask;
 	u16 pxi_credits;
+	bool mixer_sleep_lock;
 } SoundState;
 
 extern SoundState g_soundState;

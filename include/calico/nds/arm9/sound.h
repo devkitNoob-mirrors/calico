@@ -28,6 +28,7 @@ MEOW_INLINE void soundPowerOff(void)
 unsigned soundGetActiveChannels(void);
 void soundSetMixerVolume(unsigned vol);
 void soundSetMixerConfigDirect(unsigned config);
+void soundSetMixerSleep(bool enable);
 void soundPreparePcm(
 	unsigned ch, unsigned vol, unsigned pan, unsigned timer,
 	SoundMode mode, SoundFmt fmt, const void* sad, unsigned pnt, unsigned len);
