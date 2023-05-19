@@ -159,7 +159,9 @@ void _soundDisable(void)
 	pmSoundSetAmpPower(false);
 
 	// Disable sound mixer circuit
-	pmPowerOff(POWCNT_SOUND);
+	if (!g_soundState.mixer_sleep_lock) {
+		pmPowerOff(POWCNT_SOUND);
+	}
 }
 
 void _soundSetAutoUpdate(bool enable)
