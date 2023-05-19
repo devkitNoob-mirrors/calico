@@ -498,7 +498,7 @@ void pmEnterSleep(void)
 
 #if defined(ARM9)
 	u32 ie = REG_IE;
-	REG_IE = IRQ_PXI_RECV;
+	REG_IE = ie & (IRQ_PXI_RECV|IRQ_TIMER2);
 
 	u32 powcnt = REG_POWCNT;
 	if (powcnt & POWCNT_LCD) {
