@@ -349,7 +349,7 @@ typedef struct EnvExtraInfo {
 	u8  wlmgr_macaddr[6];
 	u16 wlmgr_channel_mask;
 	u8  pm_chainload_flag;
-	u8  _pad_0x0D;
+	u8  wlmgr_hdr_headroom_sz;
 	u16 dldi_features;
 	u32 dldi_io_type;
 } EnvExtraInfo;

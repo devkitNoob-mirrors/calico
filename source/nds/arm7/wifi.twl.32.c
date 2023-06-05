@@ -343,6 +343,7 @@ bool twlwifiInit(void)
 	// Copy wireless interface settings
 	memcpy(g_envExtraInfo->wlmgr_macaddr, s_ar6kDev.macaddr, 6);
 	g_envExtraInfo->wlmgr_channel_mask = s_ar6kDev.wmi_channel_mask;
+	g_envExtraInfo->wlmgr_hdr_headroom_sz = sizeof(Ar6kHtcFrameHdr) + sizeof(Ar6kWmiDataHdr) + sizeof(NetLlcSnapHdr);
 
 	return true;
 
