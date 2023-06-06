@@ -178,9 +178,9 @@ static void _twlwifiOnAssoc(Ar6kDev* dev, Ar6kWmiEvtConnected* info)
 	}
 }
 
-static void _twlwifiOnDeassoc(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info)
+static void _twlwifiOnDisassoc(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info)
 {
-	dietPrint("[TWLWIFI] Deassociated\n");
+	dietPrint("[TWLWIFI] Disassociated\n");
 	dietPrint("  IEEE reason = %u\n", info->reason_ieee);
 	dietPrint("  Reason = %u\n", info->reason);
 
@@ -333,7 +333,7 @@ bool twlwifiInit(void)
 	s_ar6kDev.cb_onBssInfo = _twlwifiOnBssInfo;
 	s_ar6kDev.cb_onScanComplete = _twlwifiOnScanComplete;
 	s_ar6kDev.cb_onAssoc = _twlwifiOnAssoc;
-	s_ar6kDev.cb_onDeassoc = _twlwifiOnDeassoc;
+	s_ar6kDev.cb_onDisassoc = _twlwifiOnDisassoc;
 	s_ar6kDev.cb_rx = _twlwifiRx;
 	s_wpaState.cb_alloc_packet = _twlwifiWpaAllocPacket;
 	s_wpaState.cb_tx = _twlwifiWpaTx;
@@ -359,7 +359,7 @@ _tmioCleanup:
 
 void twlwifiExit(void)
 {
-	twlwifiDeassociate();
+	twlwifiDisassociate();
 	wpaFinalize(&s_wpaState);
 	threadJoin(&s_wpaSupplicantThread);
 	ar6kWmiHostExitNotify(&s_ar6kDev);
@@ -623,7 +623,7 @@ bool twlwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, TwlWifiA
 	return true;
 }
 
-bool twlwifiDeassociate(void)
+bool twlwifiDisassociate(void)
 {
 	static const Ar6kWmiScanParams dummy_scan_params = {
 		.fg_start_period_secs = UINT16_MAX,

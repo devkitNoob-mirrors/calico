@@ -265,15 +265,15 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 			break;
 		}
 
-		case PxiWlMgrCmd_Deassociate: {
+		case PxiWlMgrCmd_Disassociate: {
 			if (s_wlmgrState.state == WlMgrState_Associating || s_wlmgrState.state == WlMgrState_Associated) {
 				if (s_wlmgrState.using_twlwifi) {
-					rc = twlwifiDeassociate();
+					rc = twlwifiDisassociate();
 				} else {
 					// XX: Mitsumi
 				}
 				if (rc) {
-					_wlmgrSetState(WlMgrState_Deassociating);
+					_wlmgrSetState(WlMgrState_Disassociating);
 				}
 			}
 			break;

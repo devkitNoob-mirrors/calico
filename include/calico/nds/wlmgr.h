@@ -15,14 +15,14 @@ typedef enum WlMgrMode {
 } WlMgrMode;
 
 typedef enum WlMgrState {
-	WlMgrState_Stopped       = 0,
-	WlMgrState_Starting      = 1,
-	WlMgrState_Stopping      = WlMgrState_Starting,
-	WlMgrState_Idle          = 2,
-	WlMgrState_Scanning      = 3,
-	WlMgrState_Associating   = 4,
-	WlMgrState_Associated    = 5,
-	WlMgrState_Deassociating = 6,
+	WlMgrState_Stopped        = 0,
+	WlMgrState_Starting       = 1,
+	WlMgrState_Stopping       = WlMgrState_Starting,
+	WlMgrState_Idle           = 2,
+	WlMgrState_Scanning       = 3,
+	WlMgrState_Associating    = 4,
+	WlMgrState_Associated     = 5,
+	WlMgrState_Disassociating = 6,
 } WlMgrState;
 
 typedef enum WlMgrEvent {
@@ -66,7 +66,7 @@ void wlmgrStart(WlMgrMode mode);
 void wlmgrStop(void);
 void wlmgrStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter);
 void wlmgrAssociate(WlanBssDesc const* bss, WlanAuthData const* auth);
-void wlmgrDeassociate(void);
+void wlmgrDisassociate(void);
 
 void wlmgrSetRawRxHandler(WlMgrRawRxFn cb, void* user);
 void wlmgrRawTx(NetBuf* pPacket);

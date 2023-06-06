@@ -5,11 +5,11 @@
 #define PXI_WLMGR_NUM_CREDITS 32
 
 typedef enum PxiWlMgrCmd {
-	PxiWlMgrCmd_Start       = 0,
-	PxiWlMgrCmd_Stop        = 1,
-	PxiWlMgrCmd_StartScan   = 2,
-	PxiWlMgrCmd_Associate   = 3,
-	PxiWlMgrCmd_Deassociate = 4,
+	PxiWlMgrCmd_Start        = 0,
+	PxiWlMgrCmd_Stop         = 1,
+	PxiWlMgrCmd_StartScan    = 2,
+	PxiWlMgrCmd_Associate    = 3,
+	PxiWlMgrCmd_Disassociate = 4,
 } PxiWlMgrCmd;
 
 typedef struct PxiWlMgrArgAssociate {

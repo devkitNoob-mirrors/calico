@@ -108,8 +108,8 @@ void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 
 		case Ar6kWmiEventId_Disconnected: {
 			Ar6kWmiEvtDisconnected* hdr = netbufPopHeaderType(pPacket, Ar6kWmiEvtDisconnected);
-			if (hdr && dev->cb_onDeassoc) {
-				dev->cb_onDeassoc(dev, hdr);
+			if (hdr && dev->cb_onDisassoc) {
+				dev->cb_onDisassoc(dev, hdr);
 			}
 			break;
 		}

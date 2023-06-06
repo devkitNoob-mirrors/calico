@@ -250,9 +250,9 @@ void wlmgrAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 	pxiSendWithData(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_Associate, 0), (const u32*)&arg, sizeof(arg)/sizeof(u32));
 }
 
-void wlmgrDeassociate(void)
+void wlmgrDisassociate(void)
 {
-	pxiSend(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_Deassociate, 0));
+	pxiSend(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_Disassociate, 0));
 }
 
 void wlmgrSetRawRxHandler(WlMgrRawRxFn cb, void* user)
