@@ -9,3 +9,7 @@
 #else
 #define dietPrint(...) ((void)0)
 #endif
+
+unsigned _mwlBbpRead(unsigned reg);
+void _mwlBbpWrite(unsigned reg, unsigned value);
+void _mwlRfCmd(u32 cmd);

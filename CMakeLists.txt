@@ -163,6 +163,8 @@ if(NINTENDO_DS)
 			source/nds/arm7/wpa_aes.twl.s
 
 			source/dev/mwl/mwl_calib.16.c
+			source/dev/mwl/mwl_dev_base.16.c
+			source/dev/mwl/mwl_dev_bbp_rf.c
 		)
 	endif()
 endif()
