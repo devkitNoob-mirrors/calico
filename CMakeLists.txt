@@ -161,6 +161,8 @@ if(NINTENDO_DS)
 			source/nds/arm7/wpa.twl.32.c
 			source/nds/arm7/wpa_hmac_sha1.twl.32.c
 			source/nds/arm7/wpa_aes.twl.s
+
+			source/dev/mwl/mwl_calib.16.c
 		)
 	endif()
 endif()

@@ -101,6 +101,7 @@
 #include "calico/dev/sdmmc.h"
 #include "calico/dev/sdio.h"
 #include "calico/dev/ar6k.h"
+#include "calico/dev/mwl.h"
 #endif
 
 #ifdef ARM9
