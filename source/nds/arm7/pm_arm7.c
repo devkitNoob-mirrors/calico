@@ -30,6 +30,14 @@ unsigned pmGetBatteryState(void)
 	return ret;
 }
 
+void pmSetPowerLed(PmLedMode mode)
+{
+	spiLock();
+	unsigned reg = pmicReadRegister(PmicReg_Control);
+	pmicWriteRegister(PmicReg_Control, (reg&~PMIC_CTRL_LED_MASK) | ((mode&3)<<4));
+	spiUnlock();
+}
+
 void pmSoundSetAmpPower(bool enable)
 {
 	spiLock();

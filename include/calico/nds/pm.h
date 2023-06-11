@@ -38,6 +38,12 @@ typedef enum PmEvent {
 	PmEvent_OnReset      = 2,
 } PmEvent;
 
+typedef enum PmLedMode {
+	PmLedMode_Steady    = 0,
+	PmLedMode_BlinkSlow = 1,
+	PmLedMode_BlinkFast = 3,
+} PmLedMode;
+
 typedef void (* PmEventFn)(void* user, PmEvent event);
 typedef struct PmEventCookie PmEventCookie;
 
@@ -117,6 +123,7 @@ bool pmMainLoop(void);
 #define PM_BATT_LEVEL(_x) ((_x)&0x7f)
 
 unsigned pmGetBatteryState(void);
+void pmSetPowerLed(PmLedMode mode);
 void pmMicSetAmp(bool enable, unsigned gain);
 bool pmReadNvram(void* data, u32 addr, u32 len);
 

@@ -10,6 +10,12 @@ unsigned pmGetBatteryState(void)
 	return pxiSendAndReceive(PxiChannel_Power, msg);
 }
 
+void pmSetPowerLed(PmLedMode mode)
+{
+	u32 msg = pxiPmMakeMsg(PxiPmMsg_SetPowerLed, mode);
+	pxiSendAndReceive(PxiChannel_Power, msg);
+}
+
 bool pmReadNvram(void* data, u32 addr, u32 len)
 {
 	u32 msg = pxiPmMakeMsg(PxiPmMsg_ReadNvram, 0);

@@ -131,6 +131,13 @@ static int _pmPxiThreadMain(void* arg)
 				pxiReply(PxiChannel_Power, 0);
 				break;
 			}
+
+			case PxiPmMsg_SetPowerLed: {
+				pmSetPowerLed(imm&3);
+				pxiReply(PxiChannel_Power, 0);
+				break;
+			}
+
 #endif
 
 		}
@@ -351,6 +358,9 @@ void pmInit(void)
 		// left in a dirty/undefined state (such as when using certain software).
 		gpioSetWlModule(GpioWlModule_Mitsumi);
 	}
+
+	// Initialize power LED
+	pmSetPowerLed(PmLedMode_Steady);
 #endif
 
 	// Bring up PXI thread
