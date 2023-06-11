@@ -1,6 +1,11 @@
 #include "common.h"
 #include <calico/system/thread.h>
 
+typedef struct _MwlMacInitReg {
+	u16 reg;
+	u16 val;
+} _MwlMacInitReg;
+
 static u32 s_mwlRfBkReg;
 
 static const u16 s_mwlRfMacRegs[] = {
@@ -20,6 +25,34 @@ static const u16 s_mwlRfMacRegs[] = {
 	0x124,
 	0x128,
 	0x150,
+};
+
+static const _MwlMacInitReg s_mwlMacInitRegs[] = {
+	{ W_MODE_RST,           0 },
+	{ W_TXSTATCNT,          0 },
+	{ 0x00a,                0 },
+	{ W_IE,                 0 },
+	{ W_IF,            0xffff },
+	{ 0x254,                0 },
+	{ W_TXBUF_RESET,   0xffff },
+	{ W_TXBUF_BEACON,       0 },
+	{ W_LISTENINT,          1 },
+	{ W_LISTENCOUNT,        0 },
+	{ W_AID_FULL,           0 },
+	{ W_AID_LOW,            0 },
+	{ W_US_COUNTCNT,        0 },
+	{ W_US_COMPARECNT,      0 },
+	{ W_CMD_COUNTCNT,       1 },
+	{ 0x0ec,           0x3f03 },
+	{ 0x1a2,                1 },
+	{ 0x1a0,                0 },
+	{ W_PRE_BEACON,     0x800 },
+	{ W_PREAMBLE,           1 },
+	{ 0x0d4,                3 },
+	{ 0x0d8,                4 },
+	{ W_RX_LEN_CROP,    0x602 },
+	{ W_TXBUF_GAPDISP,      0 },
+	{ 0x130,            0x146 },
 };
 
 static void _mwlRfInit(void)
@@ -59,6 +92,40 @@ static void _mwlRfInit(void)
 	}
 }
 
+static void _mwlBbpInit(void)
+{
+	MwlCalibData* calib = mwlGetCalibData();
+	for (unsigned i = 0; i < sizeof(calib->bb_reg_init); i ++) {
+		_mwlBbpWrite(i, calib->bb_reg_init[i]);
+	}
+}
+
+static void _mwlMacInit(void)
+{
+	for (unsigned i = 0; i < sizeof(s_mwlMacInitRegs)/sizeof(s_mwlMacInitRegs[0]); i ++) {
+		const _MwlMacInitReg* r = &s_mwlMacInitRegs[i];
+		MWL_REG(r->reg) = r->val;
+	}
+}
+
+static void _mwlMacDefaults(void)
+{
+	MwlCalibData* calib = mwlGetCalibData();
+	MWL_REG(W_MACADDR_0) = calib->mac_addr[0];
+	MWL_REG(W_MACADDR_1) = calib->mac_addr[1];
+	MWL_REG(W_MACADDR_2) = calib->mac_addr[2];
+	MWL_REG(W_TX_RETRYLIMIT) = 7;
+	MWL_REG(W_MODE_WEP) = MwlMode_LocalGuest | (1U<<3) | (1U<<6);
+	MWL_REG(0x290) = 0; // Not using 2nd antenna
+
+	_mwlBbpWrite(0x13, 0);    // CCA operation
+	_mwlBbpWrite(0x35, 0x1f); // ED (Energy Detection) threshold
+
+	// XX: Stuff below related to host mode/beacon tx. Probably unnecessary
+	MWL_REG(W_BEACONINT) = 500;
+	MWL_REG(W_PREAMBLE) |= 6; // short preamble
+}
+
 void mwlDevWakeUp(void)
 {
 	MWL_REG(W_POWER_US) = 0;
@@ -73,6 +140,20 @@ void mwlDevWakeUp(void)
 	_mwlRfInit();
 }
 
+void mwlDevReset(void)
+{
+	_mwlMacInit();
+	_mwlRfInit();
+	_mwlBbpInit();
+	_mwlMacDefaults();
+}
+
 void mwlDevShutdown(void)
 {
+	if (mwlGetCalibData()->rf_type == 2) {
+		_mwlRfCmd(0xc008);
+	}
+	_mwlBbpWrite(0x1e, _mwlBbpRead(0x1e) | 0x3f);
+	MWL_REG(W_BB_POWER) = 0x800d;
+	MWL_REG(W_POWER_US) = 1;
 }
