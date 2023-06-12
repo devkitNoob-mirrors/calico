@@ -148,6 +148,66 @@ void mwlDevReset(void)
 	_mwlMacDefaults();
 }
 
+void mwlDevSetChannel(unsigned ch)
+{
+	MwlCalibData* calib = mwlGetCalibData();
+	if (!(calib->enabled_ch_mask & (1U << ch))) {
+		return;
+	}
+
+	ch --;
+	if (ch >= 14) {
+		return;
+	}
+
+	unsigned powerforce_backup = MWL_REG(W_POWERFORCE);
+	MWL_REG(W_POWERFORCE) = 0x8001; // force sleep?
+	unsigned powerstate, rf_status;
+	do {
+		powerstate = MWL_REG(W_POWERSTATE);
+		rf_status = MWL_REG(W_RF_STATUS);
+	} while ((powerstate>>8) != 2 || (rf_status != 0 && rf_status != 9));
+
+	if (calib->rf_type == 3) {
+		MwlChanCalibV3* v3 = (MwlChanCalibV3*)&calib->rf_entries[calib->rf_num_entries];
+
+		unsigned bb_num_regs = v3->bb_num_regs;
+		unsigned rf_num_regs = calib->rf_num_regs;
+
+		MwlChanRegV3* bb_regs = &v3->regs[0];
+		MwlChanRegV3* rf_regs = &v3->regs[bb_num_regs];
+
+		for (unsigned i = 0; i < bb_num_regs; i ++) {
+			_mwlBbpWrite(bb_regs[i].index, bb_regs[i].values[ch]);
+		}
+
+		for (unsigned i = 0; i < rf_num_regs; i ++) {
+			_mwlRfCmd(rf_regs[i].values[ch] | (rf_regs[i].index<<8) | (5U<<16));
+		}
+	} else /* if (calib->rf_type == 2) */ {
+		unsigned bytes = ((calib->rf_entry_bits&0x7f) + 7) / 8;
+		MwlChanCalibV2* v2 = (MwlChanCalibV2*)&calib->rf_entries[bytes*calib->rf_num_entries];
+
+		unsigned rf5 = 0, rf6 = 0;
+		__builtin_memcpy(&rf5, v2->rf_regs[ch].reg_0x05, bytes);
+		__builtin_memcpy(&rf6, v2->rf_regs[ch].reg_0x06, bytes);
+
+		_mwlRfCmd(rf5);
+		_mwlRfCmd(rf6);
+
+		if (s_mwlRfBkReg & 0x10000) {
+			if (!(s_mwlRfBkReg & 0x8000)) {
+				_mwlRfCmd(s_mwlRfBkReg | ((v2->rf_0x09_bits[ch]&0x1f)<<10));
+			}
+		} else {
+			_mwlBbpWrite(0x1e, v2->bb_0x1e_values[ch]);
+		}
+	}
+
+	MWL_REG(W_POWERFORCE) = powerforce_backup;
+	MWL_REG(0x048) = 3;
+}
+
 void mwlDevShutdown(void)
 {
 	if (mwlGetCalibData()->rf_type == 2) {
