@@ -8,7 +8,10 @@ alignas(8) static u8 s_mwlThreadStack[0x600];
 
 typedef void (*MwlTaskHandler)(void);
 
+void _mwlRxEndTask(void);
+
 static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count-1] = {
+	[MwlTask_RxEnd-1] = _mwlRxEndTask,
 };
 
 static int _mwlTaskHandler(void* arg)
