@@ -1,0 +1,179 @@
+#include "common.h"
+#include <calico/system/thread.h>
+
+MwlState s_mwlState;
+
+static Thread s_mwlThread;
+alignas(8) static u8 s_mwlThreadStack[0x600];
+
+typedef void (*MwlTaskHandler)(void);
+
+static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count-1] = {
+};
+
+static int _mwlTaskHandler(void* arg)
+{
+	for (;;) {
+		MwlTask id = _mwlPopTask();
+		if_unlikely (id == MwlTask_ExitThread) {
+			return 0;
+		}
+
+		MwlTaskHandler h = s_mwlTaskHandlers[id-1];
+		if (h) {
+			h();
+		}
+	}
+}
+
+void mwlDevStart(void)
+{
+	mwlDevStop();
+
+	unsigned mode = s_mwlState.mode;
+	if (mode == MwlMode_Test) {
+		return;
+	}
+
+	// Install ISR
+	irqSet(IRQ_WIFI, _mwlIrqHandler);
+	irqEnable(IRQ_WIFI);
+
+	// Start task handler thread
+	threadPrepare(&s_mwlThread, _mwlTaskHandler, NULL, &s_mwlThreadStack[sizeof(s_mwlThreadStack)], 0x11);
+	threadStart(&s_mwlThread);
+
+	// Set mode, disable powersave
+	MWL_REG(W_MODE_WEP) = (MWL_REG(W_MODE_WEP) &~ 0x47) | mode;
+
+	// Set BSSID
+	MWL_REG(W_BSSID_0) = s_mwlState.bssid[0];
+	MWL_REG(W_BSSID_1) = s_mwlState.bssid[1];
+	MWL_REG(W_BSSID_2) = s_mwlState.bssid[2];
+
+	MWL_REG(W_WEP_CNT) = 0x8000;
+	MWL_REG(W_POST_BEACON) = 0xffff;
+	MWL_REG(W_AID_FULL) = 0;
+	MWL_REG(W_AID_LOW) = 0;
+	MWL_REG(W_POWER_TX) = 0xf;
+
+	// Enable TX LOC1/LOC2/LOC3 if needed
+	// XX: how on earth does LocalHost send mgmt frames then?
+	if (mode >= MwlMode_LocalGuest) {
+		MWL_REG(W_TXREQ_SET) = 0xd;
+	}
+
+	// Configure RX
+	unsigned rxbuf = s_mwlState.rx_pos;
+	MWL_REG(W_RXCNT) = 0x8000;
+	MWL_REG(W_RXBUF_BEGIN) = MWL_MAC_RAM + rxbuf;
+	MWL_REG(W_RXBUF_WR_ADDR) = rxbuf/2;
+	MWL_REG(W_RXBUF_END) = MWL_MAC_RAM + MWL_MAC_RAM_SZ;
+	MWL_REG(W_RXBUF_READCSR) = rxbuf/2;
+	MWL_REG(W_RXBUF_GAP) = MWL_MAC_RAM + MWL_MAC_RAM_SZ - 2;
+	MWL_REG(W_RXCNT) = 0x8001;
+	MWL_REG(0x24c) = 0xffff;
+	MWL_REG(0x24e) = 0xffff;
+	g_mwlMacVars->unk_0x10 = 0xffff; // ??
+	g_mwlMacVars->unk_0x12 = 0xffff; // ??
+	g_mwlMacVars->unk_0x1e = 0xffff; // ??
+	g_mwlMacVars->unk_0x16 = 0xffff; // ??
+
+	//MWL_REG(W_RXCNT) = 0x8000; // redundant
+	MWL_REG(W_IF) = 0xffff;
+
+	// Set up statistics. XX: We decide against using statistics
+	MWL_REG(W_RXSTAT_OVF_IE) = 0;
+	MWL_REG(W_RXSTAT_INC_IE) = 0;
+	MWL_REG(W_TXSTATCNT) = 0;
+	MWL_REG(0x00a) = 0;
+
+	unsigned ie = W_IRQ_RX_END | W_IRQ_TX_END | W_IRQ_RX_CNT_INC | W_IRQ_TX_ERR | W_IRQ_TBTT;
+	unsigned rxfilter = (1U<<0);
+	unsigned rxfilter2 = (1U<<0) | (1U<<3);
+
+	switch (mode) {
+		default: break;
+
+		case MwlMode_LocalHost:
+			ie |= W_IRQ_MP_END | W_IRQ_POST_TBTT;
+			rxfilter |= (1U<<8) | (1U<<9);
+			rxfilter2 |= (1U<<2);
+			break;
+
+		case MwlMode_LocalGuest:
+			ie |= W_IRQ_RX_START | W_IRQ_TX_START | W_IRQ_POST_TBTT | W_IRQ_PRE_TBTT;
+			rxfilter |= (1U<<7) | (1U<<8);
+			rxfilter2 |= (1U<<1);
+			break;
+
+		case MwlMode_Infra:
+			ie |= W_IRQ_PRE_TBTT;
+			rxfilter2 |= (1U<<1);
+			break;
+	}
+
+	// Enable receiving "all" beacons and not just BSSID's beacon when we have a multicast (i.e. not real) BSSID?
+	if (mode >= MwlMode_LocalGuest && (s_mwlState.bssid[0] & 1)) {
+		rxfilter |= 0x400;
+	}
+
+	MWL_REG(W_IE) = ie;
+	// XX: LocalGuest mode would do something with RXSTAT irqs here for the workaround involving rx_start irq
+	MWL_REG(W_RXFILTER) = rxfilter;
+	MWL_REG(W_RXFILTER2) = rxfilter2;
+	MWL_REG(W_MODE_RST) = 1;
+
+	// XX: I like neat things, and as a result I clear the MHz counter
+	MWL_REG(W_US_COUNT0) = 0;
+	MWL_REG(W_US_COUNT1) = 0;
+	MWL_REG(W_US_COUNT2) = 0;
+	MWL_REG(W_US_COUNT3) = 0;
+
+	// XX: LocalHost mode would set up beacon transfer and set W_US_COMPARE* (with bit0) here
+
+	// Enable counters
+	MWL_REG(W_US_COUNTCNT) = 1;
+	MWL_REG(W_US_COMPARECNT) = 1;
+
+	// Set current STA status
+	s_mwlState.status = MwlStatus_Class1; // XX: LocalHost goes straight to Class3 (when beacons are being transferred)
+
+	// Do stuff I guess
+	MWL_REG(0x048) = 0;
+	MWL_REG(W_POWER_TX) &= ~2; // disable multipoll powersave
+	MWL_REG(0x048) = 0;
+	MWL_REG(W_TXREQ_SET) = 2; // XX: Enable TX CMD... even for LocalGuest/Infra?!
+
+	// Power on the hardware
+	MWL_REG(W_POWERFORCE) = 0x8000;
+	MWL_REG(W_POWERSTATE) = 2;
+	while (!(MWL_REG(W_RF_PINS) & 0x80));
+}
+
+void mwlDevStop(void)
+{
+	// XX: Stop ticktasks here
+
+	if (threadIsRunning(&s_mwlThread)) {
+		_mwlPushTask(MwlTask_ExitThread);
+		threadJoin(&s_mwlThread);
+	}
+
+	irqDisable(IRQ_WIFI);
+
+	MWL_REG(W_IE) = 0;
+	MWL_REG(W_MODE_RST) = 0;
+	MWL_REG(W_US_COMPARECNT) = 0;
+	MWL_REG(W_US_COUNTCNT) = 0;
+	MWL_REG(W_TXSTATCNT) = 0;
+	MWL_REG(0x00a) = 0;
+	MWL_REG(W_TXBUF_BEACON) = 0;
+	MWL_REG(W_TXREQ_RESET) = 0xffff;
+	MWL_REG(W_TXBUF_RESET) = 0xffff;
+
+	s_mwlState.task_mask = 0;
+	s_mwlState.status = MwlStatus_Idle;
+	s_mwlState.has_beacon_sync = 0;
+	s_mwlState.is_power_save = 0;
+}

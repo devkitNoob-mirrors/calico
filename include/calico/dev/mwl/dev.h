@@ -29,6 +29,11 @@ typedef struct MwlMacVars {
 void mwlDevWakeUp(void);
 void mwlDevReset(void);
 void mwlDevSetChannel(unsigned ch);
+void mwlDevSetMode(MwlMode mode);
+void mwlDevSetBssid(const void* bssid);
 void mwlDevShutdown(void);
+
+void mwlDevStart(void);
+void mwlDevStop(void);
 
 MEOW_EXTERN_C_END

@@ -165,6 +165,8 @@ if(NINTENDO_DS)
 			source/dev/mwl/mwl_calib.16.c
 			source/dev/mwl/mwl_dev_base.16.c
 			source/dev/mwl/mwl_dev_bbp_rf.c
+			source/dev/mwl/mwl_dev_task.c
+			source/dev/mwl/mwl_dev_irq.32.c
 		)
 	endif()
 endif()

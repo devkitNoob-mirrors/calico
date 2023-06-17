@@ -208,6 +208,55 @@ void mwlDevSetChannel(unsigned ch)
 	MWL_REG(0x048) = 3;
 }
 
+void mwlDevSetMode(MwlMode mode)
+{
+	if (s_mwlState.status > MwlStatus_Idle) {
+		return;
+	}
+
+	s_mwlState.mode = mode;
+
+	switch (s_mwlState.mode) {
+		default: return;
+
+		case MwlMode_LocalHost:
+			s_mwlState.rx_pos = 0x10c4;
+			s_mwlState.tx_pos[0] = 0xaa0;
+			s_mwlState.tx_pos[1] = 0x958;
+			s_mwlState.tx_pos[2] = 0x334;
+			s_mwlState.tx_beacon_pos = 0x238;
+			s_mwlState.tx_cmd_pos = 0;
+			break;
+
+		case MwlMode_LocalGuest:
+			s_mwlState.rx_pos = 0xbfc;
+			s_mwlState.tx_pos[0] = 0x5d8;
+			s_mwlState.tx_pos[1] = 0x490;
+			s_mwlState.tx_pos[2] = 0x468;
+			s_mwlState.tx_reply_pos[0] = 0x234;
+			s_mwlState.tx_reply_pos[1] = 0;
+			break;
+
+		case MwlMode_Infra:
+			s_mwlState.rx_pos = 0x794;
+			s_mwlState.tx_pos[0] = 0x170;
+			s_mwlState.tx_pos[1] = 0x28;
+			s_mwlState.tx_pos[2] = 0;
+			break;
+	}
+
+	dietPrint("[MWL] RX buf sz = 0x%x\n", MWL_MAC_RAM_SZ - s_mwlState.rx_pos);
+}
+
+void mwlDevSetBssid(const void* bssid)
+{
+	if (s_mwlState.status > MwlStatus_Idle) {
+		return;
+	}
+
+	__builtin_memcpy(s_mwlState.bssid, bssid, 6);
+}
+
 void mwlDevShutdown(void)
 {
 	if (mwlGetCalibData()->rf_type == 2) {
