@@ -138,7 +138,7 @@ static void _twlwifiOnBssInfo(Ar6kDev* dev, Ar6kWmiBssInfoHdr* bssInfo, NetBuf* 
 	}
 
 	// Parse the beacon
-	wlanParseBeacon(desc, pPacket);
+	wlanParseBeacon(desc, NULL, pPacket);
 	memcpy(desc->bssid, bssInfo->bssid, 6);
 	desc->rssi = bssInfo->snr;
 	desc->channel = wlanFreqToChannel(bssInfo->channel_mhz);

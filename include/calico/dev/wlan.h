@@ -51,6 +51,9 @@ typedef enum WlanCtrlType {
 typedef enum WlanEid {
 	WlanEid_SSID             = 0,
 	WlanEid_SupportedRates   = 1,
+	WlanEid_DSParamSet       = 3,
+	WlanEid_CFParamSet       = 4,
+	WlanEid_TIM              = 5,
 	WlanEid_RSN              = 48,
 	WlanEid_SupportedRatesEx = 50,
 	WlanEid_Vendor           = 221, // also used for NN-specific data
@@ -117,6 +120,20 @@ typedef struct WlanIeHdr {
 	u8 data[];
 } WlanIeHdr;
 
+typedef struct WlanIeTim {
+	u8 dtim_count;
+	u8 dtim_period;
+	u8 bitmap_ctrl;
+	u8 bitmap[];
+} WlanIeTim;
+
+typedef struct WlanIeCfp {
+	u8  count;
+	u8  period;
+	u16 max_duration;
+	u16 dur_remaining;
+} WlanIeCfp;
+
 typedef enum WlanBssAuthType {
 	WlanBssAuthType_Open          = 0,
 	WlanBssAuthType_WEP_40        = 1,
@@ -139,6 +156,12 @@ typedef struct WlanBssDesc {
 	s8 rssi;
 	u8 channel;
 } WlanBssDesc;
+
+typedef struct WlanBssExtra {
+	WlanIeTim* tim;
+	WlanIeCfp* cfp;
+	u8 tim_bitmap_sz;
+} WlanBssExtra;
 
 typedef struct WlanBssScanFilter {
 	u32 channel_mask;
@@ -178,8 +201,9 @@ MEOW_CONSTEXPR unsigned wlanChannelToFreq(unsigned ch)
 	}
 }
 
+unsigned wlanGetRateBit(unsigned rate);
 WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, void* bssid, int rssi);
 WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len);
-void wlanParseBeacon(WlanBssDesc* desc, NetBuf* pPacket);
+void wlanParseBeacon(WlanBssDesc* desc, WlanBssExtra* extra, NetBuf* pPacket);
 
 MEOW_EXTERN_C_END
