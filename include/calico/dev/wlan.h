@@ -10,6 +10,44 @@
 
 MEOW_EXTERN_C_START
 
+typedef enum WlanFrameType {
+	WlanFrameType_Management = 0,
+	WlanFrameType_Control    = 1,
+	WlanFrameType_Data       = 2,
+} WlanFrameType;
+
+typedef enum WlanMgmtType {
+	WlanMgmtType_AssocReq    = 0,
+	WlanMgmtType_AssocResp   = 1,
+	WlanMgmtType_ReassocReq  = 2,
+	WlanMgmtType_ReassocResp = 3,
+	WlanMgmtType_ProbeReq    = 4,
+	WlanMgmtType_ProbeResp   = 5,
+	WlanMgmtType_Beacon      = 8,
+	WlanMgmtType_ATIM        = 9,
+	WlanMgmtType_Disassoc    = 10,
+	WlanMgmtType_Auth        = 11,
+	WlanMgmtType_Deauth      = 12,
+	WlanMgmtType_Action      = 13,
+} WlanMgmtType;
+
+typedef enum WlanCtrlType {
+	WlanCtrlType_BlockAckReq = 8,
+	WlanCtrlType_BlockAck    = 9,
+	WlanCtrlType_PSPoll      = 10,
+	WlanCtrlType_RTS         = 11,
+	WlanCtrlType_CTS         = 12,
+	WlanCtrlType_ACK         = 13,
+	WlanCtrlType_CFEnd       = 14,
+	WlanCtrlType_CFEnd_CFAck = 15,
+} WlanCtrlType;
+
+// "WlanDataType" is just a collection of flags
+#define WLAN_DATA_CF_ACK  (1U<<0)
+#define WLAN_DATA_CF_POLL (1U<<1)
+#define WLAN_DATA_IS_NULL (1U<<2)
+#define WLAN_DATA_IS_QOS  (1U<<3)
+
 typedef enum WlanEid {
 	WlanEid_SSID             = 0,
 	WlanEid_SupportedRates   = 1,
@@ -17,6 +55,41 @@ typedef enum WlanEid {
 	WlanEid_SupportedRatesEx = 50,
 	WlanEid_Vendor           = 221, // also used for NN-specific data
 } WlanEid;
+
+typedef union WlanFrameCtrl {
+	u16 value;
+	struct {
+		u16 version    : 2;
+		u16 type       : 2; // WlanFrameType
+		u16 subtype    : 4; // WlanMgmtType, WlanCtrlType, WLAN_DATA_* flags
+		u16 to_ds      : 1;
+		u16 from_ds    : 1;
+		u16 more_frag  : 1;
+		u16 retry      : 1;
+		u16 power_mgmt : 1;
+		u16 more_data  : 1;
+		u16 wep        : 1;
+		u16 order      : 1;
+	};
+} WlanFrameCtrl;
+
+typedef union WlanSeqCtrl {
+	u16 value;
+	struct {
+		u16 frag_num : 4;
+		u16 seq_num  : 12;
+	};
+} WlanSeqCtrl;
+
+typedef struct WlanMacHdr {
+	WlanFrameCtrl fc;
+	u16 duration;
+	u8  rx_addr[6];
+	u8  tx_addr[6];
+	u8  xtra_addr[6];
+	WlanSeqCtrl sc;
+	// WDS/Mesh routing has a 4th addr here (Data frame with ToDS=1 FromDS=1)
+} WlanMacHdr;
 
 typedef struct WlanBeaconHdr {
 	u32 timestamp[2];
