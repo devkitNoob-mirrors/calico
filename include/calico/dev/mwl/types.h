@@ -11,6 +11,13 @@ typedef enum MwlMode {
 	MwlMode_Infra      = 3,
 } MwlMode;
 
+typedef enum MwlStatus {
+	MwlStatus_Idle   = 0,
+	MwlStatus_Class1 = 1, // 802.11 Class 1 = Unauthenticated & Unassociated
+	MwlStatus_Class2 = 2, // 802.11 Class 2 = Authenticated   & Unassociated
+	MwlStatus_Class3 = 3, // 802.11 Class 3 = Authenticated   & Associated
+} MwlStatus;
+
 typedef enum MwlRxType {
 	MwlRxType_IeeeMgmtOther = 0,
 	MwlRxType_IeeeBeacon    = 1,

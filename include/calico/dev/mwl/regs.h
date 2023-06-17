@@ -110,3 +110,20 @@
 #define W_IF_SET        0x21c
 #define W_RAM_DISABLE   0x220
 #define W_RXTX_ADDR     0x268
+
+// Interrupt flags
+#define W_IRQ_RX_END     (1U<<0)
+#define W_IRQ_TX_END     (1U<<1)
+#define W_IRQ_RX_CNT_INC (1U<<2)
+#define W_IRQ_TX_ERR     (1U<<3)
+#define W_IRQ_RX_CNT_OVF (1U<<4)
+#define W_IRQ_TX_CNT_OVF (1U<<5)
+#define W_IRQ_RX_START   (1U<<6)
+#define W_IRQ_TX_START   (1U<<7)
+#define W_IRQ_TX_COUNT   (1U<<8)
+#define W_IRQ_RX_COUNT   (1U<<9)
+#define W_IRQ_RF_WAKEUP  (1U<<11)
+#define W_IRQ_MP_END     (1U<<12)
+#define W_IRQ_POST_TBTT  (1U<<13)
+#define W_IRQ_TBTT       (1U<<14)
+#define W_IRQ_PRE_TBTT   (1U<<15)
