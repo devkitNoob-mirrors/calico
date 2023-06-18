@@ -83,7 +83,7 @@ WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len)
 			return ie;
 		}
 
-		if (ie->id == WlanEid_Vendor && ie->len >= 4 && ie->data[0] == 0x00 && ie->data[1] == 0x50 && ie->data[2] == 0xf2 && ie->data[3] == 0x01) {
+		if (ie->id == WlanEid_Vendor && ie->len >= 4 && wlanDecodeOui(ie->data) == WLAN_OUI_MICROSOFT && ie->data[3] == 0x01) {
 			wpa = ie;
 		}
 	}

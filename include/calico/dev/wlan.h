@@ -1,6 +1,10 @@
 #pragma once
 #include "netbuf.h"
 
+#define WLAN_OUI_NINTENDO  0x0009bf
+#define WLAN_OUI_IEEE      0x000fac
+#define WLAN_OUI_MICROSOFT 0x0050f2
+
 #define WLAN_MAX_BSS_ENTRIES 32
 #define WLAN_MAX_SSID_LEN    32
 #define WLAN_WEP_40_LEN      5
@@ -9,6 +13,11 @@
 #define WLAN_WPA_PSK_LEN     32
 
 MEOW_EXTERN_C_START
+
+// Potentially misaligned integer datatypes
+typedef u8 Wlan16[2];
+typedef u8 Wlan24[3];
+typedef u8 Wlan32[4];
 
 typedef enum WlanFrameType {
 	WlanFrameType_Management = 0,
@@ -128,10 +137,10 @@ typedef struct WlanIeTim {
 } WlanIeTim;
 
 typedef struct WlanIeCfp {
-	u8  count;
-	u8  period;
-	u16 max_duration;
-	u16 dur_remaining;
+	u8 count;
+	u8 period;
+	Wlan16 max_duration;
+	Wlan16 dur_remaining;
 } WlanIeCfp;
 
 typedef enum WlanBssAuthType {
@@ -199,6 +208,26 @@ MEOW_CONSTEXPR unsigned wlanChannelToFreq(unsigned ch)
 	} else {
 		return 5000 + 5*ch;
 	}
+}
+
+MEOW_INLINE unsigned wlanDecode16(const u8* data)
+{
+	return data[0] | (data[1]<<8);
+}
+
+MEOW_INLINE unsigned wlanDecode24(const u8* data)
+{
+	return data[0] | (data[1]<<8) | (data[2]<<16);
+}
+
+MEOW_INLINE unsigned wlanDecodeOui(const u8* data)
+{
+	return data[2] | (data[1]<<8) | (data[0]<<16);
+}
+
+MEOW_INLINE unsigned wlanDecode32(const u8* data)
+{
+	return data[0] | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
 }
 
 unsigned wlanGetRateBit(unsigned rate);

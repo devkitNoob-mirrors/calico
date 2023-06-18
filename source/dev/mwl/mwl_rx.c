@@ -47,7 +47,7 @@ MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket)
 
 	// Apply contention-free duration if needed
 	if (extra.cfp && (dot11hdr->duration & 0x8000)) {
-		MWL_REG(W_CONTENTFREE) = extra.cfp->dur_remaining;
+		MWL_REG(W_CONTENTFREE) = wlanDecode16(extra.cfp->dur_remaining);
 	}
 
 	dietPrint("[ch%2u] SSID=%.*s\n", desc.channel, desc.ssid_len, desc.ssid);
