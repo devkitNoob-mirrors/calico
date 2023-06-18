@@ -143,6 +143,36 @@ typedef struct WlanIeCfp {
 	Wlan16 dur_remaining;
 } WlanIeCfp;
 
+typedef struct WlanIeRsn {
+	Wlan16 version;
+	u8 group_cipher[4];
+	Wlan16 num_pairwise_ciphers;
+	u8 pairwise_ciphers[];
+} WlanIeRsn;
+
+typedef struct WlanIeVendor {
+	Wlan24 oui;
+	u8 type;
+	u8 data[];
+} WlanIeVendor;
+
+typedef struct WlanIeNin {
+	Wlan16 active_zone;
+	Wlan16 vtsf;
+
+	Wlan16 magic;
+	u8 version;
+	u8 platform;
+	Wlan32 game_id;
+	Wlan16 stream_code;
+	u8 data_sz;
+	u8 attrib;
+	Wlan16 cmd_sz;
+	Wlan16 reply_sz;
+
+	u8 data[];
+} WlanIeNin;
+
 typedef enum WlanBssAuthType {
 	WlanBssAuthType_Open          = 0,
 	WlanBssAuthType_WEP_40        = 1,
@@ -161,7 +191,10 @@ typedef struct WlanBssDesc {
 	u16 ieee_caps;
 	u16 ieee_basic_rates;
 	u16 ieee_all_rates;
-	WlanBssAuthType auth_type;
+	union {
+		u8 auth_mask;
+		WlanBssAuthType auth_type;
+	};
 	s8 rssi;
 	u8 channel;
 } WlanBssDesc;
@@ -169,6 +202,7 @@ typedef struct WlanBssDesc {
 typedef struct WlanBssExtra {
 	WlanIeTim* tim;
 	WlanIeCfp* cfp;
+	WlanIeNin* nin;
 	u8 tim_bitmap_sz;
 } WlanBssExtra;
 

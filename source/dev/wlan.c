@@ -91,6 +91,37 @@ WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len)
 	return wpa;
 }
 
+static unsigned _wlanParseRsn(const WlanIeRsn* rsn, unsigned len, unsigned oui)
+{
+	bool is_wpa2 = oui == WLAN_OUI_IEEE;
+	if (len < sizeof(WlanIeRsn)) {
+		return 0;
+	}
+
+	unsigned num_ciphers = wlanDecode16(rsn->num_pairwise_ciphers);
+	if (wlanDecode16(rsn->version) != 1 || len < (sizeof(WlanIeRsn) + 4*num_ciphers)) {
+		return 0;
+	}
+
+	// Extract the pairwise ciphers
+	unsigned mask = 0;
+	for (unsigned i = 0; i < num_ciphers; i ++) {
+		unsigned c_oui  = wlanDecodeOui(&rsn->pairwise_ciphers[4*i]);
+		unsigned c_type = rsn->pairwise_ciphers[4*i+3];
+		if (c_oui != oui) {
+			continue;
+		}
+
+		if (c_type == 2) {
+			mask |= is_wpa2 ? (1U<<WlanBssAuthType_WPA2_PSK_TKIP) : (1U<<WlanBssAuthType_WPA_PSK_TKIP);
+		} else if (c_type == 4) {
+			mask |= is_wpa2 ? (1U<<WlanBssAuthType_WPA2_PSK_AES) : (1U<<WlanBssAuthType_WPA_PSK_AES);
+		}
+	}
+
+	return mask;
+}
+
 void wlanParseBeacon(WlanBssDesc* desc, WlanBssExtra* extra, NetBuf* pPacket)
 {
 	WlanBeaconHdr* hdr = netbufPopHeaderType(pPacket, WlanBeaconHdr);
@@ -107,6 +138,7 @@ void wlanParseBeacon(WlanBssDesc* desc, WlanBssExtra* extra, NetBuf* pPacket)
 		memset(extra, 0, sizeof(*extra));
 	}
 
+	bool has_rsn = false;
 	while (pPacket->len) {
 		WlanIeHdr* elhdr = netbufPopHeaderType(pPacket, WlanIeHdr);
 		if (!elhdr) {
@@ -173,7 +205,52 @@ void wlanParseBeacon(WlanBssDesc* desc, WlanBssExtra* extra, NetBuf* pPacket)
 				break;
 			}
 
-			// TODO: Rates, encryption
+			case WlanEid_RSN: {
+				// Standard WPA2 information element
+				desc->auth_mask |= _wlanParseRsn((WlanIeRsn*)data, elhdr->len, WLAN_OUI_IEEE);
+				has_rsn = true;
+				break;
+			}
+
+			case WlanEid_Vendor: {
+				if (elhdr->len < 4) {
+					break;
+				}
+
+				WlanIeVendor* vnd = (WlanIeVendor*)data;
+				unsigned oui = wlanDecodeOui(vnd->oui);
+				unsigned type = vnd->type;
+				data = vnd->data;
+
+				if (oui == WLAN_OUI_MICROSOFT && type == 0x01) {
+					// WPA1 information element
+					desc->auth_mask |= _wlanParseRsn((WlanIeRsn*)data, elhdr->len, oui);
+					has_rsn = true;
+				} else if (oui == WLAN_OUI_NINTENDO && type == 0x00) {
+					// Nintendo information element
+					if (extra && elhdr->len >= 4 + sizeof(WlanIeNin)) {
+						WlanIeNin* nin = (WlanIeNin*)data;
+						if (elhdr->len >= 4 + sizeof(WlanIeNin) + nin->data_sz) {
+							extra->nin = nin;
+						}
+					}
+				}
+
+				break;
+			}
+		}
+	}
+
+	// If above did not detect a RSN/WPA information element...
+	if (!has_rsn) {
+		// Base it off the 'Privacy' capability bit
+		if (desc->ieee_caps & (1U<<4)) {
+			// XX: I don't think it's possible to detect WEP key length from
+			// beacon info, so list them all in the mask just in case.
+			desc->auth_mask = (1U<<WlanBssAuthType_WEP_40) | (1U<<WlanBssAuthType_WEP_104) | (1U<<WlanBssAuthType_WEP_128);
+		} else {
+			// Open network
+			desc->auth_mask = 1U<<WlanBssAuthType_Open;
 		}
 	}
 }
