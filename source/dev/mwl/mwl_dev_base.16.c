@@ -206,6 +206,8 @@ void mwlDevSetChannel(unsigned ch)
 
 	MWL_REG(W_POWERFORCE) = powerforce_backup;
 	MWL_REG(0x048) = 3;
+
+	dietPrint("[MWL] Switched to ch%2u\n", ch+1);
 }
 
 void mwlDevSetMode(MwlMode mode)
@@ -250,11 +252,21 @@ void mwlDevSetMode(MwlMode mode)
 
 void mwlDevSetBssid(const void* bssid)
 {
-	if (s_mwlState.status > MwlStatus_Idle) {
-		return;
-	}
-
 	__builtin_memcpy(s_mwlState.bssid, bssid, 6);
+
+	if (s_mwlState.status > MwlStatus_Idle) {
+		// Update hardware registers too
+		MWL_REG(W_BSSID_0) = s_mwlState.bssid[0];
+		MWL_REG(W_BSSID_1) = s_mwlState.bssid[1];
+		MWL_REG(W_BSSID_2) = s_mwlState.bssid[2];
+
+		// Enable receiving "all" beacons and not just BSSID's beacon when we have a multicast (i.e. not real) BSSID?
+		if (s_mwlState.bssid[0] & 1) {
+			MWL_REG(W_RXFILTER) |= 0x400;
+		} else {
+			MWL_REG(W_RXFILTER) &= ~0x400;
+		}
+	}
 }
 
 void mwlDevShutdown(void)
