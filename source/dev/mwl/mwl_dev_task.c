@@ -9,9 +9,11 @@ alignas(8) static u8 s_mwlThreadStack[0x600];
 typedef void (*MwlTaskHandler)(void);
 
 void _mwlRxEndTask(void);
+void _mwlMlmeTask(void);
 
 static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count-1] = {
 	[MwlTask_RxEnd-1] = _mwlRxEndTask,
+	[MwlTask_MlmeProcess-1] = _mwlMlmeTask,
 };
 
 static int _mwlTaskHandler(void* arg)
@@ -156,7 +158,8 @@ void mwlDevStart(void)
 
 void mwlDevStop(void)
 {
-	// XX: Stop ticktasks here
+	// Stop ticktasks
+	tickTaskStop(&s_mwlState.timeout_task);
 
 	if (threadIsRunning(&s_mwlThread)) {
 		_mwlPushTask(MwlTask_ExitThread);
@@ -179,4 +182,5 @@ void mwlDevStop(void)
 	s_mwlState.status = MwlStatus_Idle;
 	s_mwlState.has_beacon_sync = 0;
 	s_mwlState.is_power_save = 0;
+	s_mwlState.mlme_state = MwlMlmeState_Idle;
 }

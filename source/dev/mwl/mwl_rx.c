@@ -32,7 +32,7 @@ MEOW_NOINLINE static void _mwlRxRead(void* dst, unsigned len)
 	}
 }
 
-MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket)
+MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, unsigned rssi)
 {
 	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
 	if (!dot11hdr) {
@@ -44,14 +44,21 @@ MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket)
 	WlanBssDesc desc;
 	WlanBssExtra extra;
 	wlanParseBeacon(&desc, &extra, pPacket);
+	__builtin_memcpy(desc.bssid, dot11hdr->tx_addr, 6);
 
 	// Apply contention-free duration if needed
 	if (extra.cfp && (dot11hdr->duration & 0x8000)) {
 		MWL_REG(W_CONTENTFREE) = wlanDecode16(extra.cfp->dur_remaining);
 	}
 
-	dietPrint("[ch%2u] SSID=%.*s\n", desc.channel, desc.ssid_len, desc.ssid);
-	dietPrint(" bas=%.4X sup=%.4X\n", desc.ieee_basic_rates, desc.ieee_all_rates);
+	if (s_mwlState.mlme_state == MwlMlmeState_ScanBusy && s_mwlState.mlme_cb.onBssInfo) {
+		// Apply SSID filter if necessary
+		unsigned filter_len = s_mwlState.mlme.scan.filter.target_ssid_len;
+		if (filter_len == 0 || (filter_len == desc.ssid_len &&
+			__builtin_memcmp(desc.ssid, s_mwlState.mlme.scan.filter.target_ssid, filter_len) == 0)) {
+			s_mwlState.mlme_cb.onBssInfo(&desc, &extra, rssi);
+		}
+	}
 }
 
 void _mwlRxEndTask(void)
@@ -115,7 +122,7 @@ void _mwlRxEndTask(void)
 				break;
 
 			case MwlRxType_IeeeBeacon:
-				_mwlRxBeaconFrame(pPacket);
+				_mwlRxBeaconFrame(pPacket, rxhdr.rssi&0xff);
 				break;
 		}
 

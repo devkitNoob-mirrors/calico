@@ -1,5 +1,6 @@
 #pragma once
 #include <calico/types.h>
+#include <calico/system/tick.h>
 #include <calico/dev/mwl.h>
 
 #define MWL_DEBUG
@@ -27,6 +28,14 @@ typedef enum MwlTask {
 	MwlTask__Count,
 } MwlTask;
 
+typedef enum MwlMlmeState {
+	MwlMlmeState_Idle,
+	MwlMlmeState_Preparing,
+
+	MwlMlmeState_ScanSetup,
+	MwlMlmeState_ScanBusy,
+} MwlMlmeState;
+
 typedef struct MwlState {
 	u32 task_mask;
 
@@ -49,6 +58,18 @@ typedef struct MwlState {
 	};
 
 	u16 rx_wrcsr;
+
+	TickTask timeout_task;
+
+	u8 mlme_state;
+	MwlMlmeCallbacks mlme_cb;
+	union {
+		struct {
+			WlanBssScanFilter filter;
+			u16 ch_dwell_time;
+			u16 cur_ch;
+		} scan;
+	} mlme;
 } MwlState;
 
 extern MwlState s_mwlState;
@@ -69,3 +90,4 @@ void _mwlRfCmd(u32 cmd);
 void _mwlIrqHandler(void);
 MEOW_EXTERN32 void _mwlPushTaskImpl(u32 mask) __asm__("_mwlPushTask");
 MEOW_EXTERN32 MwlTask _mwlPopTask(void);
+bool _mwlSetMlmeState(MwlMlmeState state);
