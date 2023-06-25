@@ -5,6 +5,7 @@
 #include <calico/nds/pm.h>
 #include <calico/nds/pxi.h>
 #include <calico/nds/wlmgr.h>
+#include <calico/nds/arm7/ntrwifi.h>
 #include <calico/nds/arm7/twlwifi.h>
 #include "../transfer.h"
 #include "../pxi/wlmgr.h"
@@ -214,7 +215,7 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 				if (s_wlmgrState.using_twlwifi) {
 					rc = twlwifiInit();
 				} else {
-					// XX: mitsumi
+					rc = ntrwifiInit();
 				}
 
 				if (rc) {
@@ -241,7 +242,7 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 				if (s_wlmgrState.using_twlwifi) {
 					rc = twlwifiStartScan(out_table, &filter, _wlmgrScanComplete, NULL);
 				} else {
-					// XX: Mitsumi
+					rc = ntrwifiStartScan(out_table, &filter, _wlmgrScanComplete, NULL);
 				}
 				if (rc) {
 					_wlmgrSetState(WlMgrState_Scanning);
@@ -256,7 +257,7 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 				if (s_wlmgrState.using_twlwifi) {
 					rc = twlwifiAssociate(arg->bss, arg->auth, _wlmgrOnAssoc, NULL);
 				} else {
-					// XX: Mitsumi
+					rc = ntrwifiAssociate(arg->bss, arg->auth, _wlmgrOnAssoc, NULL);
 				}
 				if (rc) {
 					_wlmgrSetState(WlMgrState_Associating);
@@ -270,7 +271,7 @@ void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsign
 				if (s_wlmgrState.using_twlwifi) {
 					rc = twlwifiDisassociate();
 				} else {
-					// XX: Mitsumi
+					rc = ntrwifiDisassociate();
 				}
 				if (rc) {
 					_wlmgrSetState(WlMgrState_Disassociating);
@@ -330,7 +331,7 @@ void _wlmgrTxProcess(void)
 			if (s_wlmgrState.using_twlwifi) {
 				twlwifiTx(pPacket);
 			} else {
-				// XX: Mitsumi
+				ntrwifiTx(pPacket);
 			}
 		}
 
@@ -345,7 +346,7 @@ void _wlmgrStop(void)
 		if (s_wlmgrState.using_twlwifi) {
 			twlwifiExit();
 		} else {
-			// XX: mitsumi
+			ntrwifiExit();
 		}
 		_wlmgrSetState(WlMgrState_Stopped);
 		pmSetSleepAllowed(true);

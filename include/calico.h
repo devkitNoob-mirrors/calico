@@ -88,6 +88,7 @@
 #include "calico/nds/arm7/tsc.h"
 #include "calico/nds/arm7/sound.h"
 #include "calico/nds/arm7/mic.h"
+#include "calico/nds/arm7/ntrwifi.h"
 
 #include "calico/nds/arm7/i2c.h"
 #include "calico/nds/arm7/mcu.h"
