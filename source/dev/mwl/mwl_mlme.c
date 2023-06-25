@@ -84,7 +84,7 @@ MwlMlmeCallbacks* mwlMlmeGetCallbacks(void)
 
 bool mwlMlmeScan(WlanBssScanFilter const* filter, unsigned ch_dwell_time)
 {
-	if (!filter || ch_dwell_time < 10 || s_mwlState.status != MwlStatus_Class1) {
+	if (!filter || ch_dwell_time < 10 || s_mwlState.status > MwlStatus_Class1) {
 		return false;
 	}
 
@@ -95,7 +95,7 @@ bool mwlMlmeScan(WlanBssScanFilter const* filter, unsigned ch_dwell_time)
 	}
 
 	// Ensure we can scan
-	if (!_mwlSetMlmeState(MwlMlmeState_Preparing)) {
+	if (s_mwlState.status != MwlStatus_Idle && !_mwlSetMlmeState(MwlMlmeState_Preparing)) {
 		return false;
 	}
 
@@ -107,6 +107,11 @@ bool mwlMlmeScan(WlanBssScanFilter const* filter, unsigned ch_dwell_time)
 
 	// Set up BSSID filter (or all-FF to disable)
 	mwlDevSetBssid(s_mwlState.mlme.scan.filter.target_bssid);
+
+	// Start device if needed
+	if (s_mwlState.status == MwlStatus_Idle) {
+		mwlDevStart();
+	}
 
 	// Start scanning task
 	return _mwlSetMlmeState(MwlMlmeState_ScanSetup);

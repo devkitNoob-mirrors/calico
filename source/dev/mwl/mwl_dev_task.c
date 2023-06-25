@@ -18,9 +18,12 @@ static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count-1] = {
 
 static int _mwlTaskHandler(void* arg)
 {
+	dietPrint("[MWL] Thread start\n");
+
 	for (;;) {
 		MwlTask id = _mwlPopTask();
 		if_unlikely (id == MwlTask_ExitThread) {
+			dietPrint("[MWL] Thread end\n");
 			return 0;
 		}
 
@@ -162,7 +165,9 @@ void mwlDevStop(void)
 
 	if (threadIsRunning(&s_mwlThread)) {
 		_mwlPushTask(MwlTask_ExitThread);
-		threadJoin(&s_mwlThread);
+		if (&s_mwlThread != threadGetSelf()) {
+			threadJoin(&s_mwlThread);
+		}
 	}
 
 	irqDisable(IRQ_WIFI);
@@ -177,7 +182,6 @@ void mwlDevStop(void)
 	MWL_REG(W_TXREQ_RESET) = 0xffff;
 	MWL_REG(W_TXBUF_RESET) = 0xffff;
 
-	s_mwlState.task_mask = 0;
 	s_mwlState.status = MwlStatus_Idle;
 	s_mwlState.has_beacon_sync = 0;
 	s_mwlState.is_power_save = 0;
