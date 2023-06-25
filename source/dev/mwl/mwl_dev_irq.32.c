@@ -38,11 +38,6 @@ MwlTask _mwlPopTask(void)
 		}
 	}
 
-	if_unlikely (i == MwlTask_ExitThread) {
-		// Clear all other tasks if we're exiting
-		s_mwlState.task_mask = 0;
-	}
-
 	armIrqUnlockByPsr(st);
 	return (MwlTask)i;
 }

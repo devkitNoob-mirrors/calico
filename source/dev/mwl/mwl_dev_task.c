@@ -8,30 +8,32 @@ alignas(8) static u8 s_mwlThreadStack[0x600];
 
 typedef void (*MwlTaskHandler)(void);
 
+static void _mwlExitTask(void);
 void _mwlRxEndTask(void);
 void _mwlMlmeTask(void);
 
-static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count-1] = {
-	[MwlTask_RxEnd-1] = _mwlRxEndTask,
-	[MwlTask_MlmeProcess-1] = _mwlMlmeTask,
+static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count] = {
+	[MwlTask_ExitThread]  = _mwlExitTask,
+	[MwlTask_RxEnd]       = _mwlRxEndTask,
+	[MwlTask_MlmeProcess] = _mwlMlmeTask,
 };
 
 static int _mwlTaskHandler(void* arg)
 {
 	dietPrint("[MWL] Thread start\n");
 
-	for (;;) {
-		MwlTask id = _mwlPopTask();
-		if_unlikely (id == MwlTask_ExitThread) {
-			dietPrint("[MWL] Thread end\n");
-			return 0;
-		}
+	MwlTask id;
+	do {
+		id = _mwlPopTask();
 
-		MwlTaskHandler h = s_mwlTaskHandlers[id-1];
+		MwlTaskHandler h = s_mwlTaskHandlers[id];
 		if (h) {
 			h();
 		}
-	}
+	} while (id != MwlTask_ExitThread);
+
+	dietPrint("[MWL] Thread end\n");
+	return 0;
 }
 
 void mwlDevStart(void)
@@ -48,6 +50,7 @@ void mwlDevStart(void)
 	irqEnable(IRQ_WIFI);
 
 	// Start task handler thread
+	s_mwlState.task_mask = 0;
 	threadPrepare(&s_mwlThread, _mwlTaskHandler, NULL, &s_mwlThreadStack[sizeof(s_mwlThreadStack)], 0x11);
 	threadStart(&s_mwlThread);
 
@@ -160,12 +163,11 @@ void mwlDevStart(void)
 
 void mwlDevStop(void)
 {
-	// Stop ticktasks
-	tickTaskStop(&s_mwlState.timeout_task);
-
-	if (threadIsRunning(&s_mwlThread)) {
+	// Tear down task handler thread if it is active
+	if (s_mwlThread.status >= ThrStatus_Running) {
 		_mwlPushTask(MwlTask_ExitThread);
 		if (&s_mwlThread != threadGetSelf()) {
+			// Wait for the thread to exit
 			threadJoin(&s_mwlThread);
 		}
 	}
@@ -181,6 +183,12 @@ void mwlDevStop(void)
 	MWL_REG(W_TXBUF_BEACON) = 0;
 	MWL_REG(W_TXREQ_RESET) = 0xffff;
 	MWL_REG(W_TXBUF_RESET) = 0xffff;
+}
+
+void _mwlExitTask(void)
+{
+	// Stop ticktasks
+	tickTaskStop(&s_mwlState.timeout_task);
 
 	s_mwlState.status = MwlStatus_Idle;
 	s_mwlState.has_beacon_sync = 0;
