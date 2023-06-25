@@ -51,11 +51,6 @@ void mwlDevStart(void)
 	// Set mode, disable powersave
 	MWL_REG(W_MODE_WEP) = (MWL_REG(W_MODE_WEP) &~ 0x47) | mode;
 
-	// Set BSSID
-	MWL_REG(W_BSSID_0) = s_mwlState.bssid[0];
-	MWL_REG(W_BSSID_1) = s_mwlState.bssid[1];
-	MWL_REG(W_BSSID_2) = s_mwlState.bssid[2];
-
 	MWL_REG(W_WEP_CNT) = 0x8000;
 	MWL_REG(W_POST_BEACON) = 0xffff;
 	MWL_REG(W_AID_FULL) = 0;
@@ -118,7 +113,11 @@ void mwlDevStart(void)
 			break;
 	}
 
-	// Enable receiving "all" beacons and not just BSSID's beacon when we have a multicast (i.e. not real) BSSID?
+	// If the current BSSID is multicast, enable RXFILTER.bit10.
+	// XX: It is currently unknown what this does. Regardless of this bit, all beacon
+	// frames from all BSSes are received (and bit15 of the RX status field is set when
+	// the frame matches the current BSSID). Maybe bit10 only affects data packets?
+	// I.e. bit10 = promiscuous mode.
 	if (mode >= MwlMode_LocalGuest && (s_mwlState.bssid[0] & 1)) {
 		rxfilter |= 0x400;
 	}

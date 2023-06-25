@@ -254,13 +254,14 @@ void mwlDevSetBssid(const void* bssid)
 {
 	__builtin_memcpy(s_mwlState.bssid, bssid, 6);
 
-	if (s_mwlState.status > MwlStatus_Idle) {
-		// Update hardware registers too
-		MWL_REG(W_BSSID_0) = s_mwlState.bssid[0];
-		MWL_REG(W_BSSID_1) = s_mwlState.bssid[1];
-		MWL_REG(W_BSSID_2) = s_mwlState.bssid[2];
+	MWL_REG(W_BSSID_0) = s_mwlState.bssid[0];
+	MWL_REG(W_BSSID_1) = s_mwlState.bssid[1];
+	MWL_REG(W_BSSID_2) = s_mwlState.bssid[2];
 
-		// Enable receiving "all" beacons and not just BSSID's beacon when we have a multicast (i.e. not real) BSSID?
+	if (s_mwlState.status > MwlStatus_Idle) {
+		// XX: See corresponding comment in mwlDevStart regarding RXFILTER.bit10.
+		// XX: Official code has this check inverted, however its counterpart of SetBssid is
+		// called prior to its counterpart of DevStart, so we presume DevStart's way is correct.
 		if (s_mwlState.bssid[0] & 1) {
 			MWL_REG(W_RXFILTER) |= 0x400;
 		} else {

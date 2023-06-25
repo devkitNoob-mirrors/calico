@@ -32,7 +32,7 @@ MEOW_NOINLINE static void _mwlRxRead(void* dst, unsigned len)
 	}
 }
 
-MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, unsigned rssi)
+MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
 {
 	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
 	if (!dot11hdr) {
@@ -51,12 +51,17 @@ MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, unsigned rssi)
 		MWL_REG(W_CONTENTFREE) = wlanDecode16(extra.cfp->dur_remaining);
 	}
 
+	// If a BSSID filter is active, ignore non-matching beacons
+	if (!(s_mwlState.bssid[0] & 1) && !(rxhdr->status & (1U<<15))) {
+		return;
+	}
+
 	if (s_mwlState.mlme_state == MwlMlmeState_ScanBusy && s_mwlState.mlme_cb.onBssInfo) {
 		// Apply SSID filter if necessary
 		unsigned filter_len = s_mwlState.mlme.scan.filter.target_ssid_len;
 		if (filter_len == 0 || (filter_len == desc.ssid_len &&
 			__builtin_memcmp(desc.ssid, s_mwlState.mlme.scan.filter.target_ssid, filter_len) == 0)) {
-			s_mwlState.mlme_cb.onBssInfo(&desc, &extra, rssi);
+			s_mwlState.mlme_cb.onBssInfo(&desc, &extra, rxhdr->rssi & 0xff);
 		}
 	}
 }
@@ -122,7 +127,7 @@ void _mwlRxEndTask(void)
 				break;
 
 			case MwlRxType_IeeeBeacon:
-				_mwlRxBeaconFrame(pPacket, rxhdr.rssi&0xff);
+				_mwlRxBeaconFrame(pPacket, &rxhdr);
 				break;
 		}
 
