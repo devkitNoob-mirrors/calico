@@ -207,7 +207,7 @@ void mwlDevSetChannel(unsigned ch)
 	MWL_REG(W_POWERFORCE) = powerforce_backup;
 	MWL_REG(0x048) = 3;
 
-	dietPrint("[MWL] Switched to ch%2u\n", ch+1);
+	//dietPrint("[MWL] Switched to ch%2u\n", ch+1);
 }
 
 void mwlDevSetMode(MwlMode mode)
@@ -222,32 +222,34 @@ void mwlDevSetMode(MwlMode mode)
 		default: return;
 
 		case MwlMode_LocalHost:
-			s_mwlState.rx_pos = 0x10c4;
-			s_mwlState.tx_pos[0] = 0xaa0;
-			s_mwlState.tx_pos[1] = 0x958;
-			s_mwlState.tx_pos[2] = 0x334;
-			s_mwlState.tx_beacon_pos = 0x238;
-			s_mwlState.tx_cmd_pos = 0;
+			s_mwlState.rx_pos        = 0x10c4;
+			s_mwlState.tx_pos[0]     = 0xaa0;  // size=0x610
+			s_mwlState.tx_pos[1]     = 0x958;  // size=0x134
+			s_mwlState.tx_pos[2]     = 0x334;  // size=0x610
+			s_mwlState.tx_beacon_pos = 0x238;  // size=0xe8
+			s_mwlState.tx_cmd_pos    = 0;      // size=0x224
 			break;
 
 		case MwlMode_LocalGuest:
-			s_mwlState.rx_pos = 0xbfc;
-			s_mwlState.tx_pos[0] = 0x5d8;
-			s_mwlState.tx_pos[1] = 0x490;
-			s_mwlState.tx_pos[2] = 0x468;
-			s_mwlState.tx_reply_pos[0] = 0x234;
-			s_mwlState.tx_reply_pos[1] = 0;
+			s_mwlState.rx_pos          = 0xbfc;
+			s_mwlState.tx_pos[0]       = 0x5d8; // size=0x600
+			s_mwlState.tx_pos[1]       = 0x490; // size=0x134
+			s_mwlState.tx_pos[2]       = 0x468; // size=0x14
+			s_mwlState.tx_reply_pos[0] = 0x234; // size=0x220
+			s_mwlState.tx_reply_pos[1] = 0;     // size=0x220
 			break;
 
 		case MwlMode_Infra:
-			s_mwlState.rx_pos = 0x794;
-			s_mwlState.tx_pos[0] = 0x170;
-			s_mwlState.tx_pos[1] = 0x28;
-			s_mwlState.tx_pos[2] = 0;
+			s_mwlState.rx_pos    = 0x794;
+			s_mwlState.tx_pos[0] = 0x170; // size=0x600
+			s_mwlState.tx_pos[1] = 0x28;  // size=0x134
+			s_mwlState.tx_pos[2] = 0;     // size=0x14
 			break;
 	}
 
-	dietPrint("[MWL] RX buf sz = 0x%x\n", MWL_MAC_RAM_SZ - s_mwlState.rx_pos);
+	s_mwlState.tx_size[0] = s_mwlState.rx_pos    - s_mwlState.tx_pos[0] - sizeof(MwlDataTxHdr);
+	s_mwlState.tx_size[1] = s_mwlState.tx_pos[0] - s_mwlState.tx_pos[1] - sizeof(MwlDataTxHdr);
+	s_mwlState.tx_size[2] = s_mwlState.tx_pos[1] - s_mwlState.tx_pos[2] - sizeof(MwlDataTxHdr);
 }
 
 void mwlDevSetBssid(const void* bssid)

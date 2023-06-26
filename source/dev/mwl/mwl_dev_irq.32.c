@@ -44,10 +44,15 @@ MwlTask _mwlPopTask(void)
 
 //-----------------------------------------------------------------------------
 
-MEOW_NOINLINE static void _mwlIrqRxEnd(void)
+static void _mwlIrqRxEnd(void)
 {
 	s_mwlState.rx_wrcsr = MWL_REG(W_RXBUF_WRCSR);
 	_mwlPushTask(MwlTask_RxEnd);
+}
+
+static void _mwlIrqTxEnd(void)
+{
+	_mwlPushTask(MwlTask_TxEnd);
 }
 
 void _mwlIrqHandler(void)
@@ -96,7 +101,7 @@ void _mwlIrqHandler(void)
 		}
 
 		if (cur_irq & W_IRQ_TX_END) {
-			//
+			_mwlIrqTxEnd();
 		}
 
 		if (cur_irq & W_IRQ_MP_END) {

@@ -13,6 +13,13 @@
 
 MEOW_EXTERN_C_START
 
+typedef enum MwlTxEvent {
+	MwlTxEvent_Dropped = 0,
+	MwlTxEvent_Queued  = 1,
+	MwlTxEvent_Done    = 2,
+	MwlTxEvent_Error   = 3,
+} MwlTxEvent;
+
 typedef struct MwlMacVars {
 	u16 unk_0x00[8];
 	u16 unk_0x10;
@@ -26,6 +33,8 @@ typedef struct MwlMacVars {
 	u16 wep_keys[4][0x10];
 } MwlMacVars;
 
+typedef void (*MwlTxCallback)(void* arg, MwlTxEvent evt, MwlDataTxHdr* hdr);
+
 void mwlDevWakeUp(void);
 void mwlDevReset(void);
 void mwlDevSetChannel(unsigned ch);
@@ -35,5 +44,7 @@ void mwlDevShutdown(void);
 
 void mwlDevStart(void);
 void mwlDevStop(void);
+
+void mwlDevTx(unsigned qid, NetBuf* pPacket, MwlTxCallback cb, void* arg);
 
 MEOW_EXTERN_C_END

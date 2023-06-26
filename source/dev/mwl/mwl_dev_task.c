@@ -9,11 +9,13 @@ alignas(8) static u8 s_mwlThreadStack[0x600];
 typedef void (*MwlTaskHandler)(void);
 
 static void _mwlExitTask(void);
+void _mwlTxEndTask(void);
 void _mwlRxEndTask(void);
 void _mwlMlmeTask(void);
 
 static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count] = {
 	[MwlTask_ExitThread]  = _mwlExitTask,
+	[MwlTask_TxEnd]       = _mwlTxEndTask,
 	[MwlTask_RxEnd]       = _mwlRxEndTask,
 	[MwlTask_MlmeProcess] = _mwlMlmeTask,
 };
@@ -194,4 +196,8 @@ void _mwlExitTask(void)
 	s_mwlState.has_beacon_sync = 0;
 	s_mwlState.is_power_save = 0;
 	s_mwlState.mlme_state = MwlMlmeState_Idle;
+
+	for (unsigned i = 0; i < 3; i ++) {
+		_mwlTxQueueClear(i);
+	}
 }

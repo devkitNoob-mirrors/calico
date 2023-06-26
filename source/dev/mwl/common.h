@@ -1,5 +1,6 @@
 #pragma once
 #include <calico/types.h>
+#include <calico/system/mutex.h>
 #include <calico/system/tick.h>
 #include <calico/dev/mwl.h>
 
@@ -36,6 +37,12 @@ typedef enum MwlMlmeState {
 	MwlMlmeState_ScanBusy,
 } MwlMlmeState;
 
+typedef struct MwlTxQueue {
+	NetBufListNode list;
+	MwlTxCallback cb;
+	void* arg;
+} MwlTxQueue;
+
 typedef struct MwlState {
 	u32 task_mask;
 
@@ -43,7 +50,8 @@ typedef struct MwlState {
 	u16 status          : 2;
 	u16 has_beacon_sync : 1;
 	u16 is_power_save   : 1;
-	u16 _pad            : 10;
+	u16 tx_busy         : 3;
+	u16 _pad            : 7;
 
 	u16 bssid[3];
 
@@ -58,6 +66,10 @@ typedef struct MwlState {
 	};
 
 	u16 rx_wrcsr;
+
+	u16 tx_size[3];
+	Mutex tx_mutex;
+	MwlTxQueue tx_queues[3];
 
 	TickTask timeout_task;
 
@@ -90,4 +102,5 @@ void _mwlRfCmd(u32 cmd);
 void _mwlIrqHandler(void);
 MEOW_EXTERN32 void _mwlPushTaskImpl(u32 mask) __asm__("_mwlPushTask");
 MEOW_EXTERN32 MwlTask _mwlPopTask(void);
+void _mwlTxQueueClear(unsigned qid);
 bool _mwlSetMlmeState(MwlMlmeState state);
