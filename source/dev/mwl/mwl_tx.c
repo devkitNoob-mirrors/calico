@@ -175,13 +175,7 @@ void mwlDevTx(unsigned qid, NetBuf* pPacket, MwlTxCallback cb, void* arg)
 	pPacket->reserved[1] = (u32)arg;
 
 	mutexLock(&s_mwlState.tx_mutex);
-	pPacket->link.next = NULL;
-	if (q->list.next) {
-		q->list.prev->link.next = pPacket;
-	} else {
-		q->list.next = pPacket;
-	}
-	q->list.prev = pPacket;
+	netbufQueueAppend(&q->list, pPacket);
 	mutexUnlock(&s_mwlState.tx_mutex);
 
 	_mwlTxQueueKick(qid);

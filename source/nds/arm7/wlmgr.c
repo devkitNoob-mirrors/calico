@@ -71,13 +71,7 @@ static void _wlmgrTxPxiHandler(void* user, u32 data)
 	NetBuf* buf = (NetBuf*)(MM_MAINRAM + (data << 5));
 
 	// Append packet to tx queue
-	buf->link.next = NULL;
-	if (s_wlmgrState.tx_queue.next) {
-		s_wlmgrState.tx_queue.prev->link.next = buf;
-	} else {
-		s_wlmgrState.tx_queue.next = buf;
-	}
-	s_wlmgrState.tx_queue.prev = buf;
+	netbufQueueAppend(&s_wlmgrState.tx_queue, buf);
 
 	// Signal thread if needed
 	Mailbox* mbox = (Mailbox*)user;
@@ -317,11 +311,7 @@ void _wlmgrPxiProcess(Mailbox* mb)
 void _wlmgrTxProcess(void)
 {
 	// Atomically borrow the packet list
-	IrqState st = irqLock();
-	NetBuf* pPacket = s_wlmgrState.tx_queue.next;
-	s_wlmgrState.tx_queue.next = NULL;
-	s_wlmgrState.tx_queue.prev = NULL;
-	irqUnlock(st);
+	NetBuf* pPacket = netbufQueueRemoveAll(&s_wlmgrState.tx_queue);
 
 	NetBuf* pNext;
 	for (; pPacket; pPacket = pNext) {

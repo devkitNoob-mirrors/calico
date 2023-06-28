@@ -1,5 +1,6 @@
 #pragma once
 #include "../types.h"
+#include "../arm/common.h"
 
 MEOW_EXTERN_C_START
 
@@ -97,6 +98,20 @@ MEOW_INLINE void* netbufPopTrailer(NetBuf* nb, unsigned size) {
 		nb->len -= size;
 	}
 	return trailer;
+}
+
+MEOW_INLINE void netbufQueueAppend(NetBufListNode* q, NetBuf* nb) {
+	nb->link.next = NULL;
+	if (q->next) {
+		q->prev->link.next = nb;
+	} else {
+		q->next = nb;
+	}
+	q->prev = nb;
+}
+
+MEOW_INLINE NetBuf* netbufQueueRemoveAll(NetBufListNode* q) {
+	return (NetBuf*)armSwapWord((u32*)&q->next, 0);
 }
 
 MEOW_EXTERN_C_END
