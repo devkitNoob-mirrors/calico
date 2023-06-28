@@ -1,6 +1,8 @@
 #include "common.h"
 #include <calico/system/thread.h>
 
+#define MWL_MLME_SCAN_SPACING 5
+
 bool _mwlSetMlmeState(MwlMlmeState state)
 {
 	IrqState st = irqLock();
@@ -18,9 +20,45 @@ bool _mwlSetMlmeState(MwlMlmeState state)
 	return ok;
 }
 
+void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi)
+{
+	if (!s_mwlState.mlme_cb.onBssInfo) {
+		return;
+	}
+
+	// Apply SSID filter if necessary
+	unsigned filter_len = s_mwlState.mlme.scan.filter.target_ssid_len;
+	if (filter_len == 0 || (filter_len == bssInfo->ssid_len &&
+		__builtin_memcmp(bssInfo->ssid, s_mwlState.mlme.scan.filter.target_ssid, filter_len) == 0)) {
+		s_mwlState.mlme_cb.onBssInfo(bssInfo, bssExtra, rssi);
+	}
+}
+
+MEOW_CONSTEXPR unsigned _mwlMlmeCalcNextScanCh(unsigned ch, unsigned ch_mask)
+{
+	MEOW_ASSUME(ch_mask != 0);
+
+	// Apply channel spacing increment
+	ch += MWL_MLME_SCAN_SPACING;
+
+	// Wrap around if there are no more enabled channels from this point on
+	if (!(ch_mask &~ ((1U<<ch)-1))) {
+		ch = 0;
+	}
+
+	// Retrieve first enabled channel in the mask
+	while (!(ch_mask & (1U<<ch))) {
+		ch ++;
+	}
+
+	return ch;
+}
+
 static void _mwlMlmeScanTimeout(TickTask* t)
 {
-	_mwlSetMlmeState(MwlMlmeState_ScanSetup);
+	s_mwlState.mlme.scan.dwell_elapsed += s_mwlState.mlme.scan.update_period;
+	bool dwell_over = s_mwlState.mlme.scan.dwell_elapsed >= s_mwlState.mlme.scan.ch_dwell_ticks;
+	_mwlSetMlmeState(dwell_over ? MwlMlmeState_ScanSetup : MwlMlmeState_ScanBusy);
 }
 
 MEOW_NOINLINE static void _mwlMlmeTaskScan(MwlMlmeState state)
@@ -44,25 +82,45 @@ MEOW_NOINLINE static void _mwlMlmeTaskScan(MwlMlmeState state)
 				}
 
 				// Restart the scan
-				s_mwlState.mlme.scan.filter.channel_mask = ch_mask;
-				s_mwlState.mlme.scan.cur_ch = 0;
+				s_mwlState.mlme.scan.cur_ch = 16;
 			}
 
 			// Find next channel to scan
-			unsigned ch = s_mwlState.mlme.scan.cur_ch;
-			while (!(ch_mask & (1U<<ch))) {
-				ch ++;
-			}
+			unsigned ch = _mwlMlmeCalcNextScanCh(s_mwlState.mlme.scan.cur_ch, ch_mask);
 
 			// Switch to new channel
-			s_mwlState.mlme.scan.filter.channel_mask &= ~(1U << ch); // flag as explored
 			s_mwlState.mlme.scan.cur_ch = ch;
+			s_mwlState.mlme.scan.filter.channel_mask = ch_mask &~ (1U << ch); // flag as explored
 			mwlDevSetChannel(ch);
 
-			// XX: Send probe request frame when ssid is provided
+			// Initialize dwell counter and update period
+			s_mwlState.mlme.scan.dwell_elapsed = 0;
+			s_mwlState.mlme.scan.update_period = s_mwlState.mlme.scan.ch_dwell_ticks;
 
+			// If performing an active scan: schedule 4 probe requests per channel
+			if (s_mwlState.mlme.scan.filter.target_ssid_len) {
+				s_mwlState.mlme.scan.update_period = (s_mwlState.mlme.scan.update_period + 3) / 4;
+			}
+
+			// Set state
 			_mwlSetMlmeState(MwlMlmeState_ScanBusy);
-			tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeScanTimeout, ticksFromUsec(s_mwlState.mlme.scan.ch_dwell_time*1000), 0);
+			break;
+		}
+
+		case MwlMlmeState_ScanBusy: {
+			// If performing an active scan: send probe request
+			if (s_mwlState.mlme.scan.filter.target_ssid_len) {
+				NetBuf* buf = _mwlMgmtMakeProbeRequest(
+					s_mwlState.mlme.scan.filter.target_bssid,
+					s_mwlState.mlme.scan.filter.target_ssid,
+					s_mwlState.mlme.scan.filter.target_ssid_len
+				);
+				if (buf) {
+					mwlDevTx(1, buf, NULL, NULL);
+				}
+			}
+
+			tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeScanTimeout, s_mwlState.mlme.scan.update_period, 0);
 			break;
 		}
 	}
@@ -102,8 +160,8 @@ bool mwlMlmeScan(WlanBssScanFilter const* filter, unsigned ch_dwell_time)
 	// Initialize scanning vars
 	s_mwlState.mlme.scan.filter = *filter;
 	s_mwlState.mlme.scan.filter.channel_mask = ch_mask;
-	s_mwlState.mlme.scan.ch_dwell_time = ch_dwell_time;
-	s_mwlState.mlme.scan.cur_ch = 0;
+	s_mwlState.mlme.scan.cur_ch = 16;
+	s_mwlState.mlme.scan.ch_dwell_ticks = ticksFromUsec(ch_dwell_time*1000);
 
 	// Set up BSSID filter (or all-FF to disable)
 	mwlDevSetBssid(s_mwlState.mlme.scan.filter.target_bssid);

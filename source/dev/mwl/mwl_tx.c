@@ -20,7 +20,7 @@ static unsigned _mwlTxQueueWrite(unsigned qid, NetBuf* pPacket)
 	WlanMacHdr* machdr = (WlanMacHdr*)netbufGet(pPacket);
 
 	// Fill in hardware header
-	hdr.service_rate = 10;
+	hdr.service_rate = 20;
 	hdr.mpdu_len = pPacket->len + 4; // add FCS
 	if (machdr->fc.wep) {
 		hdr.mpdu_len += 8; // add WEP IV/key ID + ICV

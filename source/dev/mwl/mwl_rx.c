@@ -34,11 +34,9 @@ MEOW_NOINLINE static void _mwlRxRead(void* dst, unsigned len)
 
 MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
 {
+	// Pop 802.11 header
+	MEOW_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
 	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
-	if (!dot11hdr) {
-		dietPrint("[MWL] RX bad beacon\n");
-		return;
-	}
 
 	// Parse beacon body
 	WlanBssDesc desc;
@@ -56,14 +54,35 @@ MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr
 		return;
 	}
 
-	if (s_mwlState.mlme_state == MwlMlmeState_ScanBusy && s_mwlState.mlme_cb.onBssInfo) {
-		// Apply SSID filter if necessary
-		unsigned filter_len = s_mwlState.mlme.scan.filter.target_ssid_len;
-		if (filter_len == 0 || (filter_len == desc.ssid_len &&
-			__builtin_memcmp(desc.ssid, s_mwlState.mlme.scan.filter.target_ssid, filter_len) == 0)) {
-			s_mwlState.mlme_cb.onBssInfo(&desc, &extra, rxhdr->rssi & 0xff);
-		}
+	// Forward BSS description to MLME if we are scanning
+	if (s_mwlState.mlme_state == MwlMlmeState_ScanBusy) {
+		_mwlMlmeOnBssInfo(&desc, &extra, rxhdr->rssi & 0xff);
 	}
+}
+
+MEOW_NOINLINE static void _mwlRxProbeResFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
+{
+	// Ignore this packet if we are not scanning
+	if (s_mwlState.mlme_state != MwlMlmeState_ScanBusy) {
+		return;
+	}
+
+	// Pop 802.11 header
+	MEOW_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
+	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
+
+	dietPrint("PrbRsp BSSID=%.2X:%.2X:%.2X:%.2X:%.2X:%.2X\n",
+		dot11hdr->tx_addr[0],dot11hdr->tx_addr[1],dot11hdr->tx_addr[2],
+		dot11hdr->tx_addr[3],dot11hdr->tx_addr[4],dot11hdr->tx_addr[5]);
+
+	// Parse probe response body
+	WlanBssDesc desc;
+	WlanBssExtra extra;
+	wlanParseBeacon(&desc, &extra, pPacket);
+	__builtin_memcpy(desc.bssid, dot11hdr->tx_addr, 6);
+
+	// Forward BSS description to MLME
+	_mwlMlmeOnBssInfo(&desc, &extra, rxhdr->rssi & 0xff);
 }
 
 void _mwlRxEndTask(void)
@@ -118,17 +137,35 @@ void _mwlRxEndTask(void)
 		// Update read cursor
 		MWL_REG(W_RXBUF_READCSR) = pkt_end/2;
 
+		// Get pointer to 802.11 header
+		WlanMacHdr* dot11hdr = (WlanMacHdr*)netbufGet(pPacket);
+
 		if (rxhdr.status & (1U<<9)) {
 			// TODO: is this worth supporting?
 			dietPrint("[RX] fragmented packet!\n");
+		} else if (pkt_type != MwlRxType_IeeeCtrl && pPacket->len < sizeof(WlanMacHdr)) {
+			// Shouldn't happen, but just in case.
+			dietPrint("[RX] missing 802.11 hdr!\n");
 		} else switch (pkt_type) {
-			default:
-				dietPrint("[RX:%02X] t=%X len=%u ieee=%.4X\n", rxhdr.rssi&0xff, pkt_type, rxhdr.mpdu_len, *(u16*)netbufGet(pPacket));
+			default: {
+				dietPrint("[RX:%02X] t=%X len=%u ieee=%.4X\n", rxhdr.rssi&0xff, pkt_type, rxhdr.mpdu_len, dot11hdr->fc.value);
 				break;
+			}
 
-			case MwlRxType_IeeeBeacon:
-				_mwlRxBeaconFrame(pPacket, &rxhdr);
+			case MwlRxType_IeeeMgmtOther: {
+				if (dot11hdr->fc.type == WlanFrameType_Management && dot11hdr->fc.subtype == WlanMgmtType_ProbeResp) {
+					_mwlRxProbeResFrame(pPacket, &rxhdr);
+				}
+				// XX: Handle other management frames in a separate task
 				break;
+			}
+
+			case MwlRxType_IeeeBeacon: {
+				if (dot11hdr->fc.type == WlanFrameType_Management && dot11hdr->fc.subtype == WlanMgmtType_Beacon) {
+					_mwlRxBeaconFrame(pPacket, &rxhdr);
+				}
+				break;
+			}
 		}
 
 		// Free packet if necessary

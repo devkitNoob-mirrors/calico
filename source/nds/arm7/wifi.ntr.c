@@ -115,7 +115,7 @@ bool ntrwifiStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter, N
 		dietPrint("[NTRWIFI] Scan (Passive)\n");
 	}
 
-	unsigned dwell_time = filter->target_ssid_len ? 60 : 200; // shorter scan time for active scans
+	unsigned dwell_time = filter->target_ssid_len ? 30 : 105; // shorter scan time for active scans
 
 	if (!mwlMlmeScan(filter, dwell_time)) {
 		s_scanVars.bssTable = NULL;

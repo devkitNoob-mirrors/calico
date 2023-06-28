@@ -78,8 +78,10 @@ typedef struct MwlState {
 	union {
 		struct {
 			WlanBssScanFilter filter;
-			u16 ch_dwell_time;
 			u16 cur_ch;
+			u16 ch_dwell_ticks;
+			u16 update_period;
+			u16 dwell_elapsed;
 		} scan;
 	} mlme;
 } MwlState;
@@ -104,3 +106,7 @@ MEOW_EXTERN32 void _mwlPushTaskImpl(u32 mask) __asm__("_mwlPushTask");
 MEOW_EXTERN32 MwlTask _mwlPopTask(void);
 void _mwlTxQueueClear(unsigned qid);
 bool _mwlSetMlmeState(MwlMlmeState state);
+void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);
+
+// Utilities for crafting management frames
+NetBuf* _mwlMgmtMakeProbeRequest(const void* bssid, const char* ssid, unsigned ssid_len);
