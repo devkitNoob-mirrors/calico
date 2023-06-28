@@ -85,7 +85,7 @@ bool ntrwifiInit(void)
 	MwlCalibData* calib = mwlGetCalibData();
 	memcpy(g_envExtraInfo->wlmgr_macaddr, calib->mac_addr, 6);
 	g_envExtraInfo->wlmgr_channel_mask = calib->enabled_ch_mask;
-	g_envExtraInfo->wlmgr_hdr_headroom_sz = sizeof(WlanMacHdr) + sizeof(u32) + sizeof(NetLlcSnapHdr) - sizeof(NetMacHdr);
+	g_envExtraInfo->wlmgr_hdr_headroom_sz = sizeof(WlanMacHdr) + sizeof(NetLlcSnapHdr) - sizeof(NetMacHdr);
 
 	return true;
 }

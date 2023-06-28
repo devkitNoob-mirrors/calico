@@ -108,6 +108,9 @@ bool mwlMlmeScan(WlanBssScanFilter const* filter, unsigned ch_dwell_time)
 	// Set up BSSID filter (or all-FF to disable)
 	mwlDevSetBssid(s_mwlState.mlme.scan.filter.target_bssid);
 
+	// Set up short preamble (2mbps) support for passive scans, and long preamble for active scans
+	mwlDevSetPreamble(s_mwlState.mlme.scan.filter.target_ssid_len == 0);
+
 	// Start device if needed
 	if (s_mwlState.status == MwlStatus_Idle) {
 		mwlDevStart();

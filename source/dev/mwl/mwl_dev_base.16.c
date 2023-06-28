@@ -116,14 +116,17 @@ static void _mwlMacDefaults(void)
 	MWL_REG(W_MACADDR_2) = calib->mac_addr[2];
 	MWL_REG(W_TX_RETRYLIMIT) = 7;
 	MWL_REG(W_MODE_WEP) = MwlMode_LocalGuest | (1U<<3) | (1U<<6);
+	MWL_REG(W_BEACONINT) = 500; // XX: Related to host mode/beacon tx. Probably unnecessary
 	MWL_REG(0x290) = 0; // Not using 2nd antenna
+
+	// XX: Something maybe related to PHY timing.
+	MWL_REG(0x124) = 200;
+	MWL_REG(0x128) = 2000;
+	MWL_REG(0x150) = 0x202;
+	mwlDevSetPreamble(true); // short preamble
 
 	_mwlBbpWrite(0x13, 0);    // CCA operation
 	_mwlBbpWrite(0x35, 0x1f); // ED (Energy Detection) threshold
-
-	// XX: Stuff below related to host mode/beacon tx. Probably unnecessary
-	MWL_REG(W_BEACONINT) = 500;
-	MWL_REG(W_PREAMBLE) |= 6; // short preamble
 }
 
 void mwlDevWakeUp(void)
@@ -270,6 +273,28 @@ void mwlDevSetBssid(const void* bssid)
 			MWL_REG(W_RXFILTER) &= ~0x400;
 		}
 	}
+}
+
+void mwlDevSetPreamble(bool isShort)
+{
+	unsigned unk = mwlGetCalibData()->mac_reg_init[10] + 0x202;
+
+	if (true) { // Assuming 2mbps tx rate:
+		unk -= 0x6161;
+		if (isShort) {
+			unk -= 0x6060;
+		}
+	}
+
+	// Enable/disable short preamble
+	if (isShort) {
+		MWL_REG(W_PREAMBLE) |= 6;
+	} else {
+		MWL_REG(W_PREAMBLE) &= ~6;
+	}
+
+	// Set "TX timestamp offset" (?)
+	MWL_REG(0x140) = unk;
 }
 
 void mwlDevShutdown(void)

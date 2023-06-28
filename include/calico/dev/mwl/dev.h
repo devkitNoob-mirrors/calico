@@ -40,6 +40,7 @@ void mwlDevReset(void);
 void mwlDevSetChannel(unsigned ch);
 void mwlDevSetMode(MwlMode mode);
 void mwlDevSetBssid(const void* bssid);
+void mwlDevSetPreamble(bool isShort);
 void mwlDevShutdown(void);
 
 void mwlDevStart(void);
