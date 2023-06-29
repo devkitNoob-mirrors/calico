@@ -126,12 +126,47 @@ MEOW_NOINLINE static void _mwlMlmeTaskScan(MwlMlmeState state)
 	}
 }
 
+static void _mwlMlmeJoinTimeout(TickTask* t)
+{
+	_mwlSetMlmeState(MwlMlmeState_JoinDone);
+}
+
+void _mwlMlmeHandleJoin(WlanBeaconHdr* beaconHdr, WlanBssDesc* bssInfo, WlanBssExtra* bssExtra)
+{
+	tickTaskStop(&s_mwlState.timeout_task);
+
+	// XX: Official code validates here the beacon against the info provided by the user.
+	// We instead prefer to believe the user did not lie to us.
+
+	// Configure power saving and beacon timing
+	MWL_REG(W_LISTENINT) = bssExtra->tim->dtim_period;
+	MWL_REG(W_LISTENCOUNT) = 0;
+	MWL_REG(W_BEACONINT) = beaconHdr->interval;
+	MWL_REG(W_POWER_TX) |= 1;
+
+	// Successful join!
+	s_mwlState.has_beacon_sync = 1;
+	_mwlSetMlmeState(MwlMlmeState_JoinDone);
+}
+
+static void _mwlMlmeJoinDone(void)
+{
+	_mwlSetMlmeState(MwlMlmeState_Idle);
+
+	// Invoke callback if needed
+	if (s_mwlState.mlme_cb.onJoinEnd) {
+		s_mwlState.mlme_cb.onJoinEnd(s_mwlState.has_beacon_sync);
+	}
+}
+
 void _mwlMlmeTask(void)
 {
 	MwlMlmeState state = s_mwlState.mlme_state;
 
 	if (state >= MwlMlmeState_ScanSetup && state <= MwlMlmeState_ScanBusy) {
 		_mwlMlmeTaskScan(state);
+	} else if (state == MwlMlmeState_JoinDone) {
+		_mwlMlmeJoinDone();
 	}
 }
 
@@ -142,7 +177,9 @@ MwlMlmeCallbacks* mwlMlmeGetCallbacks(void)
 
 bool mwlMlmeScan(WlanBssScanFilter const* filter, unsigned ch_dwell_time)
 {
-	if (!filter || ch_dwell_time < 10 || s_mwlState.status > MwlStatus_Class1) {
+	// Validate parameters/state
+	if (!filter || ch_dwell_time < 10 ||
+		s_mwlState.mode < MwlMode_LocalGuest || s_mwlState.status > MwlStatus_Class1 || s_mwlState.has_beacon_sync) {
 		return false;
 	}
 
@@ -176,4 +213,32 @@ bool mwlMlmeScan(WlanBssScanFilter const* filter, unsigned ch_dwell_time)
 
 	// Start scanning task
 	return _mwlSetMlmeState(MwlMlmeState_ScanSetup);
+}
+
+bool mwlMlmeJoin(WlanBssDesc const* bssInfo, unsigned timeout)
+{
+	// Validate parameters/state
+	if (!bssInfo || timeout < 100 ||
+		s_mwlState.mode < MwlMode_LocalGuest || s_mwlState.status > MwlStatus_Class1 || s_mwlState.has_beacon_sync) {
+		return false;
+	}
+
+	// Ensure we can join
+	if (s_mwlState.status != MwlStatus_Idle && !_mwlSetMlmeState(MwlMlmeState_Preparing)) {
+		return false;
+	}
+
+	// Apply hardware configuration
+	mwlDevSetChannel(bssInfo->channel);
+	mwlDevSetBssid(bssInfo->bssid);
+	mwlDevSetPreamble((bssInfo->ieee_caps & (1U<<5)) != 0);
+
+	// Start device if needed
+	if (s_mwlState.status == MwlStatus_Idle) {
+		mwlDevStart();
+	}
+
+	// Start joining task with the specified timeout
+	tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeJoinTimeout, ticksFromUsec(timeout*1000), 0);
+	return _mwlSetMlmeState(MwlMlmeState_JoinBusy);
 }

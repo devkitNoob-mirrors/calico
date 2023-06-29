@@ -38,6 +38,9 @@ MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr
 	MEOW_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
 	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
 
+	// Save beacon header for later
+	WlanBeaconHdr* hdr = (WlanBeaconHdr*)netbufGet(pPacket);
+
 	// Parse beacon body
 	WlanBssDesc desc;
 	WlanBssExtra extra;
@@ -54,10 +57,32 @@ MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr
 		return;
 	}
 
-	// Forward BSS description to MLME if we are scanning
+	// Forward BSS description to MLME if we are scanning or joining
 	if (s_mwlState.mlme_state == MwlMlmeState_ScanBusy) {
 		_mwlMlmeOnBssInfo(&desc, &extra, rxhdr->rssi & 0xff);
+	} else if (s_mwlState.mlme_state == MwlMlmeState_JoinBusy) {
+		_mwlMlmeHandleJoin(hdr, &desc, &extra);
 	}
+
+	// Below section only relevant when we have joined a BSS
+	if (!s_mwlState.has_beacon_sync) {
+		return;
+	}
+
+	// Calculate timestamp of next TBTT (target beacon transmission time).
+	// Note: as per 802.11 spec, this formula accounts for beacons delayed due to
+	// medium contention - next beacon is expected to be received at the usual time.
+	u32 beaconPeriodUs = hdr->interval << 10;
+	u64 nextTbttUs = hdr->timestamp[0] | ((u64)hdr->timestamp[1] << 32);
+	nextTbttUs = ((nextTbttUs / beaconPeriodUs) + 1) * beaconPeriodUs;
+
+	// Configure next TBTT interrupt.
+	// Note: upon receipt of a beacon matching W_BSSID, the hardware automatically
+	// updates our local clock (W_US_COUNT) with that of the BSS. Nice!
+	MWL_REG(W_US_COMPARE3) = nextTbttUs >> 48;
+	MWL_REG(W_US_COMPARE2) = nextTbttUs >> 32;
+	MWL_REG(W_US_COMPARE1) = nextTbttUs >> 16;
+	MWL_REG(W_US_COMPARE0) = nextTbttUs | 1;
 }
 
 MEOW_NOINLINE static void _mwlRxProbeResFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)

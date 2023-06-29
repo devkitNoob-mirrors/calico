@@ -44,6 +44,16 @@ MwlTask _mwlPopTask(void)
 
 //-----------------------------------------------------------------------------
 
+static void _mwlIrqTbttGuest(void)
+{
+	MWL_REG(W_POWER_TX) |= 1;
+
+	// XX: Power saving mode handling for listen interval/DTIM counters goes here
+
+	// Reenable TX queues (HW disables them on TBTT IRQ)
+	MWL_REG(W_TXREQ_SET) = 0xd;
+}
+
 static void _mwlIrqRxEnd(void)
 {
 	s_mwlState.rx_wrcsr = MWL_REG(W_RXBUF_WRCSR);
@@ -73,11 +83,14 @@ void _mwlIrqHandler(void)
 		}
 
 		if (cur_irq & W_IRQ_PRE_TBTT) {
-			//
+			// XX: This is used to increment the beacon lost counter when associated,
+			// and issue an error notif it it crosses a given threshold (i.e. link lost).
 		}
 
 		if (cur_irq & W_IRQ_TBTT) {
-			//
+			if (s_mwlState.mode >= MwlMode_LocalGuest) {
+				_mwlIrqTbttGuest();
+			}
 		}
 
 		if (cur_irq & W_IRQ_POST_TBTT) {

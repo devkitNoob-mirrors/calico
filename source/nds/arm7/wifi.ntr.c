@@ -22,6 +22,11 @@ static struct {
 	void* user;
 } s_scanVars;
 
+static struct {
+	NtrWifiAssocFn cb;
+	void* user;
+} s_assocVars;
+
 static void _ntrwifiOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi)
 {
 	if (!s_scanVars.bssTable) {
@@ -49,6 +54,17 @@ static u32 _ntrwifiOnScanEnd(void)
 
 	mwlDevStop();
 	return 0;
+}
+
+static void _ntrwifiOnJoinEnd(bool ok)
+{
+	dietPrint("[NTRWIFI] Join %s\n", ok ? "ok" : "failure!");
+
+	// XX: Implement the rest
+	mwlDevStop();
+	if (s_assocVars.cb) {
+		s_assocVars.cb(s_assocVars.user, false, 0);
+	}
 }
 
 bool ntrwifiInit(void)
@@ -80,6 +96,7 @@ bool ntrwifiInit(void)
 	MwlMlmeCallbacks* cb = mwlMlmeGetCallbacks();
 	cb->onBssInfo = _ntrwifiOnBssInfo;
 	cb->onScanEnd = _ntrwifiOnScanEnd;
+	cb->onJoinEnd = _ntrwifiOnJoinEnd;
 
 	// Copy wireless interface settings
 	MwlCalibData* calib = mwlGetCalibData();
@@ -129,8 +146,10 @@ bool ntrwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, NtrWifiA
 {
 	dietPrint("[NTRWIFI] Assoc: %.*s\n", bss->ssid_len, bss->ssid);
 
-	// TODO
-	return false;
+	s_assocVars.cb = cb;
+	s_assocVars.user = user;
+
+	return mwlMlmeJoin(bss, 2000);
 }
 
 bool ntrwifiDisassociate(void)

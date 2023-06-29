@@ -35,6 +35,9 @@ typedef enum MwlMlmeState {
 
 	MwlMlmeState_ScanSetup,
 	MwlMlmeState_ScanBusy,
+
+	MwlMlmeState_JoinBusy,
+	MwlMlmeState_JoinDone,
 } MwlMlmeState;
 
 typedef struct MwlTxQueue {
@@ -107,6 +110,7 @@ MEOW_EXTERN32 MwlTask _mwlPopTask(void);
 void _mwlTxQueueClear(unsigned qid);
 bool _mwlSetMlmeState(MwlMlmeState state);
 void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);
+void _mwlMlmeHandleJoin(WlanBeaconHdr* beaconHdr, WlanBssDesc* bssInfo, WlanBssExtra* bssExtra);
 
 // Utilities for crafting management frames
 NetBuf* _mwlMgmtMakeProbeRequest(const void* bssid, const char* ssid, unsigned ssid_len);
