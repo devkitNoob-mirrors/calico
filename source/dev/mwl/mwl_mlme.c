@@ -384,7 +384,7 @@ bool mwlMlmeAuthenticate(unsigned timeout)
 
 	// Set up state vars
 	s_mwlState.mlme.auth.pTxPacket = pPacket;
-	s_mwlState.mlme.auth.status = 1; // Unspecified failure
+	s_mwlState.mlme.auth.status = 16; // Timeout
 
 	// Start authentication task with the specified timeout
 	tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeAuthTimeout, ticksFromUsec(timeout*1000), 0);

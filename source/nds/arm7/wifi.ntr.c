@@ -25,6 +25,7 @@ static struct {
 static struct {
 	NtrWifiAssocFn cb;
 	void* user;
+	bool retry_auth;
 } s_assocVars;
 
 static void _ntrwifiOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi)
@@ -60,7 +61,7 @@ static void _ntrwifiOnJoinEnd(bool ok)
 {
 	dietPrint("[NTRWIFI] Join %s\n", ok ? "ok" : "failure!");
 
-	if (!ok || !mwlMlmeAuthenticate(2000)) {
+	if (!ok || !mwlMlmeAuthenticate(1000)) {
 		mwlDevStop();
 		if (s_assocVars.cb) {
 			s_assocVars.cb(s_assocVars.user, false, 0);
@@ -71,6 +72,14 @@ static void _ntrwifiOnJoinEnd(bool ok)
 static void _ntrwifiOnAuthEnd(unsigned status)
 {
 	dietPrint("[NTRWIFI] Auth status = %u\n", status);
+
+	// If we got timed out, retry authentication once
+	if (status == 16 && s_assocVars.retry_auth) {
+		s_assocVars.retry_auth = false;
+		if (mwlMlmeAuthenticate(1000)) {
+			return;
+		}
+	}
 
 	bool ok = status == 0;
 	if (ok) {
@@ -167,6 +176,7 @@ bool ntrwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, NtrWifiA
 
 	s_assocVars.cb = cb;
 	s_assocVars.user = user;
+	s_assocVars.retry_auth = true;
 
 	mwlDevSetAuth(bss->auth_type, auth);
 	return mwlMlmeJoin(bss, 2000);
