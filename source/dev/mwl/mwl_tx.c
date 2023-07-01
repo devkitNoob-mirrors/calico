@@ -6,11 +6,14 @@
 static void _mwlTxWrite(const void* src, unsigned len)
 {
 	const u16* src16 = (const u16*)src;
-	len = (len + 1) &~ 1;
 
-	while (len) {
+	while (len > 1) {
 		MWL_REG(W_TXBUF_WR_DATA) = *src16++;
 		len -= 2;
+	}
+
+	if (len) {
+		MWL_REG(W_TXBUF_WR_DATA) = 0;
 	}
 }
 
@@ -59,6 +62,10 @@ static unsigned _mwlTxQueueWrite(unsigned qid, NetBuf* pPacket)
 
 		// Write packet body
 		_mwlTxWrite(machdr+1, pPacket->len - sizeof(*machdr));
+
+		// Write WEP ICV
+		MWL_REG(W_TXBUF_WR_DATA) = 0;
+		MWL_REG(W_TXBUF_WR_DATA) = 0;
 	} else {
 		// Write the entire packet
 		_mwlTxWrite(machdr, pPacket->len);

@@ -149,6 +149,7 @@ bool ntrwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, NtrWifiA
 	s_assocVars.cb = cb;
 	s_assocVars.user = user;
 
+	mwlDevSetAuth(bss->auth_type, auth);
 	return mwlMlmeJoin(bss, 2000);
 }
 

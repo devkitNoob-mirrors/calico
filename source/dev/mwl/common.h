@@ -54,7 +54,8 @@ typedef struct MwlState {
 	u16 has_beacon_sync : 1;
 	u16 is_power_save   : 1;
 	u16 tx_busy         : 3;
-	u16 _pad            : 7;
+	u16 wep_enabled     : 1;
+	u16 _pad            : 6;
 
 	u16 bssid[3];
 

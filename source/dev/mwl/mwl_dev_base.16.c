@@ -297,6 +297,39 @@ void mwlDevSetPreamble(bool isShort)
 	MWL_REG(0x140) = unk;
 }
 
+void mwlDevSetAuth(WlanBssAuthType type, WlanAuthData const* data)
+{
+	unsigned wep_mode = MWL_REG(W_MODE_WEP) &~ (7U<<3);
+	s_mwlState.wep_enabled = 0;
+
+	switch (type) {
+		case WlanBssAuthType_WEP_40:
+		case WlanBssAuthType_WEP_104:
+		case WlanBssAuthType_WEP_128: {
+			wep_mode |= type<<3;
+			s_mwlState.wep_enabled = 1;
+
+			// Copy WEP key to Wifi RAM
+			// XX: Using the same key for all 4 slots
+			for (unsigned i = 0; i < 8; i ++) {
+				unsigned x = wlanDecode16(&data->wep_key[i*2]);
+				g_mwlMacVars->wep_keys[0][i] = x;
+				g_mwlMacVars->wep_keys[1][i] = x;
+				g_mwlMacVars->wep_keys[2][i] = x;
+				g_mwlMacVars->wep_keys[3][i] = x;
+			}
+
+			// fallthrough
+		}
+
+		default:
+		case WlanBssAuthType_Open: {
+			MWL_REG(W_MODE_WEP) = wep_mode;
+			break;
+		}
+	}
+}
+
 void mwlDevShutdown(void)
 {
 	if (mwlGetCalibData()->rf_type == 2) {
