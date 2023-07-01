@@ -223,6 +223,13 @@ void _mwlRxMgmtCtrlTask(void)
 			dietPrint("[RX] MGMT type %u\n", dot11hdr->fc.subtype);
 			break;
 		}
+
+		case WlanMgmtType_Auth: {
+			if (s_mwlState.mlme_state == MwlMlmeState_AuthBusy) {
+				_mwlMlmeHandleAuth(pPacket);
+			}
+			break;
+		}
 	}
 
 	// Free this packet and refire this task if there are more

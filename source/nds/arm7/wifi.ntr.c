@@ -60,10 +60,28 @@ static void _ntrwifiOnJoinEnd(bool ok)
 {
 	dietPrint("[NTRWIFI] Join %s\n", ok ? "ok" : "failure!");
 
-	// XX: Implement the rest
-	mwlDevStop();
-	if (s_assocVars.cb) {
-		s_assocVars.cb(s_assocVars.user, false, 0);
+	if (!ok || !mwlMlmeAuthenticate(2000)) {
+		mwlDevStop();
+		if (s_assocVars.cb) {
+			s_assocVars.cb(s_assocVars.user, false, 0);
+		}
+	}
+}
+
+static void _ntrwifiOnAuthEnd(unsigned status)
+{
+	dietPrint("[NTRWIFI] Auth status = %u\n", status);
+
+	bool ok = status == 0;
+	if (ok) {
+		ok = true; // TODO: assoc
+	}
+
+	if (!ok) {
+		mwlDevStop();
+		if (s_assocVars.cb) {
+			s_assocVars.cb(s_assocVars.user, false, 0);
+		}
 	}
 }
 
@@ -97,6 +115,7 @@ bool ntrwifiInit(void)
 	cb->onBssInfo = _ntrwifiOnBssInfo;
 	cb->onScanEnd = _ntrwifiOnScanEnd;
 	cb->onJoinEnd = _ntrwifiOnJoinEnd;
+	cb->onAuthEnd = _ntrwifiOnAuthEnd;
 
 	// Copy wireless interface settings
 	MwlCalibData* calib = mwlGetCalibData();

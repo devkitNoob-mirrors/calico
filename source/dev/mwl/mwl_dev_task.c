@@ -195,6 +195,11 @@ void _mwlExitTask(void)
 	tickTaskStop(&s_mwlState.timeout_task);
 	tickTaskStop(&s_mwlState.periodic_task);
 
+	// Free any unsent authentication packets
+	if (s_mwlState.mlme_state == MwlMlmeState_AuthBusy || s_mwlState.mlme_state == MwlMlmeState_AuthDone) {
+		_mwlMlmeAuthFreeReply();
+	}
+
 	s_mwlState.status = MwlStatus_Idle;
 	s_mwlState.has_beacon_sync = 0;
 	s_mwlState.is_power_save = 0;

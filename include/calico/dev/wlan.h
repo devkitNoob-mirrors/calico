@@ -63,6 +63,7 @@ typedef enum WlanEid {
 	WlanEid_DSParamSet       = 3,
 	WlanEid_CFParamSet       = 4,
 	WlanEid_TIM              = 5,
+	WlanEid_ChallengeText    = 16,
 	WlanEid_RSN              = 48,
 	WlanEid_SupportedRatesEx = 50,
 	WlanEid_Vendor           = 221, // also used for NN-specific data
@@ -109,6 +110,13 @@ typedef struct WlanBeaconHdr {
 	u16 capabilities;
 	// Information elements follow: WlanIeHdr[]
 } WlanBeaconHdr;
+
+typedef struct WlanAuthHdr {
+	u16 algorithm_id;
+	u16 sequence_num;
+	u16 status;
+	// Information elements follow: WlanIeHdr[]
+} WlanAuthHdr;
 
 typedef struct WlanAssocReqHdr {
 	u16 capabilities;

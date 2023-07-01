@@ -38,6 +38,9 @@ typedef enum MwlMlmeState {
 
 	MwlMlmeState_JoinBusy,
 	MwlMlmeState_JoinDone,
+
+	MwlMlmeState_AuthBusy,
+	MwlMlmeState_AuthDone,
 } MwlMlmeState;
 
 typedef struct MwlTxQueue {
@@ -90,6 +93,11 @@ typedef struct MwlState {
 			u16 update_period;
 			u16 dwell_elapsed;
 		} scan;
+
+		struct {
+			NetBuf* pTxPacket;
+			u16 status;
+		} auth;
 	} mlme;
 } MwlState;
 
@@ -116,6 +124,9 @@ void _mwlTxQueueClear(unsigned qid);
 bool _mwlSetMlmeState(MwlMlmeState state);
 void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);
 void _mwlMlmeHandleJoin(WlanBeaconHdr* beaconHdr, WlanBssDesc* bssInfo, WlanBssExtra* bssExtra);
+void _mwlMlmeHandleAuth(NetBuf* pPacket);
+void _mwlMlmeAuthFreeReply(void);
 
 // Utilities for crafting management frames
 NetBuf* _mwlMgmtMakeProbeReq(const void* bssid, const char* ssid, unsigned ssid_len);
+NetBuf* _mwlMgmtMakeAuth(const void* target, WlanAuthHdr const* auth_hdr, const void* chal_text, unsigned chal_len);

@@ -159,6 +159,115 @@ static void _mwlMlmeJoinDone(void)
 	}
 }
 
+static void _mwlMlmeAuthTimeout(TickTask* t)
+{
+	_mwlSetMlmeState(MwlMlmeState_AuthDone);
+}
+
+static void _mwlMlmeAuthRaceWorkaround(TickTask* t)
+{
+	_mwlSetMlmeState(MwlMlmeState_AuthBusy);
+}
+
+void _mwlMlmeHandleAuth(NetBuf* pPacket)
+{
+	WlanAuthHdr* hdr = netbufPopHeaderType(pPacket, WlanAuthHdr);
+	if (!hdr) {
+		dietPrint("[MWL] Bad auth packet\n");
+		return;
+	}
+
+	dietPrint("[MWL] Auth alg=%u seq=%u st=%u\n", hdr->algorithm_id, hdr->sequence_num, hdr->status);
+	if (hdr->algorithm_id != s_mwlState.wep_enabled) {
+		dietPrint("[MWL] Bad auth algo\n");
+		return;
+	}
+
+	if (hdr->algorithm_id == 0) { // Open System
+		if (hdr->sequence_num == 2) {
+			s_mwlState.mlme.auth.status = hdr->status;
+			_mwlSetMlmeState(MwlMlmeState_AuthDone);
+		}
+	} else if (hdr->algorithm_id == 1) { // Shared Key
+		if (hdr->status != 0 || hdr->sequence_num == 4) {
+			s_mwlState.mlme.auth.status = hdr->status;
+			_mwlSetMlmeState(MwlMlmeState_AuthDone);
+		} else if (hdr->sequence_num == 2) {
+			WlanIeHdr* ie = netbufPopHeaderType(pPacket, WlanIeHdr);
+			if (!ie || ie->id != WlanEid_ChallengeText || !ie->len) {
+				dietPrint("[MWL] Missing challenge text\n");
+				return;
+			}
+
+			void* data = netbufPopHeader(pPacket, ie->len);
+			if (!data) {
+				dietPrint("[MWL] Truncated challenge text\n");
+				return;
+			}
+
+			// Discard any previously crafted challenge reply packets
+			// (see below comment for explanation)
+			tickTaskStop(&s_mwlState.periodic_task);
+			if (s_mwlState.mlme.auth.pTxPacket) {
+				netbufFree(s_mwlState.mlme.auth.pTxPacket);
+			}
+
+			// Create a new challenge reply packet.
+			// XX: Some routers (such as my ASUS RT-N12E C1) have a bugged implementation of the 802.11
+			// Shared Key authentication protocol. Namely, they send out two consecutive challenge
+			// packets (with different challenge texts!), seemingly due to a bugged retry timeout.
+			// Authentication only works when the reply packet contains the *latest* challenge text.
+			// A race condition occurs when the client replies to the first packet after the router has
+			// already decided to send a second packet. For this reason, we delay sending the reply by
+			// 100ms in order to ensure that we always include the latest received challenge text.
+			hdr->sequence_num = 3;
+			s_mwlState.mlme.auth.pTxPacket = _mwlMgmtMakeAuth(s_mwlState.bssid, hdr, data, ie->len);
+			if (s_mwlState.mlme.auth.pTxPacket) {
+				tickTaskStart(&s_mwlState.periodic_task,_mwlMlmeAuthRaceWorkaround, ticksFromUsec(100000), 0);
+			}
+		}
+	}
+}
+
+static void _mwlMlmeAuthSend(void)
+{
+	NetBuf* pPacket = s_mwlState.mlme.auth.pTxPacket;
+	if (pPacket) {
+		s_mwlState.mlme.auth.pTxPacket = NULL;
+		mwlDevTx(1, pPacket, NULL, NULL);
+	}
+}
+
+void _mwlMlmeAuthFreeReply(void)
+{
+	if (s_mwlState.mlme.auth.pTxPacket) {
+		netbufFree(s_mwlState.mlme.auth.pTxPacket);
+		s_mwlState.mlme.auth.pTxPacket = NULL;
+	}
+}
+
+static void _mwlMlmeAuthDone(void)
+{
+	tickTaskStop(&s_mwlState.timeout_task);
+	tickTaskStop(&s_mwlState.periodic_task);
+
+	// Free any unsent authentication packets
+	_mwlMlmeAuthFreeReply();
+
+	unsigned status = s_mwlState.mlme.auth.status;
+	_mwlSetMlmeState(MwlMlmeState_Idle);
+
+	if (status == 0) {
+		// Success! We are now authenticated
+		s_mwlState.status = MwlStatus_Class2;
+	}
+
+	// Invoke callback if needed
+	if (s_mwlState.mlme_cb.onAuthEnd) {
+		s_mwlState.mlme_cb.onAuthEnd(status);
+	}
+}
+
 void _mwlMlmeTask(void)
 {
 	MwlMlmeState state = s_mwlState.mlme_state;
@@ -167,6 +276,10 @@ void _mwlMlmeTask(void)
 		_mwlMlmeTaskScan(state);
 	} else if (state == MwlMlmeState_JoinDone) {
 		_mwlMlmeJoinDone();
+	} else if (state == MwlMlmeState_AuthBusy) {
+		_mwlMlmeAuthSend();
+	} else if (state == MwlMlmeState_AuthDone) {
+		_mwlMlmeAuthDone();
 	}
 }
 
@@ -241,4 +354,38 @@ bool mwlMlmeJoin(WlanBssDesc const* bssInfo, unsigned timeout)
 	// Start joining task with the specified timeout
 	tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeJoinTimeout, ticksFromUsec(timeout*1000), 0);
 	return _mwlSetMlmeState(MwlMlmeState_JoinBusy);
+}
+
+bool mwlMlmeAuthenticate(unsigned timeout)
+{
+	// Validate parameters/state
+	if (timeout < 100 ||
+		s_mwlState.mode < MwlMode_LocalGuest || s_mwlState.status != MwlStatus_Class1 || !s_mwlState.has_beacon_sync) {
+		return false;
+	}
+
+	// Ensure we can authenticate
+	if (!_mwlSetMlmeState(MwlMlmeState_Preparing)) {
+		return false;
+	}
+
+	WlanAuthHdr auth = {
+		.algorithm_id = s_mwlState.wep_enabled, // Open System (0) or Shared Key (1)
+		.sequence_num = 1, // First message
+		.status       = 0, // Reserved
+	};
+
+	NetBuf* pPacket = _mwlMgmtMakeAuth(s_mwlState.bssid, &auth, NULL, 0);
+	if (!pPacket) {
+		_mwlSetMlmeState(MwlMlmeState_Idle);
+		return false;
+	}
+
+	// Set up state vars
+	s_mwlState.mlme.auth.pTxPacket = pPacket;
+	s_mwlState.mlme.auth.status = 1; // Unspecified failure
+
+	// Start authentication task with the specified timeout
+	tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeAuthTimeout, ticksFromUsec(timeout*1000), 0);
+	return _mwlSetMlmeState(MwlMlmeState_AuthBusy);
 }

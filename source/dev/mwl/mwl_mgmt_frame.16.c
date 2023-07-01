@@ -27,6 +27,13 @@ MEOW_INLINE WlanMacHdr* _mwlMgmtInitHeader(NetBuf* pPacket, WlanMgmtType subtype
 	return hdr;
 }
 
+MEOW_INLINE void* _mwlMgmtAddData(void** pos, unsigned len)
+{
+	void* ret = *pos;
+	*pos = (u8*)ret + len;
+	return ret;
+}
+
 MEOW_INLINE void* _mwlMgmtAddIe(void** pos, WlanEid id, unsigned len)
 {
 	WlanIeHdr* ie = (WlanIeHdr*)*pos;
@@ -43,7 +50,7 @@ MEOW_INLINE NetBuf* _mwlMgmtFinalize(NetBuf* pPacket, void* pos)
 	return pPacket;
 }
 
-NetBuf* _mwlMgmtMakeProbeRequest(const void* bssid, const char* ssid, unsigned ssid_len)
+NetBuf* _mwlMgmtMakeProbeReq(const void* bssid, const char* ssid, unsigned ssid_len)
 {
 	void* wrpos;
 	NetBuf* pPacket = _mwlMgmtAllocPacket();
@@ -76,6 +83,34 @@ NetBuf* _mwlMgmtMakeProbeRequest(const void* bssid, const char* ssid, unsigned s
 	rates[1] = 4  | 0x80; // 2mbps   basic (DSSS/Barker)
 	rates[2] = 11 | 0x80; // 5.5mbps basic (DSSS/CCK - lie!)
 	rates[3] = 22 | 0x80; // 11mbps  basic (DSSS/CCK - lie!)
+
+	return _mwlMgmtFinalize(pPacket, wrpos);
+}
+
+NetBuf* _mwlMgmtMakeAuth(const void* target, WlanAuthHdr const* auth_hdr, const void* chal_text, unsigned chal_len)
+{
+	void* wrpos;
+	NetBuf* pPacket = _mwlMgmtAllocPacket();
+	if (!pPacket) {
+		return NULL;
+	}
+
+	// Add IEEE 802.11 header
+	WlanMacHdr* hdr = _mwlMgmtInitHeader(pPacket, WlanMgmtType_Auth, &wrpos);
+	__builtin_memcpy(hdr->rx_addr, target, 6);
+
+	// Add authentication header
+	__builtin_memcpy(_mwlMgmtAddData(&wrpos, sizeof(*auth_hdr)), auth_hdr, sizeof(*auth_hdr));
+
+	// Add challenge text if needed
+	if (chal_len) {
+		__builtin_memcpy(_mwlMgmtAddIe(&wrpos, WlanEid_ChallengeText, chal_len), chal_text, chal_len);
+
+		// Enable WEP for challenge responses
+		if (auth_hdr->sequence_num == 3) {
+			hdr->fc.wep = 1;
+		}
+	}
 
 	return _mwlMgmtFinalize(pPacket, wrpos);
 }
