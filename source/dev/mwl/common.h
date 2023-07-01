@@ -62,6 +62,9 @@ typedef struct MwlState {
 
 	u16 bssid[3];
 
+	u16 ssid_len;
+	char ssid[WLAN_MAX_SSID_LEN];
+
 	u16 rx_pos;
 	u16 tx_pos[3];
 	union {

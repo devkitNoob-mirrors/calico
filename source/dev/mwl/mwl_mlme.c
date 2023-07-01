@@ -344,6 +344,7 @@ bool mwlMlmeJoin(WlanBssDesc const* bssInfo, unsigned timeout)
 	// Apply hardware configuration
 	mwlDevSetChannel(bssInfo->channel);
 	mwlDevSetBssid(bssInfo->bssid);
+	mwlDevSetSsid(bssInfo->ssid, bssInfo->ssid_len);
 	mwlDevSetPreamble((bssInfo->ieee_caps & (1U<<5)) != 0);
 
 	// Start device if needed

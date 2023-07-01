@@ -40,6 +40,7 @@ void mwlDevReset(void);
 void mwlDevSetChannel(unsigned ch);
 void mwlDevSetMode(MwlMode mode);
 void mwlDevSetBssid(const void* bssid);
+void mwlDevSetSsid(const char* ssid, unsigned ssid_len);
 void mwlDevSetPreamble(bool isShort);
 void mwlDevSetAuth(WlanBssAuthType type, WlanAuthData const* data);
 void mwlDevShutdown(void);

@@ -275,6 +275,16 @@ void mwlDevSetBssid(const void* bssid)
 	}
 }
 
+void mwlDevSetSsid(const char* ssid, unsigned ssid_len)
+{
+	if (ssid_len > WLAN_MAX_SSID_LEN) {
+		ssid_len = WLAN_MAX_SSID_LEN;
+	}
+
+	s_mwlState.ssid_len = ssid_len;
+	__builtin_memcpy(s_mwlState.ssid, ssid, ssid_len);
+}
+
 void mwlDevSetPreamble(bool isShort)
 {
 	unsigned unk = mwlGetCalibData()->mac_reg_init[10] + 0x202;
