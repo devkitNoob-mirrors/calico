@@ -11,13 +11,15 @@ typedef void (*MwlTaskHandler)(void);
 static void _mwlExitTask(void);
 void _mwlTxEndTask(void);
 void _mwlRxEndTask(void);
+void _mwlRxMgmtCtrlTask(void);
 void _mwlMlmeTask(void);
 
 static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count] = {
-	[MwlTask_ExitThread]  = _mwlExitTask,
-	[MwlTask_TxEnd]       = _mwlTxEndTask,
-	[MwlTask_RxEnd]       = _mwlRxEndTask,
-	[MwlTask_MlmeProcess] = _mwlMlmeTask,
+	[MwlTask_ExitThread]      = _mwlExitTask,
+	[MwlTask_TxEnd]           = _mwlTxEndTask,
+	[MwlTask_RxEnd]           = _mwlRxEndTask,
+	[MwlTask_RxMgmtCtrlFrame] = _mwlRxMgmtCtrlTask,
+	[MwlTask_MlmeProcess]     = _mwlMlmeTask,
 };
 
 static int _mwlTaskHandler(void* arg)
@@ -191,12 +193,14 @@ void _mwlExitTask(void)
 {
 	// Stop ticktasks
 	tickTaskStop(&s_mwlState.timeout_task);
+	tickTaskStop(&s_mwlState.periodic_task);
 
 	s_mwlState.status = MwlStatus_Idle;
 	s_mwlState.has_beacon_sync = 0;
 	s_mwlState.is_power_save = 0;
 	s_mwlState.mlme_state = MwlMlmeState_Idle;
 
+	_mwlRxQueueClear();
 	for (unsigned i = 0; i < 3; i ++) {
 		_mwlTxQueueClear(i);
 	}

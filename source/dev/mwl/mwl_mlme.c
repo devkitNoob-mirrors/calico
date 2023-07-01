@@ -110,7 +110,7 @@ MEOW_NOINLINE static void _mwlMlmeTaskScan(MwlMlmeState state)
 		case MwlMlmeState_ScanBusy: {
 			// If performing an active scan: send probe request
 			if (s_mwlState.mlme.scan.filter.target_ssid_len) {
-				NetBuf* buf = _mwlMgmtMakeProbeRequest(
+				NetBuf* buf = _mwlMgmtMakeProbeReq(
 					s_mwlState.mlme.scan.filter.target_bssid,
 					s_mwlState.mlme.scan.filter.target_ssid,
 					s_mwlState.mlme.scan.filter.target_ssid_len

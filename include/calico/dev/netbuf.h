@@ -110,6 +110,14 @@ MEOW_INLINE void netbufQueueAppend(NetBufListNode* q, NetBuf* nb) {
 	q->prev = nb;
 }
 
+MEOW_INLINE NetBuf* netbufQueueRemoveOne(NetBufListNode* q) {
+	NetBuf* ret = q->next;
+	if (ret) {
+		q->next = ret->link.next;
+	}
+	return ret;
+}
+
 MEOW_INLINE NetBuf* netbufQueueRemoveAll(NetBufListNode* q) {
 	return (NetBuf*)armSwapWord((u32*)&q->next, 0);
 }

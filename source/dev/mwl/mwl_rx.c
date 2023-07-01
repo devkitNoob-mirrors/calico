@@ -178,10 +178,16 @@ void _mwlRxEndTask(void)
 			}
 
 			case MwlRxType_IeeeMgmtOther: {
-				if (dot11hdr->fc.type == WlanFrameType_Management && dot11hdr->fc.subtype == WlanMgmtType_ProbeResp) {
-					_mwlRxProbeResFrame(pPacket, &rxhdr);
+				if (dot11hdr->fc.type == WlanFrameType_Management) {
+					if (dot11hdr->fc.subtype == WlanMgmtType_ProbeResp) {
+						_mwlRxProbeResFrame(pPacket, &rxhdr);
+					} else {
+						// Handle other management frames in a separate task
+						netbufQueueAppend(&s_mwlState.rx_mgmt, pPacket);
+						pPacket = NULL;
+						_mwlPushTask(MwlTask_RxMgmtCtrlFrame);
+					}
 				}
-				// XX: Handle other management frames in a separate task
 				break;
 			}
 
@@ -197,5 +203,40 @@ void _mwlRxEndTask(void)
 		if (!static_rx && pPacket) {
 			netbufFree(pPacket);
 		}
+	}
+}
+
+void _mwlRxMgmtCtrlTask(void)
+{
+	// Dequeue packet
+	NetBuf* pPacket = netbufQueueRemoveOne(&s_mwlState.rx_mgmt);
+	if (!pPacket) {
+		return; // Shouldn't happen
+	}
+
+	// Pop 802.11 header
+	MEOW_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
+	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
+
+	switch (dot11hdr->fc.subtype) {
+		default: {
+			dietPrint("[RX] MGMT type %u\n", dot11hdr->fc.subtype);
+			break;
+		}
+	}
+
+	// Free this packet and refire this task if there are more
+	netbufFree(pPacket);
+	if (s_mwlState.rx_mgmt.next) {
+		_mwlPushTask(MwlTask_RxMgmtCtrlFrame);
+	}
+}
+
+void _mwlRxQueueClear(void)
+{
+	NetBuf* pPacket;
+
+	while ((pPacket = netbufQueueRemoveOne(&s_mwlState.rx_mgmt))) {
+		netbufFree(pPacket);
 	}
 }

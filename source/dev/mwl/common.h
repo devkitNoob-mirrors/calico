@@ -71,11 +71,14 @@ typedef struct MwlState {
 
 	u16 rx_wrcsr;
 
+	NetBufListNode rx_mgmt;
+
 	u16 tx_size[3];
 	Mutex tx_mutex;
 	MwlTxQueue tx_queues[3];
 
 	TickTask timeout_task;
+	TickTask periodic_task;
 
 	u8 mlme_state;
 	MwlMlmeCallbacks mlme_cb;
@@ -108,10 +111,11 @@ void _mwlRfCmd(u32 cmd);
 void _mwlIrqHandler(void);
 MEOW_EXTERN32 void _mwlPushTaskImpl(u32 mask) __asm__("_mwlPushTask");
 MEOW_EXTERN32 MwlTask _mwlPopTask(void);
+void _mwlRxQueueClear(void);
 void _mwlTxQueueClear(unsigned qid);
 bool _mwlSetMlmeState(MwlMlmeState state);
 void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);
 void _mwlMlmeHandleJoin(WlanBeaconHdr* beaconHdr, WlanBssDesc* bssInfo, WlanBssExtra* bssExtra);
 
 // Utilities for crafting management frames
-NetBuf* _mwlMgmtMakeProbeRequest(const void* bssid, const char* ssid, unsigned ssid_len);
+NetBuf* _mwlMgmtMakeProbeReq(const void* bssid, const char* ssid, unsigned ssid_len);
