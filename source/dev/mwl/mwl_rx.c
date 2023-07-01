@@ -224,6 +224,13 @@ void _mwlRxMgmtCtrlTask(void)
 			break;
 		}
 
+		case WlanMgmtType_AssocResp: {
+			if (s_mwlState.mlme_state == MwlMlmeState_AssocBusy) {
+				_mwlMlmeHandleAssocResp(pPacket);
+			}
+			break;
+		}
+
 		case WlanMgmtType_Auth: {
 			if (s_mwlState.mlme_state == MwlMlmeState_AuthBusy) {
 				_mwlMlmeHandleAuth(pPacket);

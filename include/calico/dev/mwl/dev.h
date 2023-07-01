@@ -47,6 +47,7 @@ void mwlDevShutdown(void);
 
 void mwlDevStart(void);
 void mwlDevStop(void);
+void mwlDevGracefulStop(void);
 
 void mwlDevTx(unsigned qid, NetBuf* pPacket, MwlTxCallback cb, void* arg);
 

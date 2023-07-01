@@ -268,6 +268,79 @@ static void _mwlMlmeAuthDone(void)
 	}
 }
 
+static void _mwlMlmeAssocTimeout(TickTask* t)
+{
+	_mwlSetMlmeState(MwlMlmeState_AssocDone);
+}
+
+static void _mwlMlmeAssocSend(void)
+{
+	NetBuf* pPacket = _mwlMgmtMakeAssocReq(s_mwlState.bssid);
+	if (pPacket) {
+		mwlDevTx(1, pPacket, NULL, NULL);
+	}
+}
+
+void _mwlMlmeHandleAssocResp(NetBuf* pPacket)
+{
+	WlanAssocRespHdr* hdr = netbufPopHeaderType(pPacket, WlanAssocRespHdr);
+	if (!hdr) {
+		dietPrint("[MWL] Bad assoc resp packet\n");
+		return;
+	}
+
+	s_mwlState.mlme.assoc.status = hdr->status;
+	_mwlSetMlmeState(MwlMlmeState_AssocDone);
+}
+
+static void _mwlMlmeAssocDone(void)
+{
+	tickTaskStop(&s_mwlState.timeout_task);
+
+	unsigned status = s_mwlState.mlme.assoc.status;
+	_mwlSetMlmeState(MwlMlmeState_Idle);
+
+	if (status == 0) {
+		// Success! We are now associated
+		s_mwlState.status = MwlStatus_Class3;
+	}
+
+	// Invoke callback if needed
+	if (s_mwlState.mlme_cb.onAssocEnd) {
+		s_mwlState.mlme_cb.onAssocEnd(status);
+	}
+}
+
+static void _mwlMlmeDeauthTxCb(void* arg, MwlTxEvent evt, MwlDataTxHdr* hdr)
+{
+	if (evt == MwlTxEvent_Queued) {
+		return;
+	}
+
+	if (_mwlSetMlmeState(MwlMlmeState_OnStateLost)) {
+		s_mwlState.mlme.loss.reason = 36;
+		s_mwlState.mlme.loss.new_class = MwlStatus_Class1;
+	}
+}
+
+static void _mwlMlmeOnStateLost(void)
+{
+	unsigned reason = s_mwlState.mlme.loss.reason;
+	MwlStatus new_class = s_mwlState.mlme.loss.new_class;
+
+	s_mwlState.status = new_class;
+	_mwlSetMlmeState(MwlMlmeState_Idle);
+
+	_mwlRxQueueClear();
+	for (unsigned i = 0; i < 3; i ++) {
+		_mwlTxQueueClear(i);
+	}
+
+	if (s_mwlState.mlme_cb.onStateLost) {
+		s_mwlState.mlme_cb.onStateLost(new_class, reason);
+	}
+}
+
 void _mwlMlmeTask(void)
 {
 	MwlMlmeState state = s_mwlState.mlme_state;
@@ -280,6 +353,12 @@ void _mwlMlmeTask(void)
 		_mwlMlmeAuthSend();
 	} else if (state == MwlMlmeState_AuthDone) {
 		_mwlMlmeAuthDone();
+	} else if (state == MwlMlmeState_AssocBusy) {
+		_mwlMlmeAssocSend();
+	} else if (state == MwlMlmeState_AssocDone) {
+		_mwlMlmeAssocDone();
+	} else if (state == MwlMlmeState_OnStateLost) {
+		_mwlMlmeOnStateLost();
 	}
 }
 
@@ -389,4 +468,47 @@ bool mwlMlmeAuthenticate(unsigned timeout)
 	// Start authentication task with the specified timeout
 	tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeAuthTimeout, ticksFromUsec(timeout*1000), 0);
 	return _mwlSetMlmeState(MwlMlmeState_AuthBusy);
+}
+
+bool mwlMlmeAssociate(unsigned timeout)
+{
+	// Validate parameters/state
+	if (timeout < 100 ||
+		s_mwlState.mode < MwlMode_LocalGuest || s_mwlState.status != MwlStatus_Class2) {
+		return false;
+	}
+
+	// Ensure we can associate
+	if (!_mwlSetMlmeState(MwlMlmeState_Preparing)) {
+		return false;
+	}
+
+	// Set up state vars
+	s_mwlState.mlme.assoc.status = 1; // Unspecified failure
+
+	// Start association task with the specified timeout
+	tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeAssocTimeout, ticksFromUsec(timeout*1000), 0);
+	return _mwlSetMlmeState(MwlMlmeState_AssocBusy);
+}
+
+bool mwlMlmeDeauthenticate(void)
+{
+	// Validate state
+	if (s_mwlState.mode < MwlMode_LocalGuest || s_mwlState.status != MwlStatus_Class3) {
+		return false;
+	}
+
+	// Ensure we can deauthenticate
+	if (!_mwlSetMlmeState(MwlMlmeState_Preparing)) {
+		return false;
+	}
+
+	// Send deauthentication packet
+	NetBuf* pPacket = _mwlMgmtMakeDeauth(s_mwlState.bssid, 36);
+	if (pPacket) {
+		mwlDevTx(1, pPacket, _mwlMlmeDeauthTxCb, NULL);
+		return true;
+	}
+
+	return false;
 }

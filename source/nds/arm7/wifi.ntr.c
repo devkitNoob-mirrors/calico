@@ -83,7 +83,7 @@ static void _ntrwifiOnAuthEnd(unsigned status)
 
 	bool ok = status == 0;
 	if (ok) {
-		ok = true; // TODO: assoc
+		ok = mwlMlmeAssociate(2000);
 	}
 
 	if (!ok) {
@@ -91,6 +91,30 @@ static void _ntrwifiOnAuthEnd(unsigned status)
 		if (s_assocVars.cb) {
 			s_assocVars.cb(s_assocVars.user, false, 0);
 		}
+	}
+}
+
+static void _ntrwifiOnAssocEnd(unsigned status)
+{
+	dietPrint("[NTRWIFI] Assoc status = %u\n", status);
+
+	bool ok = status == 0;
+	if (!ok) {
+		mwlDevStop();
+	}
+
+	if (s_assocVars.cb) {
+		s_assocVars.cb(s_assocVars.user, ok, status);
+	}
+}
+
+static void _ntrwifiOnStateLost(MwlStatus new_class, unsigned reason)
+{
+	dietPrint("[NTRWIFI] %s reason = %u\n", new_class==MwlStatus_Class1 ? "Deauth" : "Disassoc", reason);
+	mwlDevStop();
+
+	if (s_assocVars.cb) {
+		s_assocVars.cb(s_assocVars.user, false, reason);
 	}
 }
 
@@ -125,6 +149,8 @@ bool ntrwifiInit(void)
 	cb->onScanEnd = _ntrwifiOnScanEnd;
 	cb->onJoinEnd = _ntrwifiOnJoinEnd;
 	cb->onAuthEnd = _ntrwifiOnAuthEnd;
+	cb->onAssocEnd = _ntrwifiOnAssocEnd;
+	cb->onStateLost = _ntrwifiOnStateLost;
 
 	// Copy wireless interface settings
 	MwlCalibData* calib = mwlGetCalibData();
@@ -137,7 +163,7 @@ bool ntrwifiInit(void)
 
 void ntrwifiExit(void)
 {
-	mwlDevStop();
+	mwlDevGracefulStop();
 	mwlDevShutdown();
 	pmPowerOff(POWCNT_WL_MITSUMI);
 	pmSetPowerLed(PmLedMode_Steady);
@@ -184,8 +210,13 @@ bool ntrwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, NtrWifiA
 
 bool ntrwifiDisassociate(void)
 {
-	// TODO
-	return false;
+	dietPrint("[NTRWIFI] Disassoc\n");
+
+	if (!mwlMlmeDeauthenticate()) {
+		mwlDevStop();
+	}
+
+	return true;
 }
 
 bool ntrwifiTx(NetBuf* pPacket)

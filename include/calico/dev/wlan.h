@@ -126,7 +126,7 @@ typedef struct WlanAssocReqHdr {
 
 typedef struct WlanAssocRespHdr {
 	u16 capabilities;
-	u16 interval;
+	u16 status;
 	u16 aid;
 	// Information elements follow: WlanIeHdr[]
 } WlanAssocRespHdr;

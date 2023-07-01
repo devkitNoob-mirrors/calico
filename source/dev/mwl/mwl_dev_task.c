@@ -189,6 +189,16 @@ void mwlDevStop(void)
 	MWL_REG(W_TXBUF_RESET) = 0xffff;
 }
 
+void mwlDevGracefulStop(void)
+{
+	s_mwlState.mlme_cb.onStateLost = (void*)mwlDevStop;
+	if (mwlMlmeDeauthenticate()) {
+		threadJoin(&s_mwlThread);
+	} else {
+		mwlDevStop();
+	}
+}
+
 void _mwlExitTask(void)
 {
 	// Stop ticktasks
