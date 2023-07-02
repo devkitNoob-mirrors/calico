@@ -13,7 +13,7 @@ static void _mwlTxWrite(const void* src, unsigned len)
 	}
 
 	if (len) {
-		MWL_REG(W_TXBUF_WR_DATA) = 0;
+		MWL_REG(W_TXBUF_WR_DATA) = *src16 & 0xff;
 	}
 }
 
