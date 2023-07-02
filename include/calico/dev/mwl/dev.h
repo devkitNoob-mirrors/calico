@@ -49,6 +49,9 @@ void mwlDevStart(void);
 void mwlDevStop(void);
 void mwlDevGracefulStop(void);
 
+bool mwlDevWlanToDix(NetBuf* pPacket);
+bool mwlDevDixToWlan(NetBuf* pPacket);
+
 void mwlDevTx(unsigned qid, NetBuf* pPacket, MwlTxCallback cb, void* arg);
 
 MEOW_EXTERN_C_END

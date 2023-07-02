@@ -13,6 +13,7 @@ void _mwlTxEndTask(void);
 void _mwlRxEndTask(void);
 void _mwlRxMgmtCtrlTask(void);
 void _mwlMlmeTask(void);
+void _mwlRxDataTask(void);
 
 static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count] = {
 	[MwlTask_ExitThread]      = _mwlExitTask,
@@ -20,6 +21,7 @@ static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count] = {
 	[MwlTask_RxEnd]           = _mwlRxEndTask,
 	[MwlTask_RxMgmtCtrlFrame] = _mwlRxMgmtCtrlTask,
 	[MwlTask_MlmeProcess]     = _mwlMlmeTask,
+	[MwlTask_RxDataFrame]     = _mwlRxDataTask,
 };
 
 static int _mwlTaskHandler(void* arg)

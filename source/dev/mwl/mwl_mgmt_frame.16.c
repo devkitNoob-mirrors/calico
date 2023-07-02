@@ -146,11 +146,11 @@ NetBuf* _mwlMgmtMakeAssocReq(const void* target)
 	__builtin_memcpy(_mwlMgmtAddIe(&wrpos, WlanEid_SSID, s_mwlState.ssid_len), s_mwlState.ssid, s_mwlState.ssid_len);
 
 	// Add supported rates element (see MakeProbeReq for explanation)
-	u8* rates = (u8*)_mwlMgmtAddIe(&wrpos, WlanEid_SupportedRates, 4);
-	rates[0] = 2  | 0x80;
-	rates[1] = 4  | 0x80;
-	rates[2] = 11 | 0x80;
-	rates[3] = 22 | 0x80;
+	// XX: Apparently, listing the CCK rates up front results in the DS
+	// not receiving packets. Let's simply be honest and tell the truth.
+	u8* rates = (u8*)_mwlMgmtAddIe(&wrpos, WlanEid_SupportedRates, 2);
+	rates[0] = 2 | 0x80;
+	rates[1] = 4 | 0x80;
 
 	return _mwlMgmtFinalize(pPacket, wrpos);
 }

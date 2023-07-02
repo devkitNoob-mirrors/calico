@@ -118,6 +118,24 @@ static void _ntrwifiOnStateLost(MwlStatus new_class, unsigned reason)
 	}
 }
 
+MEOW_WEAK void _netbufRx(NetBuf* pPacket, int rssi)
+{
+	netbufFree(pPacket);
+}
+
+static void _ntrwifiRx(NetBuf* pPacket, unsigned rssi)
+{
+	// Convert 802.11+LLC+SNAP packet to DIX (Ethernet)
+	if (!mwlDevWlanToDix(pPacket)) {
+		dietPrint("[NTRWIFI] RX bad format\n");
+		netbufFree(pPacket);
+		return;
+	}
+
+	// Forward packet to RX handler
+	_netbufRx(pPacket, rssi);
+}
+
 bool ntrwifiInit(void)
 {
 	// Ensure Mitsumi calibration data is loaded
@@ -151,6 +169,7 @@ bool ntrwifiInit(void)
 	cb->onAuthEnd = _ntrwifiOnAuthEnd;
 	cb->onAssocEnd = _ntrwifiOnAssocEnd;
 	cb->onStateLost = _ntrwifiOnStateLost;
+	cb->maData = _ntrwifiRx;
 
 	// Copy wireless interface settings
 	MwlCalibData* calib = mwlGetCalibData();
@@ -221,7 +240,14 @@ bool ntrwifiDisassociate(void)
 
 bool ntrwifiTx(NetBuf* pPacket)
 {
-	// TODO
-	netbufFree(pPacket);
+	// Convert DIX (Ethernet) packet into 802.11 + LLC + SNAP
+	if (!mwlDevDixToWlan(pPacket)) {
+		dietPrint("[NTRWIFI] TX bad format\n");
+		netbufFree(pPacket);
+		return false;
+	}
+
+	// Send packet!
+	mwlDevTx(0, pPacket, NULL, 0);
 	return true;
 }

@@ -10,6 +10,8 @@ typedef struct MwlMlmeCallbacks {
 	void (* onAuthEnd)(unsigned status);
 	void (* onAssocEnd)(unsigned status);
 	void (* onStateLost)(MwlStatus new_class, unsigned reason);
+
+	void (* maData)(NetBuf* pPacket, unsigned rssi);
 } MwlMlmeCallbacks;
 
 MwlMlmeCallbacks* mwlMlmeGetCallbacks(void);

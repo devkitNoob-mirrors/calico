@@ -197,6 +197,17 @@ void _mwlRxEndTask(void)
 				}
 				break;
 			}
+
+			case MwlRxType_IeeeData: {
+				if (dot11hdr->fc.type == WlanFrameType_Data && !(dot11hdr->fc.subtype & WLAN_DATA_IS_NULL) && s_mwlState.status == MwlStatus_Class3) {
+					// Handle data frames in a separate task
+					pPacket->reserved[0] = rxhdr.rssi&0xff;
+					netbufQueueAppend(&s_mwlState.rx_data, pPacket);
+					pPacket = NULL;
+					_mwlPushTask(MwlTask_RxDataFrame);
+				}
+				break;
+			}
 		}
 
 		// Free packet if necessary
@@ -246,11 +257,36 @@ void _mwlRxMgmtCtrlTask(void)
 	}
 }
 
+void _mwlRxDataTask(void)
+{
+	// Dequeue packet
+	NetBuf* pPacket = netbufQueueRemoveOne(&s_mwlState.rx_data);
+	if (!pPacket) {
+		return; // Shouldn't happen
+	}
+
+	// Forward to callback
+	if (s_mwlState.mlme_cb.maData) {
+		s_mwlState.mlme_cb.maData(pPacket, pPacket->reserved[0]);
+	} else {
+		netbufFree(pPacket);
+	}
+
+	// Refire this task if there are more
+	if (s_mwlState.rx_data.next) {
+		_mwlPushTask(MwlTask_RxDataFrame);
+	}
+}
+
 void _mwlRxQueueClear(void)
 {
 	NetBuf* pPacket;
 
 	while ((pPacket = netbufQueueRemoveOne(&s_mwlState.rx_mgmt))) {
+		netbufFree(pPacket);
+	}
+
+	while ((pPacket = netbufQueueRemoveOne(&s_mwlState.rx_data))) {
 		netbufFree(pPacket);
 	}
 }

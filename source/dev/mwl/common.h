@@ -83,6 +83,7 @@ typedef struct MwlState {
 	u16 rx_wrcsr;
 
 	NetBufListNode rx_mgmt;
+	NetBufListNode rx_data;
 
 	u16 tx_size[3];
 	Mutex tx_mutex;
