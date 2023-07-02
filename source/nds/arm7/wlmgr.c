@@ -324,8 +324,6 @@ void _wlmgrTxProcess(void)
 				ntrwifiTx(pPacket);
 			}
 		}
-
-		netbufFree(pPacket);
 	}
 }
 

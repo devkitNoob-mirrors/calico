@@ -223,7 +223,6 @@ static NetBuf* _twlwifiWpaAllocPacket(WpaState* st, size_t len)
 static void _twlwifiWpaTx(WpaState* st, NetBuf* pPacket)
 {
 	twlwifiTx(pPacket);
-	netbufFree(pPacket);
 }
 
 static void _twlwifiWpaInstallKey(WpaState* st, bool is_group, unsigned slot, unsigned len)
@@ -655,5 +654,7 @@ bool twlwifiDisassociate(void)
 
 bool twlwifiTx(NetBuf* pPacket)
 {
-	return ar6kWmiTx(&s_ar6kDev, pPacket);
+	bool rc = ar6kWmiTx(&s_ar6kDev, pPacket);
+	netbufFree(pPacket);
+	return rc;
 }
