@@ -26,6 +26,7 @@ static struct {
 	NtrWifiAssocFn cb;
 	void* user;
 	bool retry_auth;
+	bool fake_cck_rates;
 } s_assocVars;
 
 static void _ntrwifiOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi)
@@ -83,7 +84,7 @@ static void _ntrwifiOnAuthEnd(unsigned status)
 
 	bool ok = status == 0;
 	if (ok) {
-		ok = mwlMlmeAssociate(2000);
+		ok = mwlMlmeAssociate(2000, s_assocVars.fake_cck_rates);
 	}
 
 	if (!ok) {
@@ -99,6 +100,24 @@ static void _ntrwifiOnAssocEnd(unsigned status)
 	dietPrint("[NTRWIFI] Assoc status = %u\n", status);
 
 	bool ok = status == 0;
+
+	// XX: Routers are touchy about the DS's 802.11b non-compliance.
+	// Some routers reject association requests with status code = 18
+	// (i.e. "you do not support all rates in the BSSBasicRateSet")
+	// if CCK rates are not listed as supported, while other routers
+	// will always select CCK (resulting in the DS not receiving packets)
+	// if you list them up front (as required by the former set of routers).
+	// In order to maximize compatibility, we first try to associate
+	// using an honest list of rates, and if that fails we try faking
+	// support for CCK rates.
+	if (status == 18 && !s_assocVars.fake_cck_rates) {
+		s_assocVars.retry_auth = true;
+		s_assocVars.fake_cck_rates = true;
+		if (mwlMlmeAuthenticate(1000)) {
+			return;
+		}
+	}
+
 	if (!ok) {
 		mwlDevStop();
 	}
@@ -222,6 +241,7 @@ bool ntrwifiAssociate(WlanBssDesc const* bss, WlanAuthData const* auth, NtrWifiA
 	s_assocVars.cb = cb;
 	s_assocVars.user = user;
 	s_assocVars.retry_auth = true;
+	s_assocVars.fake_cck_rates = false;
 
 	mwlDevSetAuth(bss->auth_type, auth);
 	return mwlMlmeJoin(bss, 2000);

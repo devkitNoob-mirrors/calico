@@ -110,6 +110,7 @@ typedef struct MwlState {
 
 		struct {
 			u16 status;
+			bool fake_cck_rates;
 		} assoc;
 
 		struct {
@@ -149,5 +150,5 @@ void _mwlMlmeHandleAssocResp(NetBuf* pPacket);
 // Utilities for crafting management frames
 NetBuf* _mwlMgmtMakeProbeReq(const void* bssid, const char* ssid, unsigned ssid_len);
 NetBuf* _mwlMgmtMakeAuth(const void* target, WlanAuthHdr const* auth_hdr, const void* chal_text, unsigned chal_len);
-NetBuf* _mwlMgmtMakeAssocReq(const void* target);
+NetBuf* _mwlMgmtMakeAssocReq(const void* target, bool fake_cck_rates);
 NetBuf* _mwlMgmtMakeDeauth(const void* target, unsigned reason);

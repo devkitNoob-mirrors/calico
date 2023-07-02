@@ -275,7 +275,7 @@ static void _mwlMlmeAssocTimeout(TickTask* t)
 
 static void _mwlMlmeAssocSend(void)
 {
-	NetBuf* pPacket = _mwlMgmtMakeAssocReq(s_mwlState.bssid);
+	NetBuf* pPacket = _mwlMgmtMakeAssocReq(s_mwlState.bssid, s_mwlState.mlme.assoc.fake_cck_rates);
 	if (pPacket) {
 		mwlDevTx(1, pPacket, NULL, NULL);
 	}
@@ -303,6 +303,9 @@ static void _mwlMlmeAssocDone(void)
 	if (status == 0) {
 		// Success! We are now associated
 		s_mwlState.status = MwlStatus_Class3;
+	} else {
+		// Association failure means losing authentication
+		s_mwlState.status = MwlStatus_Class1;
 	}
 
 	// Invoke callback if needed
@@ -470,7 +473,7 @@ bool mwlMlmeAuthenticate(unsigned timeout)
 	return _mwlSetMlmeState(MwlMlmeState_AuthBusy);
 }
 
-bool mwlMlmeAssociate(unsigned timeout)
+bool mwlMlmeAssociate(unsigned timeout, bool fake_cck_rates)
 {
 	// Validate parameters/state
 	if (timeout < 100 ||
@@ -485,6 +488,7 @@ bool mwlMlmeAssociate(unsigned timeout)
 
 	// Set up state vars
 	s_mwlState.mlme.assoc.status = 1; // Unspecified failure
+	s_mwlState.mlme.assoc.fake_cck_rates = fake_cck_rates;
 
 	// Start association task with the specified timeout
 	tickTaskStart(&s_mwlState.timeout_task, _mwlMlmeAssocTimeout, ticksFromUsec(timeout*1000), 0);

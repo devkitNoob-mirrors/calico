@@ -18,7 +18,7 @@ MwlMlmeCallbacks* mwlMlmeGetCallbacks(void);
 bool mwlMlmeScan(WlanBssScanFilter const* filter, unsigned ch_dwell_time);
 bool mwlMlmeJoin(WlanBssDesc const* bssInfo, unsigned timeout);
 bool mwlMlmeAuthenticate(unsigned timeout);
-bool mwlMlmeAssociate(unsigned timeout);
+bool mwlMlmeAssociate(unsigned timeout, bool fake_cck_rates);
 bool mwlMlmeDeauthenticate(void);
 
 MEOW_EXTERN_C_END

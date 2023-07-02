@@ -115,7 +115,7 @@ NetBuf* _mwlMgmtMakeAuth(const void* target, WlanAuthHdr const* auth_hdr, const 
 	return _mwlMgmtFinalize(pPacket, wrpos);
 }
 
-NetBuf* _mwlMgmtMakeAssocReq(const void* target)
+NetBuf* _mwlMgmtMakeAssocReq(const void* target, bool fake_cck_rates)
 {
 	void* wrpos;
 	NetBuf* pPacket = _mwlMgmtAllocPacket();
@@ -145,12 +145,15 @@ NetBuf* _mwlMgmtMakeAssocReq(const void* target)
 	// Add SSID element
 	__builtin_memcpy(_mwlMgmtAddIe(&wrpos, WlanEid_SSID, s_mwlState.ssid_len), s_mwlState.ssid, s_mwlState.ssid_len);
 
-	// Add supported rates element (see MakeProbeReq for explanation)
-	// XX: Apparently, listing the CCK rates up front results in the DS
-	// not receiving packets. Let's simply be honest and tell the truth.
-	u8* rates = (u8*)_mwlMgmtAddIe(&wrpos, WlanEid_SupportedRates, 2);
+	// Add supported rates element (see MakeProbeReq for explanation),
+	// optionally including not-really-supported CCK rates
+	u8* rates = (u8*)_mwlMgmtAddIe(&wrpos, WlanEid_SupportedRates, fake_cck_rates ? 4 : 2);
 	rates[0] = 2 | 0x80;
 	rates[1] = 4 | 0x80;
+	if (fake_cck_rates) {
+		rates[2] = 11;
+		rates[3] = 22;
+	}
 
 	return _mwlMgmtFinalize(pPacket, wrpos);
 }
