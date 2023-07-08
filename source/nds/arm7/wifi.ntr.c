@@ -7,7 +7,7 @@
 #include <calico/nds/arm7/ntrwifi.h>
 #include <string.h>
 
-#define NTRWIFI_DEBUG
+//#define NTRWIFI_DEBUG
 
 #ifdef NTRWIFI_DEBUG
 #include <calico/system/dietprint.h>

@@ -4,7 +4,7 @@
 #include <calico/system/tick.h>
 #include <calico/dev/mwl.h>
 
-#define MWL_DEBUG
+//#define MWL_DEBUG
 
 #ifdef MWL_DEBUG
 #include <calico/system/dietprint.h>
