@@ -11,6 +11,7 @@ typedef void (*MwlTaskHandler)(void);
 static void _mwlExitTask(void);
 void _mwlTxEndTask(void);
 void _mwlRxEndTask(void);
+void _mwlMlmeBeaconLostTask(void);
 void _mwlRxMgmtCtrlTask(void);
 void _mwlMlmeTask(void);
 void _mwlRxDataTask(void);
@@ -19,6 +20,7 @@ static const MwlTaskHandler s_mwlTaskHandlers[MwlTask__Count] = {
 	[MwlTask_ExitThread]      = _mwlExitTask,
 	[MwlTask_TxEnd]           = _mwlTxEndTask,
 	[MwlTask_RxEnd]           = _mwlRxEndTask,
+	[MwlTask_BeaconLost]      = _mwlMlmeBeaconLostTask,
 	[MwlTask_RxMgmtCtrlFrame] = _mwlRxMgmtCtrlTask,
 	[MwlTask_MlmeProcess]     = _mwlMlmeTask,
 	[MwlTask_RxDataFrame]     = _mwlRxDataTask,
@@ -215,6 +217,8 @@ void _mwlExitTask(void)
 	s_mwlState.status = MwlStatus_Idle;
 	s_mwlState.has_beacon_sync = 0;
 	s_mwlState.is_power_save = 0;
+	s_mwlState.beacon_loss_cnt = 0;
+	s_mwlState.beacon_loss_thr = 0;
 	s_mwlState.mlme_state = MwlMlmeState_Idle;
 
 	_mwlRxQueueClear();

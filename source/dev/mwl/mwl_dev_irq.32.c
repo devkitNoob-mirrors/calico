@@ -44,6 +44,25 @@ MwlTask _mwlPopTask(void)
 
 //-----------------------------------------------------------------------------
 
+static void _mwlIrqPreTbtt(void)
+{
+	// Below only applies if we are associated and have configured a threshold
+	if (s_mwlState.status != MwlStatus_Class3 || !s_mwlState.beacon_loss_thr) {
+		return;
+	}
+
+	// Increment the beacon loss counter, raising an error if it exceeds the threshold.
+	// Note that it is set back to 0 if we subsequently receive a beacon.
+	// XX: This is only supposed to be done during the listen interval.
+	// For now (as we don't support powersave mode) do it always.
+	if (++s_mwlState.beacon_loss_cnt > s_mwlState.beacon_loss_thr) {
+		s_mwlState.has_beacon_sync = 0;
+		s_mwlState.beacon_loss_cnt = 0;
+		s_mwlState.beacon_loss_thr = 0;
+		_mwlPushTask(MwlTask_BeaconLost);
+	}
+}
+
 static void _mwlIrqTbttGuest(void)
 {
 	MWL_REG(W_POWER_TX) |= 1;
@@ -83,8 +102,7 @@ void _mwlIrqHandler(void)
 		}
 
 		if (cur_irq & W_IRQ_PRE_TBTT) {
-			// XX: This is used to increment the beacon lost counter when associated,
-			// and issue an error notif it it crosses a given threshold (i.e. link lost).
+			_mwlIrqPreTbtt();
 		}
 
 		if (cur_irq & W_IRQ_TBTT) {

@@ -3,7 +3,7 @@
 
 #define MWL_MLME_SCAN_SPACING 5
 
-bool _mwlSetMlmeState(MwlMlmeState state)
+static bool _mwlSetMlmeState(MwlMlmeState state)
 {
 	IrqState st = irqLock();
 	MwlMlmeState cur = s_mwlState.mlme_state;
@@ -146,6 +146,7 @@ void _mwlMlmeHandleJoin(WlanBeaconHdr* beaconHdr, WlanBssDesc* bssInfo, WlanBssE
 
 	// Successful join!
 	s_mwlState.has_beacon_sync = 1;
+	s_mwlState.beacon_loss_thr = 16;
 	_mwlSetMlmeState(MwlMlmeState_JoinDone);
 }
 
@@ -322,6 +323,32 @@ static void _mwlMlmeDeauthTxCb(void* arg, MwlTxEvent evt, MwlDataTxHdr* hdr)
 
 	if (_mwlSetMlmeState(MwlMlmeState_OnStateLost)) {
 		s_mwlState.mlme.loss.reason = 36;
+		s_mwlState.mlme.loss.new_class = MwlStatus_Class1;
+	}
+}
+
+void _mwlMlmeHandleStateLoss(NetBuf* pPacket, WlanMgmtType type)
+{
+	u16* pReason = (u16*)netbufPopHeaderType(pPacket, u16);
+	if (!pReason) {
+		return;
+	}
+
+	dietPrint("[MWL] IEEE=%u reason=%u\n", type, *pReason);
+
+	if (_mwlSetMlmeState(MwlMlmeState_OnStateLost)) {
+		s_mwlState.mlme.loss.reason = *pReason;
+		s_mwlState.mlme.loss.new_class = type == WlanMgmtType_Disassoc ? MwlStatus_Class2 : MwlStatus_Class1;
+	}
+}
+
+void _mwlMlmeBeaconLostTask(void)
+{
+	dietPrint("[MWL] Beacon lost\n");
+
+	if (_mwlSetMlmeState(MwlMlmeState_OnStateLost)) {
+		s_mwlState.has_beacon_sync = 0;
+		s_mwlState.mlme.loss.reason = 1;
 		s_mwlState.mlme.loss.new_class = MwlStatus_Class1;
 	}
 }

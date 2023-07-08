@@ -20,6 +20,7 @@ typedef enum MwlTask {
 	MwlTask_RxEnd,
 
 	// Medium priority tasks
+	MwlTask_BeaconLost,
 	MwlTask_RxMgmtCtrlFrame,
 
 	// Other tasks
@@ -92,6 +93,9 @@ typedef struct MwlState {
 	TickTask timeout_task;
 	TickTask periodic_task;
 
+	u16 beacon_loss_cnt;
+	u16 beacon_loss_thr;
+
 	u8 mlme_state;
 	MwlMlmeCallbacks mlme_cb;
 	union {
@@ -140,12 +144,12 @@ MEOW_EXTERN32 void _mwlPushTaskImpl(u32 mask) __asm__("_mwlPushTask");
 MEOW_EXTERN32 MwlTask _mwlPopTask(void);
 void _mwlRxQueueClear(void);
 void _mwlTxQueueClear(unsigned qid);
-bool _mwlSetMlmeState(MwlMlmeState state);
 void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);
 void _mwlMlmeHandleJoin(WlanBeaconHdr* beaconHdr, WlanBssDesc* bssInfo, WlanBssExtra* bssExtra);
 void _mwlMlmeHandleAuth(NetBuf* pPacket);
 void _mwlMlmeAuthFreeReply(void);
 void _mwlMlmeHandleAssocResp(NetBuf* pPacket);
+void _mwlMlmeHandleStateLoss(NetBuf* pPacket, WlanMgmtType type);
 
 // Utilities for crafting management frames
 NetBuf* _mwlMgmtMakeProbeReq(const void* bssid, const char* ssid, unsigned ssid_len);

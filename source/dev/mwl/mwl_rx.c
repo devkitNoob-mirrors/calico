@@ -69,6 +69,9 @@ MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr
 		return;
 	}
 
+	// Clear beacon loss counter for obvious reasons
+	s_mwlState.beacon_loss_cnt = 0;
+
 	// Calculate timestamp of next TBTT (target beacon transmission time).
 	// Note: as per 802.11 spec, this formula accounts for beacons delayed due to
 	// medium contention - next beacon is expected to be received at the usual time.
@@ -242,9 +245,23 @@ void _mwlRxMgmtCtrlTask(void)
 			break;
 		}
 
+		case WlanMgmtType_Disassoc: {
+			if (s_mwlState.status >= MwlStatus_Class3) {
+				_mwlMlmeHandleStateLoss(pPacket, dot11hdr->fc.subtype);
+			}
+			break;
+		}
+
 		case WlanMgmtType_Auth: {
 			if (s_mwlState.mlme_state == MwlMlmeState_AuthBusy) {
 				_mwlMlmeHandleAuth(pPacket);
+			}
+			break;
+		}
+
+		case WlanMgmtType_Deauth: {
+			if (s_mwlState.status >= MwlStatus_Class2) {
+				_mwlMlmeHandleStateLoss(pPacket, dot11hdr->fc.subtype);
 			}
 			break;
 		}
