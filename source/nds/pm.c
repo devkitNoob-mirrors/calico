@@ -155,7 +155,7 @@ MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToNextA
 	armCompilerBarrier();
 
 	// Copy new ARM7 binary to WRAM if needed
-	if (g_envAppNdsHeader->arm7_ram_address >= MM_A7WRAM) {
+	if (g_envAppNdsHeader->arm7_ram_address >= MM_A7WRAM && g_envAppNdsHeader->arm7_ram_address < MM_IO) {
 		vu32* dst = (vu32*)g_envAppNdsHeader->arm7_ram_address; // volatile to avoid memcpy optimization
 		u32* src = (u32*)(MM_MAINRAM + MM_MAINRAM_SZ_NTR - 512*1024);
 		u32 count = (g_envAppNdsHeader->arm7_size + 3) / 4;
