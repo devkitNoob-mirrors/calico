@@ -13,7 +13,7 @@ static struct {
 static Thread s_micThread;
 alignas(8) static u8 s_micThreadStack[0x2000];
 
-MEOW_INLINE bool _micIssueCmd(PxiMicCmd cmd, unsigned imm)
+MK_INLINE bool _micIssueCmd(PxiMicCmd cmd, unsigned imm)
 {
 	u32 msg = pxiMicMakeCmdMsg(cmd, imm);
 	return pxiSendAndReceive(PxiChannel_Mic, msg) != 0;

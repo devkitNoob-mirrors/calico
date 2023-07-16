@@ -5,7 +5,7 @@
 
 #include "../../types.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum DebugBufferMode {
 	DbgBufMode_None = 0,
@@ -13,7 +13,7 @@ typedef enum DebugBufferMode {
 	DbgBufMode_Full = 2,
 } DebugBufferMode;
 
-MEOW_INLINE void debugSetBufferMode(DebugBufferMode mode) {
+MK_INLINE void debugSetBufferMode(DebugBufferMode mode) {
 	extern DebugBufferMode g_dbgBufMode;
 	g_dbgBufMode = mode;
 }
@@ -21,4 +21,4 @@ MEOW_INLINE void debugSetBufferMode(DebugBufferMode mode) {
 void debugSetupStreams(void);
 void debugOutput(const char* buf, size_t size);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

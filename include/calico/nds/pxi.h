@@ -6,10 +6,10 @@
 #include "../types.h"
 #include "io.h"
 
-#define REG_PXI_SYNC MEOW_REG(u16, IO_PXI_SYNC)
-#define REG_PXI_CNT  MEOW_REG(u32, IO_PXI_CNT)
-#define REG_PXI_SEND MEOW_REG(u32, IO_PXI_SEND)
-#define REG_PXI_RECV MEOW_REG(u32, IO_PXI_RECV)
+#define REG_PXI_SYNC MK_REG(u16, IO_PXI_SYNC)
+#define REG_PXI_CNT  MK_REG(u32, IO_PXI_CNT)
+#define REG_PXI_SEND MK_REG(u32, IO_PXI_SEND)
+#define REG_PXI_RECV MK_REG(u32, IO_PXI_RECV)
 
 #define PXI_SYNC_RECV(_n)   ((_n) & 0xF)
 #define PXI_SYNC_SEND(_n)   (((_n) & 0xF) << 8)
@@ -44,7 +44,7 @@
 //   11-15  Number of extra words minus 1
 //   16-31  Immediate (16-bit)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum PxiChannel {
 	PxiChannel_System   = 0,  // Grab bag of system management functions
@@ -75,47 +75,47 @@ typedef enum PxiChannel {
 	PxiChannel_Count = PxiChannel_Extended,
 } PxiChannel;
 
-MEOW_CONSTEXPR u32 pxiMakePacket(PxiChannel ch, bool dir, u32 imm)
+MK_CONSTEXPR u32 pxiMakePacket(PxiChannel ch, bool dir, u32 imm)
 {
 	return (ch & 0x1f) | ((unsigned)dir << 5) | (imm << 6);
 }
 
-MEOW_CONSTEXPR PxiChannel pxiPacketGetChannel(u32 packet)
+MK_CONSTEXPR PxiChannel pxiPacketGetChannel(u32 packet)
 {
 	return (PxiChannel)(packet & 0x1f);
 }
 
-MEOW_CONSTEXPR bool pxiPacketIsResponse(u32 packet)
+MK_CONSTEXPR bool pxiPacketIsResponse(u32 packet)
 {
 	return (packet >> 5) & 1;
 }
 
-MEOW_CONSTEXPR bool pxiPacketIsRequest(u32 packet)
+MK_CONSTEXPR bool pxiPacketIsRequest(u32 packet)
 {
 	return !pxiPacketIsResponse(packet);
 }
 
-MEOW_CONSTEXPR u32 pxiPacketGetImmediate(u32 packet)
+MK_CONSTEXPR u32 pxiPacketGetImmediate(u32 packet)
 {
 	return packet >> 6;
 }
 
-MEOW_CONSTEXPR u32 pxiMakeExtPacket(PxiChannel ch, bool dir, unsigned num_words, u16 imm)
+MK_CONSTEXPR u32 pxiMakeExtPacket(PxiChannel ch, bool dir, unsigned num_words, u16 imm)
 {
 	return PxiChannel_Extended | ((unsigned)dir << 5) | ((ch & 0x1f) << 6) | (((num_words - 1) & 0x1f) << 11) | (imm << 16);
 }
 
-MEOW_CONSTEXPR PxiChannel pxiExtPacketGetChannel(u32 packet)
+MK_CONSTEXPR PxiChannel pxiExtPacketGetChannel(u32 packet)
 {
 	return (PxiChannel)((packet >> 6) & 0x1f);
 }
 
-MEOW_CONSTEXPR unsigned pxiExtPacketGetNumWords(u32 packet)
+MK_CONSTEXPR unsigned pxiExtPacketGetNumWords(u32 packet)
 {
 	return ((packet >> 11) & 0x1f) + 1;
 }
 
-MEOW_CONSTEXPR u16 pxiExtPacketGetImmediate(u32 packet)
+MK_CONSTEXPR u16 pxiExtPacketGetImmediate(u32 packet)
 {
 	return packet >> 16;
 }
@@ -123,7 +123,7 @@ MEOW_CONSTEXPR u16 pxiExtPacketGetImmediate(u32 packet)
 typedef void (* PxiHandlerFn)(void* user, u32 data);
 struct Mailbox; // forward declare
 
-MEOW_INLINE void pxiPing(void)
+MK_INLINE void pxiPing(void)
 {
 	REG_PXI_SYNC |= PXI_SYNC_IRQ_SEND;
 }
@@ -141,33 +141,33 @@ void pxiSendExtPacket(u32 packet, const u32* data);
 void pxiBeginReceive(PxiChannel ch);
 u32 pxiEndReceive(PxiChannel ch);
 
-MEOW_INLINE void pxiSend(PxiChannel ch, u32 imm)
+MK_INLINE void pxiSend(PxiChannel ch, u32 imm)
 {
 	pxiSendPacket(pxiMakePacket(ch, false, imm));
 }
 
-MEOW_INLINE void pxiSendWithData(PxiChannel ch, u16 imm, const u32* data, u32 num_words)
+MK_INLINE void pxiSendWithData(PxiChannel ch, u16 imm, const u32* data, u32 num_words)
 {
 	pxiSendExtPacket(pxiMakeExtPacket(ch, false, num_words, imm), data);
 }
 
-MEOW_INLINE void pxiReply(PxiChannel ch, u32 imm)
+MK_INLINE void pxiReply(PxiChannel ch, u32 imm)
 {
 	pxiSendPacket(pxiMakePacket(ch, true, imm));
 }
 
-MEOW_INLINE u32 pxiSendAndReceive(PxiChannel ch, u32 imm)
+MK_INLINE u32 pxiSendAndReceive(PxiChannel ch, u32 imm)
 {
 	pxiBeginReceive(ch);
 	pxiSend(ch, imm);
 	return pxiEndReceive(ch);
 }
 
-MEOW_INLINE u32 pxiSendWithDataAndReceive(PxiChannel ch, u32 imm, const u32* data, u32 num_words)
+MK_INLINE u32 pxiSendWithDataAndReceive(PxiChannel ch, u32 imm, const u32* data, u32 num_words)
 {
 	pxiBeginReceive(ch);
 	pxiSendWithData(ch, imm, data, num_words);
 	return pxiEndReceive(ch);
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

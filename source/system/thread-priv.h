@@ -12,12 +12,12 @@ extern ThrSchedState __sched_state;
 #define s_firstThread __sched_state.first
 #define s_irqWaitMask __sched_state.irqWaitMask
 #define s_irqWaitList __sched_state.irqWaitList
-#if MEOW_IRQ_NUM_HANDLERS > 32
+#if MK_IRQ_NUM_HANDLERS > 32
 #define s_irqWaitMask2 __sched_state.irqWaitMask2
 #define s_irqWaitList2 __sched_state.irqWaitList2
 #endif
 
-MEOW_INLINE Thread* threadGetInsertPosition(Thread* t)
+MK_INLINE Thread* threadGetInsertPosition(Thread* t)
 {
 	Thread* pos = NULL;
 	for (Thread* cur = s_firstThread; cur && cur->prio <= t->prio; cur = cur->next)
@@ -25,7 +25,7 @@ MEOW_INLINE Thread* threadGetInsertPosition(Thread* t)
 	return pos;
 }
 
-MEOW_INLINE Thread* threadGetPrevious(Thread* t)
+MK_INLINE Thread* threadGetPrevious(Thread* t)
 {
 	Thread* pos = NULL;
 	for (Thread* cur = s_firstThread; cur && cur != t; cur = cur->next)
@@ -33,7 +33,7 @@ MEOW_INLINE Thread* threadGetPrevious(Thread* t)
 	return pos;
 }
 
-MEOW_INLINE void threadEnqueue(Thread* t)
+MK_INLINE void threadEnqueue(Thread* t)
 {
 	Thread* pos = threadGetInsertPosition(t);
 	if (pos) {
@@ -45,7 +45,7 @@ MEOW_INLINE void threadEnqueue(Thread* t)
 	}
 }
 
-MEOW_INLINE void threadDequeue(Thread* t)
+MK_INLINE void threadDequeue(Thread* t)
 {
 	Thread* prev = threadGetPrevious(t);
 	if (prev)
@@ -54,14 +54,14 @@ MEOW_INLINE void threadDequeue(Thread* t)
 		s_firstThread = t->next;
 }
 
-MEOW_INLINE Thread* threadFindRunnable(Thread* first)
+MK_INLINE Thread* threadFindRunnable(Thread* first)
 {
 	Thread* t;
 	for (t = first; t && !threadIsRunning(t); t = t->next);
 	return t;
 }
 
-MEOW_INLINE void threadSwitchTo(Thread* t, ArmIrqState st)
+MK_INLINE void threadSwitchTo(Thread* t, ArmIrqState st)
 {
 	if (!armContextSave(&__sched_state.cur->ctx, st, 1)) {
 		s_curThread = t;
@@ -69,14 +69,14 @@ MEOW_INLINE void threadSwitchTo(Thread* t, ArmIrqState st)
 	}
 }
 
-MEOW_INLINE Thread* threadLinkGetInsertPosition(ThrListNode* queue, Thread* t)
+MK_INLINE Thread* threadLinkGetInsertPosition(ThrListNode* queue, Thread* t)
 {
 	Thread* pos;
 	for (pos = queue->next; pos && pos->prio <= t->prio; pos = pos->link.next);
 	return pos ? pos->link.prev : queue->prev;
 }
 
-MEOW_INLINE void threadLinkEnqueue(ThrListNode* queue, Thread* t)
+MK_INLINE void threadLinkEnqueue(ThrListNode* queue, Thread* t)
 {
 	Thread* pos = threadLinkGetInsertPosition(queue, t);
 	if (pos) {
@@ -95,7 +95,7 @@ MEOW_INLINE void threadLinkEnqueue(ThrListNode* queue, Thread* t)
 	t->queue = queue;
 }
 
-MEOW_INLINE void threadLinkDequeue(ThrListNode* queue, Thread* t)
+MK_INLINE void threadLinkDequeue(ThrListNode* queue, Thread* t)
 {
 	if (t->queue != queue)
 		return;
@@ -104,7 +104,7 @@ MEOW_INLINE void threadLinkDequeue(ThrListNode* queue, Thread* t)
 	(t->link.next ? &t->link.next->link : queue)->prev = t->link.prev;
 }
 
-MEOW_INLINE bool threadTestUnblock(Thread* t, ThrUnblockMode mode, u32 ref)
+MK_INLINE bool threadTestUnblock(Thread* t, ThrUnblockMode mode, u32 ref)
 {
 	switch (mode) {
 		default:
@@ -117,4 +117,4 @@ MEOW_INLINE bool threadTestUnblock(Thread* t, ThrUnblockMode mode, u32 ref)
 	}
 }
 
-//MEOW_EXTERN32 void _threadReschedule(Thread* t, ArmIrqState st);
+//MK_EXTERN32 void _threadReschedule(Thread* t, ArmIrqState st);

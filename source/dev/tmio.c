@@ -123,7 +123,7 @@ bool tmioInit(TmioCtl* ctl, uptr reg_base, uptr fifo_base, u32* mbox_slots, unsi
 	return true;
 }
 
-MEOW_INLINE void _tmioSetPort0CardIrqEnable(TmioCtl* ctl, bool enable)
+MK_INLINE void _tmioSetPort0CardIrqEnable(TmioCtl* ctl, bool enable)
 {
 	if (enable) {
 		REG_TMIO_SDIO_MASK &= ~1;

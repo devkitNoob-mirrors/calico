@@ -1,9 +1,9 @@
 #include <calico/types.h>
 #include <calico/system/irq.h>
 
-extern IrqHandler __irq_table[MEOW_IRQ_NUM_HANDLERS];
+extern IrqHandler __irq_table[MK_IRQ_NUM_HANDLERS];
 
-MEOW_INLINE bool _irqMaskUnpack(IrqMask* pmask, unsigned* pid)
+MK_INLINE bool _irqMaskUnpack(IrqMask* pmask, unsigned* pid)
 {
 #if (__ARM_ARCH < 5) || __thumb__
 	if (!*pmask)
@@ -29,7 +29,7 @@ void irqSet(IrqMask mask, IrqHandler handler)
 	irqUnlock(st);
 }
 
-#if MEOW_IRQ_NUM_HANDLERS > 32
+#if MK_IRQ_NUM_HANDLERS > 32
 
 void irqSet2(IrqMask mask, IrqHandler handler)
 {

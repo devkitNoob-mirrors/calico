@@ -12,7 +12,7 @@
 #define dietPrint(...) ((void)0)
 #endif
 
-MEOW_INLINE unsigned _envGetUserSettingsNvramOffset(void)
+MK_INLINE unsigned _envGetUserSettingsNvramOffset(void)
 {
 	u16 off_div8 = g_envExtraInfo->nvram_offset_div8;
 	if (!off_div8) {

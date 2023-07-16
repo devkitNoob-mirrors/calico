@@ -56,7 +56,7 @@ void pmSoundSetAmpPower(bool enable)
 	spiUnlock();
 }
 
-MEOW_CONSTEXPR PmicMicGain _pmMicGainToPmic(unsigned gain)
+MK_CONSTEXPR PmicMicGain _pmMicGainToPmic(unsigned gain)
 {
 	if (gain < (PmMicGain_20+PmMicGain_40)/2) {
 		return PmicMicGain_20;

@@ -18,7 +18,7 @@ static ThrListNode s_pxiRecvQueue;
 static u32 s_pxiRecvState;
 static PxiChannelState s_pxiChannels[PxiChannel_Count];
 
-MEOW_INLINE u32 _pxiProcessPacket(u32 packet)
+MK_INLINE u32 _pxiProcessPacket(u32 packet)
 {
 	PxiChannel ch = pxiPacketGetChannel(packet);
 	u32 imm, num_words;
@@ -49,7 +49,7 @@ MEOW_INLINE u32 _pxiProcessPacket(u32 packet)
 	return num_words;
 }
 
-MEOW_INLINE u32 _pxiProcessData(u32 state, u32 data)
+MK_INLINE u32 _pxiProcessData(u32 state, u32 data)
 {
 	state --;
 	if_unlikely (!(state & (1U << 26))) {
@@ -138,7 +138,7 @@ void pxiWaitRemote(PxiChannel ch)
 	}
 }
 
-MEOW_INLINE void _pxiSendWord(u32 word)
+MK_INLINE void _pxiSendWord(u32 word)
 {
 	while (REG_PXI_CNT & PXI_CNT_SEND_FULL)
 		threadIrqWait(false, IRQ_PXI_SEND);

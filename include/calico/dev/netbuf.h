@@ -2,7 +2,7 @@
 #include "../types.h"
 #include "../arm/common.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct NetBuf NetBuf;
 
@@ -53,7 +53,7 @@ NetBuf* netbufAlloc(unsigned hdr_headroom_sz, unsigned data_sz, NetBufPool pool)
 void netbufFlush(NetBuf* nb);
 void netbufFree(NetBuf* nb);
 
-MEOW_INLINE void* netbufGet(NetBuf* nb) {
+MK_INLINE void* netbufGet(NetBuf* nb) {
 	return (u8*)(nb+1) + nb->pos;
 }
 
@@ -62,7 +62,7 @@ MEOW_INLINE void* netbufGet(NetBuf* nb) {
 #define netbufPushTrailerType(_nb, _type) ((_type*)netbufPushTrailer((_nb), sizeof(_type)))
 #define netbufPopTrailerType(_nb, _type)  ((_type*)netbufPopTrailer ((_nb), sizeof(_type)))
 
-MEOW_INLINE void* netbufPushHeader(NetBuf* nb, unsigned size) {
+MK_INLINE void* netbufPushHeader(NetBuf* nb, unsigned size) {
 	if (nb->pos < size) {
 		return NULL;
 	} else {
@@ -72,7 +72,7 @@ MEOW_INLINE void* netbufPushHeader(NetBuf* nb, unsigned size) {
 	}
 }
 
-MEOW_INLINE void* netbufPopHeader(NetBuf* nb, unsigned size) {
+MK_INLINE void* netbufPopHeader(NetBuf* nb, unsigned size) {
 	void* hdr = NULL;
 	if (nb->len >= size) {
 		hdr = netbufGet(nb);
@@ -82,7 +82,7 @@ MEOW_INLINE void* netbufPopHeader(NetBuf* nb, unsigned size) {
 	return hdr;
 }
 
-MEOW_INLINE void* netbufPushTrailer(NetBuf* nb, unsigned size) {
+MK_INLINE void* netbufPushTrailer(NetBuf* nb, unsigned size) {
 	void* trailer = NULL;
 	if (nb->pos + nb->len + size <= nb->capacity) {
 		trailer = (u8*)netbufGet(nb) + nb->len;
@@ -91,7 +91,7 @@ MEOW_INLINE void* netbufPushTrailer(NetBuf* nb, unsigned size) {
 	return trailer;
 }
 
-MEOW_INLINE void* netbufPopTrailer(NetBuf* nb, unsigned size) {
+MK_INLINE void* netbufPopTrailer(NetBuf* nb, unsigned size) {
 	void* trailer = NULL;
 	if (nb->len >= size) {
 		trailer = (u8*)netbufGet(nb) + nb->len - size;
@@ -100,7 +100,7 @@ MEOW_INLINE void* netbufPopTrailer(NetBuf* nb, unsigned size) {
 	return trailer;
 }
 
-MEOW_INLINE void netbufQueueAppend(NetBufListNode* q, NetBuf* nb) {
+MK_INLINE void netbufQueueAppend(NetBufListNode* q, NetBuf* nb) {
 	nb->link.next = NULL;
 	if (q->next) {
 		q->prev->link.next = nb;
@@ -110,7 +110,7 @@ MEOW_INLINE void netbufQueueAppend(NetBufListNode* q, NetBuf* nb) {
 	q->prev = nb;
 }
 
-MEOW_INLINE NetBuf* netbufQueueRemoveOne(NetBufListNode* q) {
+MK_INLINE NetBuf* netbufQueueRemoveOne(NetBufListNode* q) {
 	NetBuf* ret = q->next;
 	if (ret) {
 		q->next = ret->link.next;
@@ -118,8 +118,8 @@ MEOW_INLINE NetBuf* netbufQueueRemoveOne(NetBufListNode* q) {
 	return ret;
 }
 
-MEOW_INLINE NetBuf* netbufQueueRemoveAll(NetBufListNode* q) {
+MK_INLINE NetBuf* netbufQueueRemoveAll(NetBufListNode* q) {
 	return (NetBuf*)armSwapWord((u32*)&q->next, 0);
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

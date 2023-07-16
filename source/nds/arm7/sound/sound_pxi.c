@@ -1,6 +1,6 @@
 #include "common.h"
 
-MEOW_INLINE bool _soundBitmaskUnpack(unsigned* mask, unsigned* i)
+MK_INLINE bool _soundBitmaskUnpack(unsigned* mask, unsigned* i)
 {
 	if (!*mask) {
 		return false;
@@ -14,7 +14,7 @@ MEOW_INLINE bool _soundBitmaskUnpack(unsigned* mask, unsigned* i)
 	return true;
 }
 
-MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStart(unsigned ch_mask, u16 cap_mask)
+MK_NOINLINE MK_CODE32 static void _soundPxiStart(unsigned ch_mask, u16 cap_mask)
 {
 	IrqState st = irqLock();
 
@@ -29,7 +29,7 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStart(unsigned ch_mask, u16 cap_m
 	irqUnlock(st);
 }
 
-MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStop(unsigned ch_mask, u16 cap_mask)
+MK_NOINLINE MK_CODE32 static void _soundPxiStop(unsigned ch_mask, u16 cap_mask)
 {
 	IrqState st = irqLock();
 
@@ -44,7 +44,7 @@ MEOW_NOINLINE MEOW_CODE32 static void _soundPxiStop(unsigned ch_mask, u16 cap_ma
 	irqUnlock(st);
 }
 
-MEOW_NOINLINE MEOW_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsigned imm, const void* body, unsigned num_words)
+MK_NOINLINE MK_CODE32 static void _soundPxiProcessCmd(PxiSoundCmd cmd, unsigned imm, const void* body, unsigned num_words)
 {
 	// Ignore commands when sound hardware is not enabled
 	if (cmd > PxiSoundCmd_SetPower && !_soundIsEnabled()) {

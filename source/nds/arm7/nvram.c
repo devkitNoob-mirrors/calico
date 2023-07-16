@@ -9,7 +9,7 @@ static void _nvramSpiBegin(NvramCmd cmd)
 	spiRawWriteByte(cmd);
 }
 
-MEOW_INLINE void _nvramSpiPreEnd(void)
+MK_INLINE void _nvramSpiPreEnd(void)
 {
 	spiRawEndHold(SpiDev_NVRAM, SpiBaud_4MHz);
 }

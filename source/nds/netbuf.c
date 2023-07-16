@@ -7,7 +7,7 @@
 #ifdef ARM9
 #include <calico/arm/cache.h>
 
-MEOW_INLINE void _netbufFlushHdr(NetBuf* nb)
+MK_INLINE void _netbufFlushHdr(NetBuf* nb)
 {
 	// Flush only the header (single cache line)
 	armDCacheFlush(nb, sizeof(NetBuf));
@@ -32,7 +32,7 @@ typedef struct _NetbufMgr {
 	_NetBufPool pools[NetBufPool_Count];
 } _NetbufMgr;
 
-MEOW_CONSTEXPR unsigned _netbufFindSubpool(unsigned size)
+MK_CONSTEXPR unsigned _netbufFindSubpool(unsigned size)
 {
 	unsigned i;
 	for (i = 0; i < NETBUF_NUM_SUBPOOLS; i ++) {
@@ -43,7 +43,7 @@ MEOW_CONSTEXPR unsigned _netbufFindSubpool(unsigned size)
 	return i;
 }
 
-MEOW_INLINE void _netbufEnqueue(NetBufListNode* subpool, NetBuf* nb)
+MK_INLINE void _netbufEnqueue(NetBufListNode* subpool, NetBuf* nb)
 {
 	NetBuf* pos = subpool->prev;
 	if (pos) {
@@ -59,7 +59,7 @@ MEOW_INLINE void _netbufEnqueue(NetBufListNode* subpool, NetBuf* nb)
 	_netbufFlushHdr(nb);
 }
 
-MEOW_INLINE NetBuf* _netbufDequeue(NetBufListNode* subpool)
+MK_INLINE NetBuf* _netbufDequeue(NetBufListNode* subpool)
 {
 	NetBuf* nb = subpool->next;
 	if (nb) {

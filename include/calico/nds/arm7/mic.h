@@ -9,8 +9,8 @@
 #include "tsc.h"
 #include "codec.h"
 
-#define REG_MICEX_CNT  MEOW_REG(u16, IO_MICEX_CNT)
-#define REG_MICEX_DATA MEOW_REG(u32, IO_MICEX_DATA)
+#define REG_MICEX_CNT  MK_REG(u16, IO_MICEX_CNT)
+#define REG_MICEX_DATA MK_REG(u32, IO_MICEX_DATA)
 
 #define MICEX_CNT_NO_L         (1U<<0)
 #define MICEX_CNT_NO_R         (1U<<1)
@@ -24,8 +24,8 @@
 #define MICEX_CNT_IE_FIFO_FULL (1U<<14)
 #define MICEX_CNT_ENABLE       (1U<<15)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 void micStartServer(u8 thread_prio);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

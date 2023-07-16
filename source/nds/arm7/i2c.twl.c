@@ -5,12 +5,12 @@
 Mutex g_i2cMutex;
 static s32 s_i2cDelay, s_i2cMcuDelay;
 
-MEOW_INLINE void _i2cWaitBusy(void)
+MK_INLINE void _i2cWaitBusy(void)
 {
 	while (REG_I2C_CNT & 0x80);
 }
 
-MEOW_INLINE void _i2cSetDelay(I2cDevice dev)
+MK_INLINE void _i2cSetDelay(I2cDevice dev)
 {
 	if (dev == I2cDev_MCU) {
 		s_i2cDelay = s_i2cMcuDelay;
@@ -24,7 +24,7 @@ void _i2cSetMcuDelay(s32 delay)
 	s_i2cMcuDelay = delay;
 }
 
-MEOW_INLINE void _i2cDelay()
+MK_INLINE void _i2cDelay()
 {
 	_i2cWaitBusy();
 	if (s_i2cDelay > 0) {
@@ -49,13 +49,13 @@ static void _i2cStop(u8 arg0)
 	}
 }
 
-MEOW_INLINE bool _i2cGetResult()
+MK_INLINE bool _i2cGetResult()
 {
 	_i2cWaitBusy();
 	return (REG_I2C_CNT >> 4) & 0x01;
 }
 
-MEOW_INLINE u8 _i2cGetData()
+MK_INLINE u8 _i2cGetData()
 {
 	_i2cWaitBusy();
 	return REG_I2C_DATA;

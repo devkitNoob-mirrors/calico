@@ -74,7 +74,7 @@ static unsigned _mwlTxQueueWrite(unsigned qid, NetBuf* pPacket)
 	return reg;
 }
 
-MEOW_NOINLINE static void _mwlTxQueueKick(unsigned qid)
+MK_NOINLINE static void _mwlTxQueueKick(unsigned qid)
 {
 	MwlTxQueue* q = &s_mwlState.tx_queues[qid];
 	unsigned bit = 1U<<qid;

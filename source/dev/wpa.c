@@ -124,7 +124,7 @@ static WlanIeHdr* _wpaRsnSnagGtk(u8* key_data, unsigned data_len)
 	return NULL;
 }
 
-MEOW_NOINLINE static NetBuf* _wpaEapolCreateReplyPacket(WpaState* st, WpaWork* wk, size_t keydatalen)
+MK_NOINLINE static NetBuf* _wpaEapolCreateReplyPacket(WpaState* st, WpaWork* wk, size_t keydatalen)
 {
 	NetBuf* pPacket = st->cb_alloc_packet(st, sizeof(WpaEapolHdr) + sizeof(WpaEapolKeyHdr) + keydatalen);
 	if (!pPacket) {
@@ -155,7 +155,7 @@ MEOW_NOINLINE static NetBuf* _wpaEapolCreateReplyPacket(WpaState* st, WpaWork* w
 	wk->reply = hdr;
 
 	// Prepend MAC header
-	MEOW_ASSUME(pPacket->pos >= sizeof(NetMacHdr));
+	MK_ASSUME(pPacket->pos >= sizeof(NetMacHdr));
 	NetMacHdr* machdr = netbufPushHeaderType(pPacket, NetMacHdr);
 	memcpy(machdr->dst_mac, wk->machdr->src_mac, 6);
 	memcpy(machdr->src_mac, wk->machdr->dst_mac, 6);
@@ -164,7 +164,7 @@ MEOW_NOINLINE static NetBuf* _wpaEapolCreateReplyPacket(WpaState* st, WpaWork* w
 	return pPacket;
 }
 
-MEOW_INLINE bool _wpaEapolCreateAndSendReplyPacket(WpaState* st, WpaWork* wk)
+MK_INLINE bool _wpaEapolCreateAndSendReplyPacket(WpaState* st, WpaWork* wk)
 {
 	NetBuf* pPacket = _wpaEapolCreateReplyPacket(st, wk, 0);
 	if (!pPacket) {
@@ -176,7 +176,7 @@ MEOW_INLINE bool _wpaEapolCreateAndSendReplyPacket(WpaState* st, WpaWork* wk)
 	return true;
 }
 
-MEOW_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
+MK_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
 {
 	dietPrint("[WPA] Handshake 1/4\n");
 
@@ -228,7 +228,7 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
 	st->cb_tx(st, pPacket);
 }
 
-MEOW_NOINLINE static void _wpaPairwiseHandshake34(WpaState* st, WpaWork* wk)
+MK_NOINLINE static void _wpaPairwiseHandshake34(WpaState* st, WpaWork* wk)
 {
 	dietPrint("[WPA] Handshake 3/4\n");
 
@@ -266,7 +266,7 @@ MEOW_NOINLINE static void _wpaPairwiseHandshake34(WpaState* st, WpaWork* wk)
 	}
 }
 
-MEOW_NOINLINE static void _wpaGroupHandshake(WpaState* st, WpaWork* wk)
+MK_NOINLINE static void _wpaGroupHandshake(WpaState* st, WpaWork* wk)
 {
 	dietPrint("[WPA] Group renew 1/2\n");
 

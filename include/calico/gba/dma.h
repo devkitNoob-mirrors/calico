@@ -9,18 +9,18 @@
 #error "This header file is only for GBA and NDS"
 #endif
 
-#define REG_DMAxSAD(_x)   MEOW_REG(u32, IO_DMAxSAD(_x))
-#define REG_DMAxDAD(_x)   MEOW_REG(u32, IO_DMAxDAD(_x))
-#define REG_DMAxCNT(_x)   MEOW_REG(u32, IO_DMAxCNT(_x))
-#define REG_DMAxCNT_L(_x) MEOW_REG(u16, IO_DMAxCNT(_x)+0)
-#define REG_DMAxCNT_H(_x) MEOW_REG(u16, IO_DMAxCNT(_x)+2)
+#define REG_DMAxSAD(_x)   MK_REG(u32, IO_DMAxSAD(_x))
+#define REG_DMAxDAD(_x)   MK_REG(u32, IO_DMAxDAD(_x))
+#define REG_DMAxCNT(_x)   MK_REG(u32, IO_DMAxCNT(_x))
+#define REG_DMAxCNT_L(_x) MK_REG(u16, IO_DMAxCNT(_x)+0)
+#define REG_DMAxCNT_H(_x) MK_REG(u16, IO_DMAxCNT(_x)+2)
 #if defined(IO_DMAxFIL)
-#define REG_DMAxFIL(_x)   MEOW_REG(u32, IO_DMAxFIL(_x))
+#define REG_DMAxFIL(_x)   MK_REG(u32, IO_DMAxFIL(_x))
 #else
 #define REG_DMAxFIL(_x)   __dma_fill[(_x)]
 #endif
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 #if !defined(IO_DMAxFIL)
 extern vu32 __dma_fill[4];
@@ -76,17 +76,17 @@ typedef enum DmaTiming {
 #define DMA_IRQ_ENABLE   (1<<14)
 #define DMA_START        (1<<15)
 
-MEOW_INLINE bool dmaIsBusy(unsigned id)
+MK_INLINE bool dmaIsBusy(unsigned id)
 {
 	return REG_DMAxCNT_H(id) & DMA_START;
 }
 
-MEOW_INLINE void dmaBusyWait(unsigned id)
+MK_INLINE void dmaBusyWait(unsigned id)
 {
 	while (dmaIsBusy(id));
 }
 
-MEOW_INLINE void dmaStartCopy32(unsigned id, void* dst, const void* src, size_t size)
+MK_INLINE void dmaStartCopy32(unsigned id, void* dst, const void* src, size_t size)
 {
 	REG_DMAxSAD(id) = (u32)src;
 	REG_DMAxDAD(id) = (u32)dst;
@@ -99,7 +99,7 @@ MEOW_INLINE void dmaStartCopy32(unsigned id, void* dst, const void* src, size_t 
 		DMA_START;
 }
 
-MEOW_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
+MK_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 {
 	REG_DMAxFIL(id) = value;
 	REG_DMAxSAD(id) = (u32)&REG_DMAxFIL(id);
@@ -113,4 +113,4 @@ MEOW_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 		DMA_START;
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

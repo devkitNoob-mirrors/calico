@@ -10,7 +10,7 @@
 #define dietPrint(...) ((void)0)
 #endif
 
-MEOW_CONSTEXPR u32 _sdmmcCalcNumSectors(TmioResp csd, bool ismmc)
+MK_CONSTEXPR u32 _sdmmcCalcNumSectors(TmioResp csd, bool ismmc)
 {
 	u32 c_size, c_blk;
 	if (!ismmc && (csd.value[3]>>30) == 1) {
@@ -26,7 +26,7 @@ MEOW_CONSTEXPR u32 _sdmmcCalcNumSectors(TmioResp csd, bool ismmc)
 	return (c_size+1) * c_blk;
 }
 
-MEOW_CONSTEXPR bool _sdmmcCheckSectorRange(u32 total_sectors, u32 sector_id, u32 num_sectors)
+MK_CONSTEXPR bool _sdmmcCheckSectorRange(u32 total_sectors, u32 sector_id, u32 num_sectors)
 {
 	u32 end_sector = sector_id+num_sectors-1;
 	return sector_id<=end_sector && end_sector<total_sectors;

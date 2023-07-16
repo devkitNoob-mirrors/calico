@@ -14,15 +14,15 @@
 
 #define AES_MAX_PAYLOAD_SZ 0xffff0
 
-#define REG_AES_CNT          MEOW_REG(u32, IO_AES_CNT)
-#define REG_AES_LEN          MEOW_REG(u32, IO_AES_LEN)
-#define REG_AES_WRFIFO       MEOW_REG(u32, IO_AES_WRFIFO)
-#define REG_AES_RDFIFO       MEOW_REG(u32, IO_AES_RDFIFO)
-#define REG_AES_IV           MEOW_REG(AesBlock, IO_AES_IV)
-#define REG_AES_MAC          MEOW_REG(AesBlock, IO_AES_MAC)
-#define REG_AES_SLOTxKEY(_x) MEOW_REG(AesBlock, IO_AES_SLOTxKEY(_x))
-#define REG_AES_SLOTxX(_x)   MEOW_REG(AesBlock, IO_AES_SLOTxX(_x))
-#define REG_AES_SLOTxY(_x)   MEOW_REG(AesBlock, IO_AES_SLOTxY(_x))
+#define REG_AES_CNT          MK_REG(u32, IO_AES_CNT)
+#define REG_AES_LEN          MK_REG(u32, IO_AES_LEN)
+#define REG_AES_WRFIFO       MK_REG(u32, IO_AES_WRFIFO)
+#define REG_AES_RDFIFO       MK_REG(u32, IO_AES_RDFIFO)
+#define REG_AES_IV           MK_REG(AesBlock, IO_AES_IV)
+#define REG_AES_MAC          MK_REG(AesBlock, IO_AES_MAC)
+#define REG_AES_SLOTxKEY(_x) MK_REG(AesBlock, IO_AES_SLOTxKEY(_x))
+#define REG_AES_SLOTxX(_x)   MK_REG(AesBlock, IO_AES_SLOTxX(_x))
+#define REG_AES_SLOTxY(_x)   MK_REG(AesBlock, IO_AES_SLOTxY(_x))
 
 #define AES_WRFIFO_COUNT(_x)    ((_x) & 0x1f)
 #define AES_RDFIFO_COUNT(_x)    (((_x)>>5) & 0x1f)
@@ -44,7 +44,7 @@
 #define AES_IRQ_ENABLE          (1U<<30)
 #define AES_ENABLE              (1U<<31)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct AesBlock {
 	u32 data[AES_BLOCK_SZ_WORDS];
@@ -79,7 +79,7 @@ typedef enum AesMode {
 
 #if !__thumb__
 
-MEOW_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
+MK_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
 {
 	__asm__ __volatile__ (
 		"adds   %0, %0, %4\n\t"
@@ -94,34 +94,34 @@ MEOW_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
 
 #else
 
-MEOW_EXTERN32 void aesCtrIncrementIvFromThumb(AesBlock* iv, u32 value);
+MK_EXTERN32 void aesCtrIncrementIvFromThumb(AesBlock* iv, u32 value);
 
-MEOW_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
+MK_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
 {
 	aesCtrIncrementIvFromThumb(iv, value);
 }
 
 #endif
 
-MEOW_INLINE void aesBusyWaitReady(void)
+MK_INLINE void aesBusyWaitReady(void)
 {
 	while (REG_AES_CNT & (AES_BUSY | AES_KEY_SCHEDULE_BUSY));
 }
 
-MEOW_INLINE void aesBusyWaitWrFifoReady(void)
+MK_INLINE void aesBusyWaitWrFifoReady(void)
 {
 	while (AES_WRFIFO_COUNT(REG_AES_CNT) > 0);
 }
 
-MEOW_INLINE void aesBusyWaitRdFifoReady(void)
+MK_INLINE void aesBusyWaitRdFifoReady(void)
 {
 	while (AES_RDFIFO_COUNT(REG_AES_CNT) < 0x10);
 }
 
-MEOW_INLINE void aesSelectKeySlot(AesKeySlot slot)
+MK_INLINE void aesSelectKeySlot(AesKeySlot slot)
 {
 	REG_AES_CNT = (REG_AES_CNT &~ AES_KEY_SLOT(3)) | AES_KEY_SLOT(slot) | AES_KEY_SELECT;
 	while (REG_AES_CNT & AES_KEY_SCHEDULE_BUSY);
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

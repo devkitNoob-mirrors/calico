@@ -6,7 +6,7 @@
 #include "../../types.h"
 #include "../../dev/wlan.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef void (*NtrWifiScanCompleteFn)(void* user, WlanBssDesc* bss_list, unsigned bss_count);
 typedef void (*NtrWifiAssocFn)(void* user, bool success, unsigned reason);
@@ -19,4 +19,4 @@ bool ntrwifiDisassociate(void);
 
 bool ntrwifiTx(NetBuf* pPacket);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

@@ -25,7 +25,7 @@ typedef enum MicRate {
 	MicRate_Div4 = 3,
 } MicRate;
 
-MEOW_CONSTEXPR unsigned soundTimerFromMicRate(MicRate rate)
+MK_CONSTEXPR unsigned soundTimerFromMicRate(MicRate rate)
 {
 	return 512*((unsigned)rate + 1);
 }

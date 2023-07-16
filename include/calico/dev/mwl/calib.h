@@ -4,7 +4,7 @@
 #define MWL_CALIB_NVRAM_OFFSET 0x02a
 #define MWL_CALIB_NVRAM_MAX_SZ (0x200-MWL_CALIB_NVRAM_OFFSET)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct MwlCalibData {
 	u16 crc16;
@@ -61,9 +61,9 @@ bool mwlCalibLoad(void);
 
 alignas(2) extern u8 g_mwlCalibData[MWL_CALIB_NVRAM_MAX_SZ];
 
-MEOW_INLINE MwlCalibData* mwlGetCalibData(void)
+MK_INLINE MwlCalibData* mwlGetCalibData(void)
 {
 	return (MwlCalibData*)g_mwlCalibData;
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

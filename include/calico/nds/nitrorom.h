@@ -5,7 +5,7 @@
 #define NITROROM_ROOT_DIR 0xf000
 #define NITROROM_NAME_MAX 0x7f
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct NitroRom          NitroRom;
 typedef struct NitroRomParams    NitroRomParams;
@@ -63,33 +63,33 @@ bool nitroromOpen(NitroRom* nr, const NitroRomParams* params, const NitroRomIfac
 
 void nitroromClose(NitroRom* nr);
 
-MEOW_INLINE bool nitroromRead(NitroRom* nr, u32 offset, void* buf, u32 size)
+MK_INLINE bool nitroromRead(NitroRom* nr, u32 offset, void* buf, u32 size)
 {
 	return nr->iface->read(nr->user, offset, buf, size);
 }
 
-MEOW_INLINE u32 nitroromGetFileOffset(NitroRom* nr, u16 file_id)
+MK_INLINE u32 nitroromGetFileOffset(NitroRom* nr, u16 file_id)
 {
 	return nr->img_offset + nr->file_table[file_id].start_offset;
 }
 
-MEOW_INLINE u32 nitroromGetFileSize(NitroRom* nr, u16 file_id)
+MK_INLINE u32 nitroromGetFileSize(NitroRom* nr, u16 file_id)
 {
 	EnvNdsFileTableEntry* f = &nr->file_table[file_id];
 	return f->end_offset - f->start_offset;
 }
 
-MEOW_INLINE bool nitroromReadFile(NitroRom* nr, u16 file_id, u32 offset, void* buf, u32 size)
+MK_INLINE bool nitroromReadFile(NitroRom* nr, u16 file_id, u32 offset, void* buf, u32 size)
 {
 	return nitroromRead(nr, nitroromGetFileOffset(nr, file_id) + offset, buf, size);
 }
 
-MEOW_INLINE u16 nitroromGetParentDir(NitroRom* nr, u16 dir_id)
+MK_INLINE u16 nitroromGetParentDir(NitroRom* nr, u16 dir_id)
 {
 	return nr->dir_table[dir_id-NITROROM_ROOT_DIR].parent_id;
 }
 
-MEOW_INLINE void nitroromOpenIter(NitroRom* nr, u16 dir_id, NitroRomIter* iter)
+MK_INLINE void nitroromOpenIter(NitroRom* nr, u16 dir_id, NitroRomIter* iter)
 {
 	NitroRomDir* d      = &nr->dir_table[dir_id-NITROROM_ROOT_DIR];
 	iter->nr            = nr;
@@ -101,7 +101,7 @@ MEOW_INLINE void nitroromOpenIter(NitroRom* nr, u16 dir_id, NitroRomIter* iter)
 
 bool nitroromReadIter(NitroRomIter* iter, NitroRomIterEntry* entry);
 
-MEOW_INLINE void nitroromRewindIter(NitroRomIter* iter)
+MK_INLINE void nitroromRewindIter(NitroRomIter* iter)
 {
 	iter->cursor      = iter->start;
 	iter->cur_file_id = iter->first_file_id;
@@ -109,4 +109,4 @@ MEOW_INLINE void nitroromRewindIter(NitroRomIter* iter)
 
 int nitroromResolvePath(NitroRom* nr, u16 base_dir, const char* path);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

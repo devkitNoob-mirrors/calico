@@ -5,7 +5,7 @@
 
 #include "../mic.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef void (*MicBufferFn)(void* user, void* buf, size_t byte_sz);
 
@@ -21,4 +21,4 @@ bool micStart(void* buf, size_t byte_sz, MicFmt fmt, MicMode mode);
 
 void micStop(void);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

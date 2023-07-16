@@ -29,17 +29,17 @@ typedef struct PxiMicArgStart {
 	u32 dest_sz;
 } PxiMicArgStart;
 
-MEOW_CONSTEXPR u32 pxiMicMakeCmdMsg(PxiMicCmd cmd, unsigned imm)
+MK_CONSTEXPR u32 pxiMicMakeCmdMsg(PxiMicCmd cmd, unsigned imm)
 {
 	return (cmd & 7) | (imm << 3);
 }
 
-MEOW_CONSTEXPR PxiMicCmd pxiMicCmdGetType(u32 msg)
+MK_CONSTEXPR PxiMicCmd pxiMicCmdGetType(u32 msg)
 {
 	return (PxiMicCmd)(msg & 7);
 }
 
-MEOW_CONSTEXPR unsigned pxiMicCmdGetImm(u32 msg)
+MK_CONSTEXPR unsigned pxiMicCmdGetImm(u32 msg)
 {
 	return msg >> 3;
 }

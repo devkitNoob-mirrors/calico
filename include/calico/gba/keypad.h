@@ -12,8 +12,8 @@
 #error "This header file is only for GBA and NDS"
 #endif
 
-#define REG_KEYINPUT MEOW_REG(u16, IO_KEYINPUT)
-#define REG_KEYCNT   MEOW_REG(u16, IO_KEYCNT)
+#define REG_KEYINPUT MK_REG(u16, IO_KEYINPUT)
+#define REG_KEYCNT   MK_REG(u16, IO_KEYCNT)
 
 #define KEYCNT_IRQ_ENABLE (1U<<14)
 #define KEYCNT_IRQ_OR     (0U<<15)
@@ -39,28 +39,28 @@
 #define KEY_MASK_EXT 0x3c00
 #endif
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct Keypad {
 	u16 cur;
 	u16 old;
 } Keypad;
 
-MEOW_INLINE unsigned keypadGetInState(void)
+MK_INLINE unsigned keypadGetInState(void)
 {
 	return ~REG_KEYINPUT & KEY_MASK;
 }
 
 #if defined(__GBA__)
 
-MEOW_INLINE unsigned keypadGetState(void)
+MK_INLINE unsigned keypadGetState(void)
 {
 	return keypadGetInState();
 }
 
 #elif defined(__NDS__) && defined(ARM7)
 
-MEOW_INLINE unsigned keypadGetExtState(void)
+MK_INLINE unsigned keypadGetExtState(void)
 {
 	unsigned state = 0;
 	unsigned rcnt_ext = REG_RCNT_EXT;
@@ -69,7 +69,7 @@ MEOW_INLINE unsigned keypadGetExtState(void)
 	return state;
 }
 
-MEOW_INLINE unsigned keypadGetState(void)
+MK_INLINE unsigned keypadGetState(void)
 {
 	return keypadGetInState() | keypadGetExtState();
 }
@@ -82,25 +82,25 @@ unsigned keypadGetState(void);
 
 #endif
 
-MEOW_INLINE void keypadRead(Keypad* k)
+MK_INLINE void keypadRead(Keypad* k)
 {
 	k->old = k->cur;
 	k->cur = keypadGetState();
 }
 
-MEOW_INLINE u16 keypadHeld(Keypad const* k)
+MK_INLINE u16 keypadHeld(Keypad const* k)
 {
 	return k->cur;
 }
 
-MEOW_INLINE u16 keypadDown(Keypad const* k)
+MK_INLINE u16 keypadDown(Keypad const* k)
 {
 	return ~k->old & k->cur;
 }
 
-MEOW_INLINE u16 keypadUp(Keypad const* k)
+MK_INLINE u16 keypadUp(Keypad const* k)
 {
 	return k->old & ~k->cur;
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

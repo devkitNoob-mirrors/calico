@@ -2,7 +2,7 @@
 
 #define MWL_MGMT_MAX_SZ 0x100
 
-MEOW_INLINE NetBuf* _mwlMgmtAllocPacket(void)
+MK_INLINE NetBuf* _mwlMgmtAllocPacket(void)
 {
 	NetBuf* pPacket = netbufAlloc(0, MWL_MGMT_MAX_SZ, NetBufPool_Tx);
 	if (pPacket) {
@@ -12,7 +12,7 @@ MEOW_INLINE NetBuf* _mwlMgmtAllocPacket(void)
 	return pPacket;
 }
 
-MEOW_INLINE WlanMacHdr* _mwlMgmtInitHeader(NetBuf* pPacket, WlanMgmtType subtype, void** pos)
+MK_INLINE WlanMacHdr* _mwlMgmtInitHeader(NetBuf* pPacket, WlanMgmtType subtype, void** pos)
 {
 	WlanMacHdr* hdr = (WlanMacHdr*)netbufGet(pPacket);
 	__builtin_memset(hdr, 0, sizeof(*hdr));
@@ -27,14 +27,14 @@ MEOW_INLINE WlanMacHdr* _mwlMgmtInitHeader(NetBuf* pPacket, WlanMgmtType subtype
 	return hdr;
 }
 
-MEOW_INLINE void* _mwlMgmtAddData(void** pos, unsigned len)
+MK_INLINE void* _mwlMgmtAddData(void** pos, unsigned len)
 {
 	void* ret = *pos;
 	*pos = (u8*)ret + len;
 	return ret;
 }
 
-MEOW_INLINE void* _mwlMgmtAddIe(void** pos, WlanEid id, unsigned len)
+MK_INLINE void* _mwlMgmtAddIe(void** pos, WlanEid id, unsigned len)
 {
 	WlanIeHdr* ie = (WlanIeHdr*)*pos;
 	ie->id = id;
@@ -44,7 +44,7 @@ MEOW_INLINE void* _mwlMgmtAddIe(void** pos, WlanEid id, unsigned len)
 	return ret;
 }
 
-MEOW_INLINE NetBuf* _mwlMgmtFinalize(NetBuf* pPacket, void* pos)
+MK_INLINE NetBuf* _mwlMgmtFinalize(NetBuf* pPacket, void* pos)
 {
 	pPacket->len = pos - netbufGet(pPacket);
 	return pPacket;

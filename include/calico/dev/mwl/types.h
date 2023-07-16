@@ -2,7 +2,7 @@
 #include "../../types.h"
 #include "../wlan.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum MwlMode {
 	MwlMode_Test       = 0,
@@ -47,4 +47,4 @@ typedef struct MwlDataRxHdr {
 	u16 rssi;
 } MwlDataRxHdr;
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

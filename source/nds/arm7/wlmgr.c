@@ -35,12 +35,12 @@ static struct {
 	bool using_twlwifi;
 } s_wlmgrState;
 
-MEOW_NOINLINE static void _wlmgrPxiProcess(Mailbox* mb);
-MEOW_NOINLINE static void _wlmgrTxProcess(void);
-MEOW_NOINLINE static void _wlmgrStop(void);
-MEOW_NOINLINE MEOW_CODE32 static void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsigned num_words);
+MK_NOINLINE static void _wlmgrPxiProcess(Mailbox* mb);
+MK_NOINLINE static void _wlmgrTxProcess(void);
+MK_NOINLINE static void _wlmgrStop(void);
+MK_NOINLINE MK_CODE32 static void _wlmgrPxiProcessCmd(PxiWlMgrCmd cmd, unsigned imm, const void* body, unsigned num_words);
 
-MEOW_INLINE void _wlmgrSendEvent(WlMgrEvent evt, unsigned imm)
+MK_INLINE void _wlmgrSendEvent(WlMgrEvent evt, unsigned imm)
 {
 	pxiSend(PxiChannel_WlMgr, pxiWlMgrMakeEvent(evt, imm));
 }

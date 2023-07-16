@@ -4,7 +4,7 @@
 #define BLK_SECTOR_SZ       512
 #define BLK_SECTOR_SZ_WORDS (BLK_SECTOR_SZ/sizeof(u32))
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum BlkDevice {
 
@@ -32,4 +32,4 @@ u32  blkDevGetSectorCount(BlkDevice dev);
 bool blkDevReadSectors(BlkDevice dev, void* buffer, u32 first_sector, u32 num_sectors);
 bool blkDevWriteSectors(BlkDevice dev, const void* buffer, u32 first_sector, u32 num_sectors);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

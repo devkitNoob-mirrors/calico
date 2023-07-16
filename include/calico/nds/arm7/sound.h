@@ -6,23 +6,23 @@
 #include "../io.h"
 #include "../sound.h"
 
-#define REG_SOUNDCNT       MEOW_REG(u16, IO_SOUNDCNT)
-#define REG_SOUNDCNTVOL    MEOW_REG(u8,  IO_SOUNDCNT)
-#define REG_SOUNDBIAS      MEOW_REG(u16, IO_SOUNDBIAS)
-#define REG_SNDEXCNT       MEOW_REG(u16, IO_SNDEXCNT)
+#define REG_SOUNDCNT       MK_REG(u16, IO_SOUNDCNT)
+#define REG_SOUNDCNTVOL    MK_REG(u8,  IO_SOUNDCNT)
+#define REG_SOUNDBIAS      MK_REG(u16, IO_SOUNDBIAS)
+#define REG_SNDEXCNT       MK_REG(u16, IO_SNDEXCNT)
 
-#define REG_SOUNDxCNT(_x)  MEOW_REG(u32, IO_SOUNDxCNT(_x))
-#define REG_SOUNDxVOL(_x)  MEOW_REG(u16, IO_SOUNDxCNT(_x))
-#define REG_SOUNDxPAN(_x)  MEOW_REG(u8,  IO_SOUNDxCNT(_x)+2)
-#define REG_SOUNDxSAD(_x)  MEOW_REG(u32, IO_SOUNDxSAD(_x))
-#define REG_SOUNDxTMR(_x)  MEOW_REG(u16, IO_SOUNDxTMR(_x))
-#define REG_SOUNDxPNT(_x)  MEOW_REG(u16, IO_SOUNDxPNT(_x))
-#define REG_SOUNDxLEN(_x)  MEOW_REG(u32, IO_SOUNDxLEN(_x))
+#define REG_SOUNDxCNT(_x)  MK_REG(u32, IO_SOUNDxCNT(_x))
+#define REG_SOUNDxVOL(_x)  MK_REG(u16, IO_SOUNDxCNT(_x))
+#define REG_SOUNDxPAN(_x)  MK_REG(u8,  IO_SOUNDxCNT(_x)+2)
+#define REG_SOUNDxSAD(_x)  MK_REG(u32, IO_SOUNDxSAD(_x))
+#define REG_SOUNDxTMR(_x)  MK_REG(u16, IO_SOUNDxTMR(_x))
+#define REG_SOUNDxPNT(_x)  MK_REG(u16, IO_SOUNDxPNT(_x))
+#define REG_SOUNDxLEN(_x)  MK_REG(u32, IO_SOUNDxLEN(_x))
 
-#define REG_SNDCAPCNT      MEOW_REG(u16, IO_SNDCAPxCNT(0))
-#define REG_SNDCAPxCNT(_x) MEOW_REG(u8,  IO_SNDCAPxCNT(_x))
-#define REG_SNDCAPxDAD(_x) MEOW_REG(u32, IO_SNDCAPxDAD(_x))
-#define REG_SNDCAPxLEN(_x) MEOW_REG(u16, IO_SNDCAPxLEN(_x))
+#define REG_SNDCAPCNT      MK_REG(u16, IO_SNDCAPxCNT(0))
+#define REG_SNDCAPxCNT(_x) MK_REG(u8,  IO_SNDCAPxCNT(_x))
+#define REG_SNDCAPxDAD(_x) MK_REG(u32, IO_SNDCAPxDAD(_x))
+#define REG_SNDCAPxLEN(_x) MK_REG(u16, IO_SNDCAPxLEN(_x))
 
 #define SOUNDCNT_VOL(_x)       ((_x)&0x7f)
 #define SOUNDCNT_MIXER_CFG(_x) (((_x)&0x3f)<<8)
@@ -55,25 +55,25 @@
 #define SNDCAPxCNT_FMT(_x)     (((_x)&1)<<3)
 #define SNDCAPxCNT_ENABLE      (1U<<7)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
-MEOW_INLINE void soundSetMixerVolume(unsigned vol)
+MK_INLINE void soundSetMixerVolume(unsigned vol)
 {
 	REG_SOUNDCNTVOL = vol & 0x7f;
 }
 
-MEOW_INLINE void soundSetMixerConfigDirect(unsigned config)
+MK_INLINE void soundSetMixerConfigDirect(unsigned config)
 {
 	REG_SOUNDCNT = (REG_SOUNDCNT &~ SOUNDCNT_MIXER_CFG(0x3f)) | SOUNDCNT_MIXER_CFG(config);
 }
 
-MEOW_INLINE void soundSetMixerConfig(SoundOutSrc src_l, SoundOutSrc src_r, bool mute_ch1, bool mute_ch3)
+MK_INLINE void soundSetMixerConfig(SoundOutSrc src_l, SoundOutSrc src_r, bool mute_ch1, bool mute_ch3)
 {
 	unsigned config = soundMakeMixerConfig(src_l, src_r, mute_ch1, mute_ch3);
 	soundSetMixerConfigDirect(config);
 }
 
-MEOW_INLINE void soundChPreparePcm(
+MK_INLINE void soundChPreparePcm(
 	unsigned ch, unsigned vol, SoundVolDiv voldiv, unsigned pan, unsigned timer,
 	SoundMode mode, SoundFmt fmt, const void* sad, unsigned pnt, unsigned len)
 {
@@ -86,7 +86,7 @@ MEOW_INLINE void soundChPreparePcm(
 	REG_SOUNDxLEN(ch) = len;
 }
 
-MEOW_INLINE void soundChPreparePsg(
+MK_INLINE void soundChPreparePsg(
 	unsigned ch, unsigned vol, SoundVolDiv voldiv, unsigned pan, unsigned timer,
 	SoundDuty duty)
 {
@@ -96,49 +96,49 @@ MEOW_INLINE void soundChPreparePsg(
 	REG_SOUNDxTMR(ch) = -timer;
 }
 
-MEOW_INLINE void soundChStart(unsigned ch)
+MK_INLINE void soundChStart(unsigned ch)
 {
 	REG_SOUNDxCNT(ch) |= SOUNDxCNT_ENABLE;
 }
 
-MEOW_INLINE void soundChStop(unsigned ch)
+MK_INLINE void soundChStop(unsigned ch)
 {
 	REG_SOUNDxCNT(ch) &= ~SOUNDxCNT_ENABLE;
 }
 
-MEOW_INLINE bool soundChIsActive(unsigned ch)
+MK_INLINE bool soundChIsActive(unsigned ch)
 {
 	return REG_SOUNDxCNT(ch) & SOUNDxCNT_ENABLE;
 }
 
-MEOW_INLINE void soundChSetVolume(unsigned ch, unsigned vol, SoundVolDiv voldiv)
+MK_INLINE void soundChSetVolume(unsigned ch, unsigned vol, SoundVolDiv voldiv)
 {
 	REG_SOUNDxVOL(ch) = SOUNDxCNT_VOL(vol) | SOUNDxCNT_VOL_DIV(voldiv);
 }
 
-MEOW_INLINE void soundChSetPan(unsigned ch, unsigned pan)
+MK_INLINE void soundChSetPan(unsigned ch, unsigned pan)
 {
 	REG_SOUNDxPAN(ch) = pan & 0x7f;
 }
 
-MEOW_INLINE void soundChSetTimer(unsigned ch, unsigned timer)
+MK_INLINE void soundChSetTimer(unsigned ch, unsigned timer)
 {
 	REG_SOUNDxTMR(ch) = -timer;
 }
 
-MEOW_INLINE void soundChSetDuty(unsigned ch, SoundDuty duty)
+MK_INLINE void soundChSetDuty(unsigned ch, SoundDuty duty)
 {
 	REG_SOUNDxCNT(ch) = (REG_SOUNDxCNT(ch) &~ SOUNDxCNT_DUTY(7)) | SOUNDxCNT_DUTY(duty);
 }
 
-MEOW_INLINE void soundPrepareCapDirect(unsigned cap, unsigned config, void* dad, unsigned len)
+MK_INLINE void soundPrepareCapDirect(unsigned cap, unsigned config, void* dad, unsigned len)
 {
 	REG_SNDCAPxCNT(cap) = SNDCAPxCNT_CFG(config);
 	REG_SNDCAPxDAD(cap) = (u32)dad;
 	REG_SNDCAPxLEN(cap) = len;
 }
 
-MEOW_INLINE void soundPrepareCap(
+MK_INLINE void soundPrepareCap(
 	unsigned cap, SoundCapDst dst, SoundCapSrc src, bool loop, SoundCapFmt fmt,
 	void* dad, unsigned len)
 {
@@ -146,7 +146,7 @@ MEOW_INLINE void soundPrepareCap(
 	soundPrepareCapDirect(cap, config, dad, len);
 }
 
-MEOW_CONSTEXPR u16 soundExpandCapMask(unsigned cap_mask)
+MK_CONSTEXPR u16 soundExpandCapMask(unsigned cap_mask)
 {
 	u16 ret = 0;
 	ret |= (cap_mask&1) * SNDCAPxCNT_ENABLE;
@@ -154,16 +154,16 @@ MEOW_CONSTEXPR u16 soundExpandCapMask(unsigned cap_mask)
 	return ret;
 }
 
-MEOW_CONSTEXPR void soundCapStart(u16 mask)
+MK_CONSTEXPR void soundCapStart(u16 mask)
 {
 	REG_SNDCAPCNT |= mask;
 }
 
-MEOW_CONSTEXPR void soundCapStop(u16 mask)
+MK_CONSTEXPR void soundCapStop(u16 mask)
 {
 	REG_SNDCAPCNT &= ~mask;
 }
 
 void soundStartServer(u8 thread_prio);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

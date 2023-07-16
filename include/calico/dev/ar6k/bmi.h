@@ -1,7 +1,7 @@
 #pragma once
 #include "base.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum Ar6kBmiCommand {
 	Ar6kBmiCmd_NoCommand          = 0,
@@ -37,9 +37,9 @@ bool ar6kBmiReadSocReg(Ar6kDev* dev, u32 addr, u32* out);
 bool ar6kBmiWriteSocReg(Ar6kDev* dev, u32 addr, u32 value);
 bool ar6kBmiGetTargetInfo(Ar6kDev* dev, Ar6kBmiTargetInfo* info);
 
-MEOW_INLINE bool ar6kBmiWriteMemoryWord(Ar6kDev* dev, u32 addr, u32 value)
+MK_INLINE bool ar6kBmiWriteMemoryWord(Ar6kDev* dev, u32 addr, u32 value)
 {
 	return ar6kBmiWriteMemory(dev, addr, &value, sizeof(u32));
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

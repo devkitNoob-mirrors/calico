@@ -11,12 +11,12 @@ typedef enum PxiResetMsgType {
 	PxiResetMsgType_Abort = 0x20,
 } PxiResetMsgType;
 
-MEOW_CONSTEXPR u32 pxiResetMakeMsg(PxiResetMsgType type)
+MK_CONSTEXPR u32 pxiResetMakeMsg(PxiResetMsgType type)
 {
 	return ((type & 0x7f) << 8) | PXI_LIBNDS_FIFO_SPECIAL;
 }
 
-MEOW_CONSTEXPR PxiResetMsgType pxiResetGetType(u32 msg)
+MK_CONSTEXPR PxiResetMsgType pxiResetGetType(u32 msg)
 {
 	return (PxiResetMsgType)((msg >> 8) & 0x7f);
 }

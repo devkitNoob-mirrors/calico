@@ -11,7 +11,7 @@
 #define g_mwlMacVars     ((volatile MwlMacVars*)(MWL_MAC_RAM_ADDR + MWL_MAC_RAM_SZ))
 #endif
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum MwlTxEvent {
 	MwlTxEvent_Dropped = 0,
@@ -54,4 +54,4 @@ bool mwlDevDixToWlan(NetBuf* pPacket);
 
 void mwlDevTx(unsigned qid, NetBuf* pPacket, MwlTxCallback cb, void* arg);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

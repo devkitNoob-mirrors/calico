@@ -9,7 +9,7 @@ typedef struct TlsInfo {
 	size_t load_sz;
 } TlsInfo;
 
-extern TlsInfo __tls_info MEOW_WEAK;
+extern TlsInfo __tls_info MK_WEAK;
 
 #if defined(__GBA__) || (defined(__NDS__) && defined(ARM7))
 void svcHalt(void);
@@ -23,7 +23,7 @@ extern u32 __sp_usr[];
 static Thread s_mainThread, s_idleThread;
 static ThrListNode s_joinThreads, s_sleepThreads;
 
-MEOW_INLINE void* _threadGetMainTp(void)
+MK_INLINE void* _threadGetMainTp(void)
 {
 	if (&__tls_info) {
 		return (char*)__tls_info.start - 2*sizeof(void*);
@@ -198,7 +198,7 @@ void threadYield(void)
 		armIrqUnlockByPsr(st);
 }
 
-MEOW_INLINE u32 _threadIrqWaitImpl(bool next_irq, IrqMask mask, ThrListNode* wait_list, IrqMask* wait_mask, volatile IrqMask* flags)
+MK_INLINE u32 _threadIrqWaitImpl(bool next_irq, IrqMask mask, ThrListNode* wait_list, IrqMask* wait_mask, volatile IrqMask* flags)
 {
 	if (!mask) return 0;
 	ArmIrqState st = armIrqLockByPsr();
@@ -224,7 +224,7 @@ u32 threadIrqWait(bool next_irq, IrqMask mask)
 	return _threadIrqWaitImpl(next_irq, mask, &s_irqWaitList, &s_irqWaitMask, &__irq_flags);
 }
 
-#if MEOW_IRQ_NUM_HANDLERS > 32
+#if MK_IRQ_NUM_HANDLERS > 32
 
 u32 threadIrqWait2(bool next_irq, IrqMask mask)
 {

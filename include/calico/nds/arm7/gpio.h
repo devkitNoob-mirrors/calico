@@ -39,12 +39,12 @@
 //   T6 aka GPIO33[2] <- Connected to MCU interrupt pin
 //   T7 aka GPIO33[3] <- Connected to sound enable output
 
-#define REG_RCNT     MEOW_REG(u16, IO_RCNT)
-#define REG_RCNT_EXT MEOW_REG(u16, IO_RCNT_EXT)
-#define REG_RCNT_RTC MEOW_REG(u16, IO_RCNT_RTC)
-#define REG_GPIO_CNT MEOW_REG(u16, IO_GPIO_CNT)
-#define REG_GPIO_IRQ MEOW_REG(u16, IO_GPIO_IRQ)
-#define REG_GPIO_WL  MEOW_REG(u16, IO_GPIO_WL)
+#define REG_RCNT     MK_REG(u16, IO_RCNT)
+#define REG_RCNT_EXT MK_REG(u16, IO_RCNT_EXT)
+#define REG_RCNT_RTC MK_REG(u16, IO_RCNT_RTC)
+#define REG_GPIO_CNT MK_REG(u16, IO_GPIO_CNT)
+#define REG_GPIO_IRQ MK_REG(u16, IO_GPIO_IRQ)
+#define REG_GPIO_WL  MK_REG(u16, IO_GPIO_WL)
 
 // RCNT layout: mm00000iddddOIDC
 #define RCNT_SI              (1U<<2)
@@ -93,7 +93,7 @@
 #define GPIO_WL_MITSUMI  (1U<<8)
 #define GPIO_WL_MASK     (1U<<8)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum GpioWlModule {
 	GpioWlModule_Atheros = 0,
@@ -102,4 +102,4 @@ typedef enum GpioWlModule {
 
 void gpioSetWlModule(GpioWlModule module);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

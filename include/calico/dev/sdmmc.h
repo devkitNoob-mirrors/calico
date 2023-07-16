@@ -26,7 +26,7 @@
 
 #define SDMMC_SECTOR_SZ 512
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum SdmmcType {
 	SdmmcType_Invalid = 0,
@@ -53,4 +53,4 @@ bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc);
 bool sdmmcCardReadSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors);
 bool sdmmcCardWriteSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

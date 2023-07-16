@@ -36,17 +36,17 @@ void dietPrint(const char* fmt, ...)
 #define DP_FLAG_16        0 //(1U << 9)  // See below on why this isn't needed
 #define DP_FLAG_8         0 //(1U << 10)
 
-MEOW_CONSTEXPR bool _dietIsDigit(char c)
+MK_CONSTEXPR bool _dietIsDigit(char c)
 {
 	return c >= '0' && c <= '9';
 }
 
-MEOW_CONSTEXPR bool _dietIsUppercase(char c)
+MK_CONSTEXPR bool _dietIsUppercase(char c)
 {
 	return c >= 'A' && c <= 'Z';
 }
 
-MEOW_INLINE unsigned _dietParseDec(const char** ptr)
+MK_INLINE unsigned _dietParseDec(const char** ptr)
 {
 	unsigned ret = 0;
 	while (_dietIsDigit(**ptr)) {
@@ -56,7 +56,7 @@ MEOW_INLINE unsigned _dietParseDec(const char** ptr)
 	return ret;
 }
 
-MEOW_NOINLINE static void _dietOutput(const char* buf, size_t size, unsigned left_pad, unsigned right_pad)
+MK_NOINLINE static void _dietOutput(const char* buf, size_t size, unsigned left_pad, unsigned right_pad)
 {
 	if_unlikely (left_pad) {
 		g_dietPrintFn(NULL, left_pad);
@@ -71,7 +71,7 @@ MEOW_NOINLINE static void _dietOutput(const char* buf, size_t size, unsigned lef
 	}
 }
 
-MEOW_INLINE void _dietPrintWidth(unsigned flags, unsigned width, const char* buf, size_t size)
+MK_INLINE void _dietPrintWidth(unsigned flags, unsigned width, const char* buf, size_t size)
 {
 	unsigned padlen = size < width ? (width - size) : 0;
 
@@ -82,7 +82,7 @@ MEOW_INLINE void _dietPrintWidth(unsigned flags, unsigned width, const char* buf
 	}
 }
 
-MEOW_NOINLINE static unsigned _dietPrintHex32(unsigned flags, unsigned width, unsigned precision, u32 value)
+MK_NOINLINE static unsigned _dietPrintHex32(unsigned flags, unsigned width, unsigned precision, u32 value)
 {
 	bool wantPrefix = value && (flags & DP_FLAG_HASH);
 	if (flags & DP_FLAG_ZEROPAD) {
@@ -129,7 +129,7 @@ MEOW_NOINLINE static unsigned _dietPrintHex32(unsigned flags, unsigned width, un
 	return final_len;
 }
 
-MEOW_INLINE void _dietPrintHex64(unsigned flags, unsigned width, unsigned precision, u64 value)
+MK_INLINE void _dietPrintHex64(unsigned flags, unsigned width, unsigned precision, u64 value)
 {
 	u32 value_hi = value >> 32; // Guaranteed to be non-zero
 	u32 value_lo = value;
@@ -153,7 +153,7 @@ MEOW_INLINE void _dietPrintHex64(unsigned flags, unsigned width, unsigned precis
 	}
 }
 
-MEOW_NOINLINE MEOW_CODE32 static void _dietPrintDec32(unsigned flags, unsigned width, unsigned precision, u32 value)
+MK_NOINLINE MK_CODE32 static void _dietPrintDec32(unsigned flags, unsigned width, unsigned precision, u32 value)
 {
 	if (flags & DP_FLAG_ZEROPAD) {
 		precision = width;
@@ -191,7 +191,7 @@ MEOW_NOINLINE MEOW_CODE32 static void _dietPrintDec32(unsigned flags, unsigned w
 	_dietPrintWidth(flags, width, pos, end - pos);
 }
 
-MEOW_NOINLINE void dietPrintV(const char* fmt, va_list va)
+MK_NOINLINE void dietPrintV(const char* fmt, va_list va)
 {
 	for (const char* span_end = NULL;; fmt = span_end) {
 		// Find the end of this immediate span

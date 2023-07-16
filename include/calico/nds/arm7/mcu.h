@@ -12,7 +12,7 @@
 #define MCU_IRQ_BATTERY_LOW     (1U << 5)
 #define MCU_IRQ_VOLBTN          (1U << 6)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum McuRegister {
 	McuReg_Version  = 0x00,
@@ -61,7 +61,7 @@ typedef enum McuPwrBtnState {
 
 typedef void (*McuIrqHandler)(unsigned irq_mask);
 
-MEOW_INLINE McuPwrBtnState mcuGetPwrBtnState(void)
+MK_INLINE McuPwrBtnState mcuGetPwrBtnState(void)
 {
 	extern McuPwrBtnState g_mcuPwrBtnState;
 	return g_mcuPwrBtnState;
@@ -69,7 +69,7 @@ MEOW_INLINE McuPwrBtnState mcuGetPwrBtnState(void)
 
 void mcuInit(void);
 void mcuIrqSet(unsigned irq_mask, McuIrqHandler fn);
-void mcuIssueReset(void) MEOW_NORETURN;
-void mcuIssueShutdown(void) MEOW_NORETURN;
+void mcuIssueReset(void) MK_NORETURN;
+void mcuIssueShutdown(void) MK_NORETURN;
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

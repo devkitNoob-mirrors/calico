@@ -38,7 +38,7 @@
 #define PMIC_CTRL_EXT_RESET      (1U<<0)
 #define PMIC_CTRL_EXT_USER       (1U<<1)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum PmicRegister {
 	PmicReg_Control        = 0x00,
@@ -59,6 +59,6 @@ typedef enum PmicMicGain {
 bool pmicWriteRegister(PmicRegister reg, u8 data);
 u8 pmicReadRegister(PmicRegister reg);
 
-void pmicIssueShutdown(void) MEOW_NORETURN;
+void pmicIssueShutdown(void) MK_NORETURN;
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

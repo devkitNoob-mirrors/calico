@@ -19,7 +19,7 @@
 #define SVC_SET_UNIT_16      (0<<26)
 #define SVC_SET_UNIT_32      (1<<26)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 /* TODO: ABI. This is intended to be returned as r0/r1
 typedef struct SvcDivResult {
@@ -63,7 +63,7 @@ typedef struct SvcBitUnpackParams {
 	u32 zero_data_flag : 1;
 } SvcBitUnpackParams;
 
-void svcSoftReset(void) MEOW_NORETURN;
+void svcSoftReset(void) MK_NORETURN;
 void svcRegisterRamReset(u32 flags);
 void svcHalt(void);
 void svcStop(void);
@@ -91,6 +91,6 @@ void svcDiff16bitUnfilter(const void* src, void* dst);
 void svcSoundBias(bool enable);
 u32 svcMidiKey2Freq(const void* wave, u8 key, u8 finetune);
 u32 svcMultiBoot(const void* param, u32 mode); // todo: add types
-void svcHardReset(void) MEOW_NORETURN;
+void svcHardReset(void) MK_NORETURN;
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

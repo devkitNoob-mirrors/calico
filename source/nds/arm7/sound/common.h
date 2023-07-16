@@ -24,7 +24,7 @@ typedef struct SoundState {
 
 extern SoundState g_soundState;
 
-MEOW_INLINE bool _soundIsEnabled(void)
+MK_INLINE bool _soundIsEnabled(void)
 {
 	return g_soundState.soundcnt_cfg & SOUNDCNT_ENABLE;
 }

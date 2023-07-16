@@ -1,7 +1,7 @@
 #include "thread-priv.h"
 
 ThrSchedState __sched_state;
-IrqHandler __irq_table[MEOW_IRQ_NUM_HANDLERS];
+IrqHandler __irq_table[MK_IRQ_NUM_HANDLERS];
 
 static void threadReschedule(Thread* t, ArmIrqState st)
 {
@@ -27,7 +27,7 @@ void threadBlock(ThrListNode* queue, u32 token)
 	threadReschedule(threadFindRunnable(s_firstThread), st);
 }
 
-MEOW_INLINE void _threadUnblockCommon(ThrListNode* queue, int max, ThrUnblockMode mode, u32 ref)
+MK_INLINE void _threadUnblockCommon(ThrListNode* queue, int max, ThrUnblockMode mode, u32 ref)
 {
 	//if (max == 0) return;
 	//if (max < 0) max = -1;

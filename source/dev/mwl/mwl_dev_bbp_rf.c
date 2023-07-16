@@ -1,11 +1,11 @@
 #include "common.h"
 
-MEOW_INLINE void _mwlBbpBusyWait(void)
+MK_INLINE void _mwlBbpBusyWait(void)
 {
 	while (MWL_REG(W_BB_BUSY) & 1);
 }
 
-MEOW_INLINE void _mwlRfBusyWait(void)
+MK_INLINE void _mwlRfBusyWait(void)
 {
 	while (MWL_REG(W_RF_BUSY) & 1);
 }

@@ -4,7 +4,7 @@
 
 #define TICK_FREQ (SYSTEM_CLOCK/64)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct TickTask TickTask;
 typedef void (* TickTaskFn)(TickTask*);
@@ -16,12 +16,12 @@ struct TickTask {
 	TickTaskFn fn;
 };
 
-MEOW_CONSTEXPR u32 ticksFromUsec(u32 us)
+MK_CONSTEXPR u32 ticksFromUsec(u32 us)
 {
 	return (us * (u64)TICK_FREQ) / 1000000;
 }
 
-MEOW_CONSTEXPR u32 ticksFromHz(u32 hz)
+MK_CONSTEXPR u32 ticksFromHz(u32 hz)
 {
 	return (TICK_FREQ + hz/2) / hz;
 }
@@ -31,4 +31,4 @@ u64 tickGetCount(void);
 void tickTaskStart(TickTask* t, TickTaskFn fn, u32 delay_ticks, u32 period_ticks);
 void tickTaskStop(TickTask* t);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

@@ -55,7 +55,7 @@ static PmState s_pmState;
 static Thread s_pmPxiThread;
 static alignas(8) u8 s_pmPxiThreadStack[0x200];
 
-MEOW_NOINLINE static void _pmCallEventHandlers(PmEvent event)
+MK_NOINLINE static void _pmCallEventHandlers(PmEvent event)
 {
 	for (PmEventCookie* c = s_pmState.cookie_list; c; c = c->next) {
 		c->handler(c->user, event);
@@ -91,7 +91,7 @@ static int _pmPxiThreadMain(void* arg)
 		u32 msg = mailboxRecv(&mb);
 		PxiPmMsgType type = pxiPmGetType(msg);
 		unsigned imm = pxiPmGetImmediate(msg);
-		MEOW_DUMMY(imm);
+		MK_DUMMY(imm);
 
 		switch (type) {
 			default: break;
@@ -148,7 +148,7 @@ static int _pmPxiThreadMain(void* arg)
 
 #if defined(ARM7)
 
-MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToNextApp(void)
+MK_CODE32 MK_EXTERN32 MK_NOINLINE MK_NORETURN static void _pmJumpToNextApp(void)
 {
 	// Back up DSi mode flag
 	bool is_twl = systemIsTwlMode();
@@ -166,10 +166,10 @@ MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToNextA
 
 	// Set up MBK regs if needed
 	if (is_twl) {
-		MEOW_REG(u32, IO_MBK_SLOTWRPROT) = g_envAppTwlHeader->mbk9_setting;
-		MEOW_REG(u32, IO_MBK_MAP_A) = g_envAppTwlHeader->arm7_wram_setting[0];
-		MEOW_REG(u32, IO_MBK_MAP_B) = g_envAppTwlHeader->arm7_wram_setting[1];
-		MEOW_REG(u32, IO_MBK_MAP_C) = g_envAppTwlHeader->arm7_wram_setting[2];
+		MK_REG(u32, IO_MBK_SLOTWRPROT) = g_envAppTwlHeader->mbk9_setting;
+		MK_REG(u32, IO_MBK_MAP_A) = g_envAppTwlHeader->arm7_wram_setting[0];
+		MK_REG(u32, IO_MBK_MAP_B) = g_envAppTwlHeader->arm7_wram_setting[1];
+		MK_REG(u32, IO_MBK_MAP_C) = g_envAppTwlHeader->arm7_wram_setting[2];
 	}
 
 	// Jump to ARM7 entrypoint
@@ -177,12 +177,12 @@ MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToNextA
 	for (;;); // just in case
 }
 
-MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToBootstub(void)
+MK_CODE32 MK_EXTERN32 MK_NOINLINE MK_NORETURN static void _pmJumpToBootstub(void)
 {
 	// Remap WRAM_A to the location used by DSi-enhanced (hybrid) apps
 	// This is needed for compatibility with libnds v1.x infrastructure
 	if (systemIsTwlMode()) {
-		MEOW_REG(u32, IO_MBK_MAP_A) = 0x00403000;
+		MK_REG(u32, IO_MBK_MAP_A) = 0x00403000;
 	}
 
 	// Jump to ARM7 entrypoint
@@ -190,21 +190,21 @@ MEOW_CODE32 MEOW_EXTERN32 MEOW_NOINLINE MEOW_NORETURN static void _pmJumpToBoots
 	for (;;); // just in case
 }
 
-MEOW_WEAK void rtcSyncTime(void)
+MK_WEAK void rtcSyncTime(void)
 {
 	// Dummy function used in case the RTC code isn't linked in
 }
 
 #elif defined(ARM9)
 
-MEOW_WEAK void systemUserExit(void)
+MK_WEAK void systemUserExit(void)
 {
 	// Nothing
 }
 
 #endif
 
-MEOW_WEAK void systemErrorExit(int rc)
+MK_WEAK void systemErrorExit(int rc)
 {
 	// Nothing
 }
@@ -303,7 +303,7 @@ void __SYSCALL(exit)(int rc)
 
 	// Clear PXI FIFO
 	while (!(REG_PXI_CNT & PXI_CNT_RECV_EMPTY)) {
-		MEOW_DUMMY(REG_PXI_RECV);
+		MK_DUMMY(REG_PXI_RECV);
 	}
 
 	// Jump to new ARM7 entrypoint

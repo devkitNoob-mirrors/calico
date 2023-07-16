@@ -4,18 +4,18 @@
 
 static CdcPage s_cdcCurPage = CdcPage_Dummy;
 
-MEOW_INLINE bool _cdcCanUse(void)
+MK_INLINE bool _cdcCanUse(void)
 {
 	return cdcIsTwlMode() && mutexIsLockedByCurrentThread(&g_spiMutex);
 }
 
-MEOW_INLINE void _cdcSpiBegin(u8 cmd)
+MK_INLINE void _cdcSpiBegin(u8 cmd)
 {
 	spiRawStartHold(SpiDev_TSC, SpiBaud_4MHz);
 	spiRawWriteByte(cmd);
 }
 
-MEOW_INLINE void _cdcSpiPreEnd(void)
+MK_INLINE void _cdcSpiPreEnd(void)
 {
 	spiRawEndHold(SpiDev_TSC, SpiBaud_4MHz);
 }

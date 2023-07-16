@@ -6,14 +6,14 @@
 #if defined(__NDS__)
 #include "../nds/transfer.h"
 
-MEOW_INLINE time_t _getUnixTime(void)
+MK_INLINE time_t _getUnixTime(void)
 {
 	return s_transferRegion->unix_time;
 }
 
 #else
 
-MEOW_INLINE time_t _getUnixTime(void)
+MK_INLINE time_t _getUnixTime(void)
 {
 	return 0;
 }
@@ -43,7 +43,7 @@ int __SYSCALL(gettod_r)(struct _reent* ptr, struct timeval* tp, struct timezone*
 	return 0;
 }
 
-MEOW_CODE32 int __SYSCALL(nanosleep)(const struct timespec* req, struct timespec* rem)
+MK_CODE32 int __SYSCALL(nanosleep)(const struct timespec* req, struct timespec* rem)
 {
 	threadSleep((unsigned)req->tv_sec*1000000U + (unsigned)req->tv_nsec/1000U);
 	return 0;

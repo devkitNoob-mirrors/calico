@@ -116,7 +116,7 @@ void _ar6kWmiEventRx(Ar6kDev* dev, NetBuf* pPacket)
 	}
 }
 
-MEOW_CONSTEXPR bool _ar6kWmiIsLlcSnapPacket(NetMacHdr* machdr)
+MK_CONSTEXPR bool _ar6kWmiIsLlcSnapPacket(NetMacHdr* machdr)
 {
 	return __builtin_bswap16(machdr->len_or_ethertype_be) < NetEtherType_First;
 }
@@ -146,7 +146,7 @@ void _ar6kWmiDataRx(Ar6kDev* dev, Ar6kHtcSrvId srvid, NetBuf* pPacket)
 
 		// Convert MAC+LLC-SNAP to DIX (i.e. regular Ethernet II frame)
 		// XX: Not validating LLC-SNAP header
-		MEOW_ASSUME(pPacket->pos > sizeof(NetMacHdr));
+		MK_ASSUME(pPacket->pos > sizeof(NetMacHdr));
 		machdr = netbufPushHeaderType(pPacket, NetMacHdr);
 		machdrdata.len_or_ethertype_be = llcsnaphdr->ethertype_be;
 		memcpy(machdr, &machdrdata, sizeof(NetMacHdr));
@@ -267,13 +267,13 @@ static NetBuf* _ar6kWmiAllocPacket(unsigned headroom, unsigned size)
 	return pPacket;
 }
 
-MEOW_INLINE NetBuf* _ar6kWmiAllocCmdPacket(unsigned size)
+MK_INLINE NetBuf* _ar6kWmiAllocCmdPacket(unsigned size)
 {
 	unsigned hdr_len = sizeof(Ar6kHtcFrameHdr) + sizeof(Ar6kWmiCtrlHdr);
 	NetBuf* pPacket = _ar6kWmiAllocPacket(hdr_len, size);
 	pPacket->len = 0;
-	MEOW_ASSUME(pPacket->pos == hdr_len);
-	MEOW_ASSUME(pPacket->capacity >= (size + hdr_len));
+	MK_ASSUME(pPacket->pos == hdr_len);
+	MK_ASSUME(pPacket->capacity >= (size + hdr_len));
 	return pPacket;
 }
 

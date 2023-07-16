@@ -40,7 +40,7 @@ extern char __heap_start[], __heap_end[];
 
 #endif
 
-MEOW_NOINLINE void crt0ProcessLoadList(Crt0LoadList const* ll)
+MK_NOINLINE void crt0ProcessLoadList(Crt0LoadList const* ll)
 {
 	uptr lma = ll->lma;
 	for (Crt0LoadListEntry const* ent = ll->start; ent != ll->end; ent ++) {
@@ -94,7 +94,7 @@ static void crt0SetupArgv(bool is_twl)
 	}
 }
 
-MEOW_WEAK void _blkShelterDldi(void)
+MK_WEAK void _blkShelterDldi(void)
 {
 }
 
@@ -149,7 +149,7 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 
 	if (is_twl) {
 		// Ensure WRAM_A is mapped to the right location
-		MEOW_REG(u32, IO_MBK_MAP_A) = g_envAppTwlHeader->arm7_wram_setting[0];
+		MK_REG(u32, IO_MBK_MAP_A) = g_envAppTwlHeader->arm7_wram_setting[0];
 
 		// Configure DSi GPIO
 		REG_GPIO_CNT = GPIO_CNT_DIR_OUT(GPIO_PIN_SOUND_ENABLE) | GPIO_CNT_PIN(GPIO_PIN_SOUND_ENABLE);

@@ -4,7 +4,7 @@
 #if defined(__NDS__) && defined(ARM7)
 #include "../../nds/io.h"
 
-#define MWL_REG(_off) MEOW_REG(u16, IO_MITSUMI_WS1+(_off))
+#define MWL_REG(_off) MK_REG(u16, IO_MITSUMI_WS1+(_off))
 #endif
 
 // XX: Using gbatek's register names. Even though they aren't exactly great,

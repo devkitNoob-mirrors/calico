@@ -81,7 +81,7 @@ static bool _twlwifiGetWifiReset(void)
 	return (reg & (1U<<4)) != 0;
 }
 
-MEOW_INLINE void _twlwifiSetupDma(unsigned ch,
+MK_INLINE void _twlwifiSetupDma(unsigned ch,
 	uptr src, NdmaMode srcmode, uptr dst, NdmaMode dstmode,
 	u32 unit_words, u32 total_words, u32 cnt)
 {
@@ -190,7 +190,7 @@ static void _twlwifiOnDisassoc(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info)
 	}
 }
 
-MEOW_WEAK void _netbufRx(NetBuf* pPacket, int rssi)
+MK_WEAK void _netbufRx(NetBuf* pPacket, int rssi)
 {
 	netbufFree(pPacket);
 }

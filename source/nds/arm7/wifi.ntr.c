@@ -137,7 +137,7 @@ static void _ntrwifiOnStateLost(MwlStatus new_class, unsigned reason)
 	}
 }
 
-MEOW_WEAK void _netbufRx(NetBuf* pPacket, int rssi)
+MK_WEAK void _netbufRx(NetBuf* pPacket, int rssi)
 {
 	netbufFree(pPacket);
 }

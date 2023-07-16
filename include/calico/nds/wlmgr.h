@@ -7,7 +7,7 @@
 #include "../dev/netbuf.h"
 #include "../dev/wlan.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum WlMgrMode {
 	WlMgrMode_Infrastructure = 0,
@@ -48,13 +48,13 @@ typedef void (*WlMgrRawRxFn)(void* user, NetBuf* pPacket);
 
 bool wlmgrInit(const WlMgrInitConfig* config, u8 thread_prio);
 
-MEOW_INLINE const WlMgrInitConfig* wlmgrGetDefaultConfig(void)
+MK_INLINE const WlMgrInitConfig* wlmgrGetDefaultConfig(void)
 {
 	extern const WlMgrInitConfig g_wlmgrDefaultConfig;
 	return &g_wlmgrDefaultConfig;
 }
 
-MEOW_INLINE bool wlmgrInitDefault(void)
+MK_INLINE bool wlmgrInitDefault(void)
 {
 	return wlmgrInit(wlmgrGetDefaultConfig(), WLMGR_DEFAULT_THREAD_PRIO);
 }
@@ -77,4 +77,4 @@ void wlmgrStartServer(u8 thread_prio);
 
 #endif
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

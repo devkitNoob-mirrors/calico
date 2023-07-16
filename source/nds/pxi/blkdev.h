@@ -14,17 +14,17 @@ typedef enum PxiBlkDevMsgType {
 	PxiBlkDevMsg_Inserted     = 0x1f,
 } PxiBlkDevMsgType;
 
-MEOW_CONSTEXPR u32 pxiBlkDevMakeMsg(PxiBlkDevMsgType type, unsigned imm)
+MK_CONSTEXPR u32 pxiBlkDevMakeMsg(PxiBlkDevMsgType type, unsigned imm)
 {
 	return (type & 0x1f) | ((imm & 0x7ff) << 5);
 }
 
-MEOW_CONSTEXPR PxiBlkDevMsgType pxiBlkDevMsgGetType(u32 msg)
+MK_CONSTEXPR PxiBlkDevMsgType pxiBlkDevMsgGetType(u32 msg)
 {
 	return (PxiBlkDevMsgType)(msg & 0x1f);
 }
 
-MEOW_CONSTEXPR unsigned pxiBlkDevMsgGetImmediate(u32 msg)
+MK_CONSTEXPR unsigned pxiBlkDevMsgGetImmediate(u32 msg)
 {
 	return (msg >> 5) & 0x7ff;
 }

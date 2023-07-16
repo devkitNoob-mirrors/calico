@@ -7,12 +7,12 @@
 #include "../arm/common.h"
 #include "io.h"
 
-#define REG_IME MEOW_REG(u32, IO_IME)
-#define REG_IE  MEOW_REG(u32, IO_IE)
-#define REG_IF  MEOW_REG(u32, IO_IF)
+#define REG_IME MK_REG(u32, IO_IME)
+#define REG_IE  MK_REG(u32, IO_IE)
+#define REG_IF  MK_REG(u32, IO_IF)
 #ifdef ARM7
-#define REG_IE2 MEOW_REG(u32, IO_IE2)
-#define REG_IF2 MEOW_REG(u32, IO_IF2)
+#define REG_IE2 MK_REG(u32, IO_IE2)
+#define REG_IF2 MK_REG(u32, IO_IF2)
 #endif
 
 #define IRQ_VBLANK       (1U << 0)
@@ -43,7 +43,7 @@
 #define IRQ_NDMA(_x)     (1U << (28+(_x)))
 
 #ifdef ARM7
-#define MEOW_IRQ_NUM_HANDLERS 64
+#define MK_IRQ_NUM_HANDLERS 64
 
 #define IRQ_RTC          (1U << 7)
 #define IRQ_HINGE        (1U << 22)
@@ -62,7 +62,7 @@
 #endif
 
 #ifdef ARM9
-#define MEOW_IRQ_NUM_HANDLERS 32
+#define MK_IRQ_NUM_HANDLERS 32
 
 #define IRQ_SLOT1_SWAP   (1U << 14)
 #define IRQ_3DFIFO       (1U << 21)
@@ -73,7 +73,7 @@
 typedef unsigned IrqState;
 typedef u32 IrqMask;
 
-MEOW_INLINE IrqState irqLock(void)
+MK_INLINE IrqState irqLock(void)
 {
 	armCompilerBarrier();
 	IrqState saved = REG_IME;
@@ -82,7 +82,7 @@ MEOW_INLINE IrqState irqLock(void)
 	return saved;
 }
 
-MEOW_INLINE void irqUnlock(IrqState state)
+MK_INLINE void irqUnlock(IrqState state)
 {
 	armCompilerBarrier();
 	REG_IME = state;

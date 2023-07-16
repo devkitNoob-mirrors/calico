@@ -8,7 +8,7 @@
 
 #if defined(ARM9)
 
-#define REG_POWCNT MEOW_REG(u32, IO_POWCNT9)
+#define REG_POWCNT MK_REG(u32, IO_POWCNT9)
 
 #define POWCNT_LCD         (1U<<0) // supposedly "do not write 0"
 #define POWCNT_2D_GFX_A    (1U<<1)
@@ -20,7 +20,7 @@
 
 #elif defined(ARM7)
 
-#define REG_POWCNT MEOW_REG(u32, IO_POWCNT7)
+#define REG_POWCNT MK_REG(u32, IO_POWCNT7)
 
 #define POWCNT_SOUND       (1U<<0)
 #define POWCNT_WL_MITSUMI  (1U<<1)
@@ -30,7 +30,7 @@
 #error "ARM9 or ARM7 must be defined"
 #endif
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum PmEvent {
 	PmEvent_OnSleep      = 0,
@@ -53,18 +53,18 @@ struct PmEventCookie {
 	void* user;
 };
 
-MEOW_INLINE void pmSetControl(unsigned mask, unsigned value)
+MK_INLINE void pmSetControl(unsigned mask, unsigned value)
 {
 	mask &= POWCNT_ALL;
 	REG_POWCNT = (REG_POWCNT &~ mask) | (value & mask);
 }
 
-MEOW_INLINE void pmPowerOn(unsigned mask)
+MK_INLINE void pmPowerOn(unsigned mask)
 {
 	pmSetControl(mask, mask);
 }
 
-MEOW_INLINE void pmPowerOff(unsigned mask)
+MK_INLINE void pmPowerOff(unsigned mask)
 {
 	pmSetControl(mask, 0);
 }
@@ -78,12 +78,12 @@ typedef enum PmLcdLayout {
 	PmLcdLayout_TopIsA    = PmLcdLayout_BottomIsB,
 } PmLcdLayout;
 
-MEOW_INLINE void pmGfxLcdSwap(void)
+MK_INLINE void pmGfxLcdSwap(void)
 {
 	REG_POWCNT ^= POWCNT_LCD_SWAP;
 }
 
-MEOW_INLINE void pmGfxSetLcdLayout(PmLcdLayout layout)
+MK_INLINE void pmGfxSetLcdLayout(PmLcdLayout layout)
 {
 	unsigned reg = REG_POWCNT &~ POWCNT_LCD_SWAP;
 	if (layout != PmLcdLayout_BottomIsA) {
@@ -127,4 +127,4 @@ void pmSetPowerLed(PmLedMode mode);
 void pmMicSetAmp(bool enable, unsigned gain);
 bool pmReadNvram(void* data, u32 addr, u32 len);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

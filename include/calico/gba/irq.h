@@ -7,9 +7,9 @@
 #include "../arm/common.h"
 #include "io.h"
 
-#define REG_IE  MEOW_REG(u16, IO_IE)
-#define REG_IF  MEOW_REG(u16, IO_IF)
-#define REG_IME MEOW_REG(u16, IO_IME)
+#define REG_IE  MK_REG(u16, IO_IE)
+#define REG_IF  MK_REG(u16, IO_IF)
+#define REG_IME MK_REG(u16, IO_IME)
 
 #define IRQ_VBLANK (1U << 0)
 #define IRQ_HBLANK (1U << 1)
@@ -29,14 +29,14 @@
 #define IRQ_TIMER(_x) (1U << (3+(_x)))
 #define IRQ_DMA(_x)   (1U << (8+(_x)))
 
-#define MEOW_IRQ_NUM_HANDLERS 16
+#define MK_IRQ_NUM_HANDLERS 16
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef unsigned IrqState;
 typedef u16 IrqMask;
 
-MEOW_INLINE IrqState irqLock(void)
+MK_INLINE IrqState irqLock(void)
 {
 	armCompilerBarrier();
 	IrqState saved = REG_IME;
@@ -45,11 +45,11 @@ MEOW_INLINE IrqState irqLock(void)
 	return saved;
 }
 
-MEOW_INLINE void irqUnlock(IrqState state)
+MK_INLINE void irqUnlock(IrqState state)
 {
 	armCompilerBarrier();
 	REG_IME = state;
 	armCompilerBarrier();
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

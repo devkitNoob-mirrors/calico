@@ -6,7 +6,7 @@
 #include "../../types.h"
 #include "spi.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum TscPowerMode {
 	TscPowerMode_Auto  = 0U<<0,
@@ -42,16 +42,16 @@ typedef enum TscResult {
 	TscResult_Valid = 2,
 } TscResult;
 
-typedef struct MEOW_STRUCT_ALIGN(4) TscTouchData {
+typedef struct MK_STRUCT_ALIGN(4) TscTouchData {
 	u16 x, y;
 } TscTouchData;
 
-MEOW_CONSTEXPR unsigned tscAbs(signed x)
+MK_CONSTEXPR unsigned tscAbs(signed x)
 {
 	return x >= 0 ? x : (-x);
 }
 
-MEOW_CONSTEXPR u8 tscMakeCmd(TscChannel ch, TscConvMode conv, TscPowerMode pm)
+MK_CONSTEXPR u8 tscMakeCmd(TscChannel ch, TscConvMode conv, TscPowerMode pm)
 {
 	return pm | conv | ch | (1U<<7);
 }
@@ -61,4 +61,4 @@ TscResult tscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_
 unsigned tscReadChannel8(TscChannel ch);
 unsigned tscReadChannel12(TscChannel ch);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

@@ -20,7 +20,7 @@ static u32 s_blkPxiMailboxData[1];
 static Thread s_blkPxiThread;
 alignas(8) static u8 s_blkPxiThreadStack[2048];
 
-MEOW_CONSTEXPR bool _blkIsValidAddr(const void* addr, u32 alignment)
+MK_CONSTEXPR bool _blkIsValidAddr(const void* addr, u32 alignment)
 {
 	// Verify that:
 	// 1) The address is in main RAM (excluding DTCM mapped/shared region)
@@ -98,7 +98,7 @@ u32 blkDevGetSectorCount(BlkDevice dev)
 	}
 }
 
-MEOW_NOINLINE static bool _blkDevReadWriteSectors(u32 msg, u32 buffer, u32 first_sector, u32 num_sectors)
+MK_NOINLINE static bool _blkDevReadWriteSectors(u32 msg, u32 buffer, u32 first_sector, u32 num_sectors)
 {
 	u32 params[3] = {
 		buffer,

@@ -4,7 +4,7 @@
 
 #define AR6K_WMI_PROTOCOL_VER 2
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum Ar6kWmiCmdId {
 	Ar6kWmiCmdId_Connect                  = 0x0001,
@@ -391,49 +391,49 @@ bool ar6kWmiSetBitRate(Ar6kDev* dev, Ar6kWmiBitRate data_rate, Ar6kWmiBitRate mg
 
 bool ar6kWmixConfigDebugModuleCmd(Ar6kDev* dev, u32 cfgmask, u32 config);
 
-MEOW_INLINE bool ar6kWmiDisconnect(Ar6kDev* dev)
+MK_INLINE bool ar6kWmiDisconnect(Ar6kDev* dev)
 {
 	return ar6kWmiSimpleCmd(dev, Ar6kWmiCmdId_Disconnect);
 }
 
-MEOW_INLINE bool ar6kWmiSetDiscTimeout(Ar6kDev* dev, u8 timeout)
+MK_INLINE bool ar6kWmiSetDiscTimeout(Ar6kDev* dev, u8 timeout)
 {
 	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetDiscTimeout, timeout);
 }
 
-MEOW_INLINE bool ar6kWmiGetChannelList(Ar6kDev* dev)
+MK_INLINE bool ar6kWmiGetChannelList(Ar6kDev* dev)
 {
 	return ar6kWmiSimpleCmd(dev, Ar6kWmiCmdId_GetChannelList);
 }
 
-MEOW_INLINE bool ar6kWmiSetPowerMode(Ar6kDev* dev, Ar6kWmiPowerMode mode)
+MK_INLINE bool ar6kWmiSetPowerMode(Ar6kDev* dev, Ar6kWmiPowerMode mode)
 {
 	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetPowerMode, mode);
 }
 
-MEOW_INLINE bool ar6kWmiSetKeepAlive(Ar6kDev* dev, u8 interval)
+MK_INLINE bool ar6kWmiSetKeepAlive(Ar6kDev* dev, u8 interval)
 {
 	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetKeepAlive, interval);
 }
 
-MEOW_INLINE bool ar6kWmiSetWscStatus(Ar6kDev* dev, bool enable)
+MK_INLINE bool ar6kWmiSetWscStatus(Ar6kDev* dev, bool enable)
 {
 	return ar6kWmiSimpleCmdWithParam8(dev, Ar6kWmiCmdId_SetWscStatus, enable?1:0);
 }
 
-MEOW_INLINE bool ar6kWmiSetHbTimeout(Ar6kDev* dev, u32 timeout)
+MK_INLINE bool ar6kWmiSetHbTimeout(Ar6kDev* dev, u32 timeout)
 {
 	return ar6kWmiSimpleCmdWithParam32(dev, Ar6kWmiCmdId_SetHbTimeout, timeout);
 }
 
-MEOW_INLINE bool ar6kWmiSetErrorReportBitmask(Ar6kDev* dev, u32 bitmask)
+MK_INLINE bool ar6kWmiSetErrorReportBitmask(Ar6kDev* dev, u32 bitmask)
 {
 	return ar6kWmiSimpleCmdWithParam32(dev, Ar6kWmiCmdId_TargetErrorReportBitmask, bitmask);
 }
 
-MEOW_INLINE bool ar6kWmiHostExitNotify(Ar6kDev* dev)
+MK_INLINE bool ar6kWmiHostExitNotify(Ar6kDev* dev)
 {
 	return ar6kWmiSimpleCmd(dev, Ar6kWmiCmdId_HostExitNotify);
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

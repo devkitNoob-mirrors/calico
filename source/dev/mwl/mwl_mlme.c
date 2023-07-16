@@ -34,9 +34,9 @@ void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rs
 	}
 }
 
-MEOW_CONSTEXPR unsigned _mwlMlmeCalcNextScanCh(unsigned ch, unsigned ch_mask)
+MK_CONSTEXPR unsigned _mwlMlmeCalcNextScanCh(unsigned ch, unsigned ch_mask)
 {
-	MEOW_ASSUME(ch_mask != 0);
+	MK_ASSUME(ch_mask != 0);
 
 	// Apply channel spacing increment
 	ch += MWL_MLME_SCAN_SPACING;
@@ -61,7 +61,7 @@ static void _mwlMlmeScanTimeout(TickTask* t)
 	_mwlSetMlmeState(dwell_over ? MwlMlmeState_ScanSetup : MwlMlmeState_ScanBusy);
 }
 
-MEOW_NOINLINE static void _mwlMlmeTaskScan(MwlMlmeState state)
+MK_NOINLINE static void _mwlMlmeTaskScan(MwlMlmeState state)
 {
 	switch (state) {
 		default: break;

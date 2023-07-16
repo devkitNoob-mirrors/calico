@@ -3,18 +3,18 @@
 #include <calico/nds/arm7/spi.h>
 #include <calico/nds/arm7/tsc.h>
 
-MEOW_INLINE void _tscSpiBegin(u8 cmd)
+MK_INLINE void _tscSpiBegin(u8 cmd)
 {
 	spiRawStartHold(SpiDev_TSC, SpiBaud_2MHz);
 	spiRawWriteByte(cmd);
 }
 
-MEOW_INLINE void _tscSpiPreEnd(void)
+MK_INLINE void _tscSpiPreEnd(void)
 {
 	spiRawEndHold(SpiDev_TSC, SpiBaud_2MHz);
 }
 
-MEOW_INLINE bool _tscIsPenIrqAsserted(void)
+MK_INLINE bool _tscIsPenIrqAsserted(void)
 {
 	return ~REG_RCNT_EXT & RCNT_EXT_PENIRQ;
 }
@@ -89,7 +89,7 @@ static TscResult _tscTryReadChannel(u16* out, unsigned diff_threshold, TscChanne
 		*out_max_diff = max_diff;
 	}
 
-#if MEOW_NDS_TSC_USE_ALTERNATE_ALGORITHM
+#if MK_NDS_TSC_USE_ALTERNATE_ALGORITHM
 	// Select one among the 5 samples to use as reference point.
 	// At least two more samples must be below a given threshold
 	// to be considered as a valid (non-noisy) result.
@@ -189,7 +189,7 @@ TscResult tscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_max_
 	return res;
 }
 
-MEOW_CODE32 unsigned tscReadChannel8(TscChannel ch)
+MK_CODE32 unsigned tscReadChannel8(TscChannel ch)
 {
 	_tscSpiBegin(tscMakeCmd(ch, TscConvMode_8bit, TscPowerMode_Auto));
 	unsigned hi = spiRawReadByte() & 0x7f;
@@ -199,7 +199,7 @@ MEOW_CODE32 unsigned tscReadChannel8(TscChannel ch)
 	return (hi << 1) | (lo >> 7);
 }
 
-MEOW_CODE32 unsigned tscReadChannel12(TscChannel ch)
+MK_CODE32 unsigned tscReadChannel12(TscChannel ch)
 {
 	_tscSpiBegin(tscMakeCmd(ch, TscConvMode_12bit, TscPowerMode_Auto));
 	unsigned hi = spiRawReadByte() & 0x7f;

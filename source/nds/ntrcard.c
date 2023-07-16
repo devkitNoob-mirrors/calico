@@ -23,12 +23,12 @@ static u32 s_ntrcardNormalCnt;
 static u32 s_ntrcardCachePos;
 alignas(CACHE_ALIGN) u8 s_ntrcardCache[NTRCARD_SECTOR_SZ];
 
-MEOW_INLINE bool _ntrcardIsOpenByArm9(void)
+MK_INLINE bool _ntrcardIsOpenByArm9(void)
 {
 	return (REG_EXMEMCNT & EXMEMCNT_NDS_SLOT_ARM7) == 0;
 }
 
-MEOW_INLINE bool _ntrcardIsOpenByArm7(void)
+MK_INLINE bool _ntrcardIsOpenByArm7(void)
 {
 	return (s_transferRegion->exmemcnt_mirror & EXMEMCNT_NDS_SLOT_ARM7) != 0;
 }
@@ -119,7 +119,7 @@ static void _ntrcardRecvByCpu(u32 romcnt, void* buf)
 	} while (romcnt & NTRCARD_ROMCNT_BUSY);
 }
 
-MEOW_NOINLINE static void _ntrcardRomReadSector(int dma_ch, u32 offset, void* buf)
+MK_NOINLINE static void _ntrcardRomReadSector(int dma_ch, u32 offset, void* buf)
 {
 	while (REG_NTRCARD_ROMCNT & NTRCARD_ROMCNT_BUSY);
 	REG_NTRCARD_CNT = NTRCARD_CNT_MODE_ROM | NTRCARD_CNT_TX_IE | NTRCARD_CNT_ENABLE;
@@ -150,7 +150,7 @@ void ntrcardClose(void)
 	mutexUnlock(&s_ntrcardMutex);
 }
 
-MEOW_INLINE bool _ntrcardIsAligned(int dma_ch, uptr addr)
+MK_INLINE bool _ntrcardIsAligned(int dma_ch, uptr addr)
 {
 	unsigned align = 4;
 #ifdef ARM9
@@ -161,7 +161,7 @@ MEOW_INLINE bool _ntrcardIsAligned(int dma_ch, uptr addr)
 	return (addr & (align-1)) == 0;
 }
 
-MEOW_INLINE unsigned _ntrcardCanAccess(int dma_ch, uptr addr)
+MK_INLINE unsigned _ntrcardCanAccess(int dma_ch, uptr addr)
 {
 	bool ret = _ntrcardIsAligned(dma_ch, addr);
 #ifdef ARM9

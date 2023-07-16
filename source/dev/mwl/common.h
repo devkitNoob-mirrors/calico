@@ -140,8 +140,8 @@ void _mwlRfCmd(u32 cmd);
 })
 
 void _mwlIrqHandler(void);
-MEOW_EXTERN32 void _mwlPushTaskImpl(u32 mask) __asm__("_mwlPushTask");
-MEOW_EXTERN32 MwlTask _mwlPopTask(void);
+MK_EXTERN32 void _mwlPushTaskImpl(u32 mask) __asm__("_mwlPushTask");
+MK_EXTERN32 MwlTask _mwlPopTask(void);
 void _mwlRxQueueClear(void);
 void _mwlTxQueueClear(unsigned qid);
 void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);

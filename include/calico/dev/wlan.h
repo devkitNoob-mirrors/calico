@@ -12,7 +12,7 @@
 #define WLAN_WEP_128_LEN     16
 #define WLAN_WPA_PSK_LEN     32
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 // Potentially misaligned integer datatypes
 typedef u8 Wlan16[2];
@@ -226,7 +226,7 @@ typedef union WlanAuthData {
 	u8 wep_key[WLAN_WEP_128_LEN];
 } WlanAuthData;
 
-MEOW_CONSTEXPR unsigned wlanFreqToChannel(unsigned freq_mhz)
+MK_CONSTEXPR unsigned wlanFreqToChannel(unsigned freq_mhz)
 {
 	if (freq_mhz == 2484) {
 		return 14;
@@ -239,7 +239,7 @@ MEOW_CONSTEXPR unsigned wlanFreqToChannel(unsigned freq_mhz)
 	}
 }
 
-MEOW_CONSTEXPR unsigned wlanChannelToFreq(unsigned ch)
+MK_CONSTEXPR unsigned wlanChannelToFreq(unsigned ch)
 {
 	if (ch == 14) {
 		return 2484;
@@ -252,22 +252,22 @@ MEOW_CONSTEXPR unsigned wlanChannelToFreq(unsigned ch)
 	}
 }
 
-MEOW_INLINE unsigned wlanDecode16(const u8* data)
+MK_INLINE unsigned wlanDecode16(const u8* data)
 {
 	return data[0] | (data[1]<<8);
 }
 
-MEOW_INLINE unsigned wlanDecode24(const u8* data)
+MK_INLINE unsigned wlanDecode24(const u8* data)
 {
 	return data[0] | (data[1]<<8) | (data[2]<<16);
 }
 
-MEOW_INLINE unsigned wlanDecodeOui(const u8* data)
+MK_INLINE unsigned wlanDecodeOui(const u8* data)
 {
 	return data[2] | (data[1]<<8) | (data[0]<<16);
 }
 
-MEOW_INLINE unsigned wlanDecode32(const u8* data)
+MK_INLINE unsigned wlanDecode32(const u8* data)
 {
 	return data[0] | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
 }
@@ -277,4 +277,4 @@ WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, vo
 WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len);
 void wlanParseBeacon(WlanBssDesc* desc, WlanBssExtra* extra, NetBuf* pPacket);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

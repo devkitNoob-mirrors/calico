@@ -11,14 +11,14 @@
 static Mutex s_rtcMutex;
 static TickTask s_rtcUpdateTask;
 
-MEOW_INLINE void _rtcSleepUsec(int usec)
+MK_INLINE void _rtcSleepUsec(int usec)
 {
 	// This is probably eyeballed (not by me) and a lot slower than what's necessary.
 	// TODO: replace with a more accurate (and inline-asm) cycle count busyloop.
 	svcWaitByLoop(usec<<3);
 }
 
-MEOW_INLINE void _rtcBegin(void)
+MK_INLINE void _rtcBegin(void)
 {
 	mutexLock(&s_rtcMutex);
 	REG_RCNT_RTC = RCNT_RTC_CS_0 | RCNT_RTC_SCK_1;
@@ -27,13 +27,13 @@ MEOW_INLINE void _rtcBegin(void)
 	_rtcSleepUsec(1);
 }
 
-MEOW_INLINE void _rtcEnd(void)
+MK_INLINE void _rtcEnd(void)
 {
 	REG_RCNT_RTC = RCNT_RTC_CS_0 | RCNT_RTC_SCK_1;
 	mutexUnlock(&s_rtcMutex);
 }
 
-MEOW_INLINE void _rtcOutputBit(u8 bit)
+MK_INLINE void _rtcOutputBit(u8 bit)
 {
 	bit &= 1;
 	REG_RCNT_RTC = RCNT_RTC_CS_1 | RCNT_RTC_SCK_0 | RCNT_RTC_SIO_OUT | bit;
@@ -42,7 +42,7 @@ MEOW_INLINE void _rtcOutputBit(u8 bit)
 	_rtcSleepUsec(5);
 }
 
-MEOW_INLINE u8 _rtcInputBit(void)
+MK_INLINE u8 _rtcInputBit(void)
 {
 	REG_RCNT_RTC = RCNT_RTC_CS_1 | RCNT_RTC_SCK_0;
 	_rtcSleepUsec(5);
@@ -51,7 +51,7 @@ MEOW_INLINE u8 _rtcInputBit(void)
 	return REG_RCNT_RTC & RCNT_RTC_SIO;
 }
 
-MEOW_INLINE void _rtcOutputCmdByte(u8 byte)
+MK_INLINE void _rtcOutputCmdByte(u8 byte)
 {
 	// MSB to LSB
 	for (int i = 7; i >= 0; i --) {
@@ -59,7 +59,7 @@ MEOW_INLINE void _rtcOutputCmdByte(u8 byte)
 	}
 }
 
-MEOW_INLINE void _rtcOutputDataByte(u8 byte)
+MK_INLINE void _rtcOutputDataByte(u8 byte)
 {
 	// LSB to MSB
 	for (int i = 0; i < 8; i ++) {
@@ -67,7 +67,7 @@ MEOW_INLINE void _rtcOutputDataByte(u8 byte)
 	}
 }
 
-MEOW_INLINE u8 _rtcInputDataByte(void)
+MK_INLINE u8 _rtcInputDataByte(void)
 {
 	// LSB to MSB
 	u8 byte = 0;

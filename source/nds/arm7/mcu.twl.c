@@ -26,7 +26,7 @@ static unsigned _mcuCheckIrqFlags(void)
 	return flags;
 }
 
-MEOW_INLINE bool _mcuIrqMaskUnpack(unsigned* pmask, unsigned* pid)
+MK_INLINE bool _mcuIrqMaskUnpack(unsigned* pmask, unsigned* pid)
 {
 	if (!*pmask)
 		return false;

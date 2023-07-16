@@ -7,7 +7,7 @@
 #include "spi.h"
 #include "tsc.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum CdcPage {
 	CdcPage_Control    = 0x00,
@@ -42,7 +42,7 @@ typedef enum CdcTscSndReg {
 	CdcTscSndReg_MicPga          = 0x2f,
 } CdcTscSndReg;
 
-MEOW_INLINE bool cdcIsTwlMode(void)
+MK_INLINE bool cdcIsTwlMode(void)
 {
 	extern bool g_cdcIsTwlMode;
 	return g_cdcIsTwlMode;
@@ -60,4 +60,4 @@ TscResult cdcTscReadTouch(TscTouchData* out, unsigned diff_threshold, u16* out_m
 
 void cdcMicSetAmp(bool enable, unsigned gain);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

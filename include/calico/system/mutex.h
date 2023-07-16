@@ -2,7 +2,7 @@
 #include "../types.h"
 #include "thread.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct Mutex {
 	Thread* owner;
@@ -13,7 +13,7 @@ typedef struct RMutex {
 	u32 counter;
 } RMutex;
 
-MEOW_INLINE bool mutexIsLockedByCurrentThread(Mutex* m)
+MK_INLINE bool mutexIsLockedByCurrentThread(Mutex* m)
 {
 	return m->owner == threadGetSelf();
 }
@@ -21,7 +21,7 @@ MEOW_INLINE bool mutexIsLockedByCurrentThread(Mutex* m)
 void mutexLock(Mutex* m);
 void mutexUnlock(Mutex* m);
 
-MEOW_INLINE void rmutexLock(RMutex* m)
+MK_INLINE void rmutexLock(RMutex* m)
 {
 	if (mutexIsLockedByCurrentThread(&m->mutex)) {
 		m->counter ++;
@@ -31,11 +31,11 @@ MEOW_INLINE void rmutexLock(RMutex* m)
 	}
 }
 
-MEOW_INLINE void rmutexUnlock(RMutex* m)
+MK_INLINE void rmutexUnlock(RMutex* m)
 {
 	if (!--m->counter) {
 		mutexUnlock(&m->mutex);
 	}
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

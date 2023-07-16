@@ -10,7 +10,7 @@ static struct {
 	u8 body[MWL_RX_STATIC_MEM_SZ];
 } s_mwlRxStaticMem;
 
-MEOW_CONSTEXPR bool _mwlRxCanUseStaticMem(MwlRxType type, unsigned len)
+MK_CONSTEXPR bool _mwlRxCanUseStaticMem(MwlRxType type, unsigned len)
 {
 	switch (type) {
 		default:
@@ -23,7 +23,7 @@ MEOW_CONSTEXPR bool _mwlRxCanUseStaticMem(MwlRxType type, unsigned len)
 	}
 }
 
-MEOW_NOINLINE static void _mwlRxRead(void* dst, unsigned len)
+MK_NOINLINE static void _mwlRxRead(void* dst, unsigned len)
 {
 	u16* dst16 = (u16*)dst;
 	while (len > 1) {
@@ -32,10 +32,10 @@ MEOW_NOINLINE static void _mwlRxRead(void* dst, unsigned len)
 	}
 }
 
-MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
+MK_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
 {
 	// Pop 802.11 header
-	MEOW_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
+	MK_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
 	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
 
 	// Save beacon header for later
@@ -88,7 +88,7 @@ MEOW_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr
 	MWL_REG(W_US_COMPARE0) = nextTbttUs | 1;
 }
 
-MEOW_NOINLINE static void _mwlRxProbeResFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
+MK_NOINLINE static void _mwlRxProbeResFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
 {
 	// Ignore this packet if we are not scanning
 	if (s_mwlState.mlme_state != MwlMlmeState_ScanBusy) {
@@ -96,7 +96,7 @@ MEOW_NOINLINE static void _mwlRxProbeResFrame(NetBuf* pPacket, MwlDataRxHdr* rxh
 	}
 
 	// Pop 802.11 header
-	MEOW_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
+	MK_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
 	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
 
 	dietPrint("PrbRsp BSSID=%.2X:%.2X:%.2X:%.2X:%.2X:%.2X\n",
@@ -229,7 +229,7 @@ void _mwlRxMgmtCtrlTask(void)
 	}
 
 	// Pop 802.11 header
-	MEOW_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
+	MK_ASSUME(pPacket->len >= sizeof(WlanMacHdr));
 	WlanMacHdr* dot11hdr = netbufPopHeaderType(pPacket, WlanMacHdr);
 
 	switch (dot11hdr->fc.subtype) {

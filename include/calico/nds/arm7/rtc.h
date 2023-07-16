@@ -21,7 +21,7 @@
 #define RTC_STATUS2_INT2_EN       (1U<<6)
 #define RTC_STATUS2_TEST          (1U<<7)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum RtcRegister {
 	// Available on all models (Seiko S-35180)
@@ -63,7 +63,7 @@ typedef struct RtcDateTime {
 	u8 second;  // 0-59
 } RtcDateTime;
 
-MEOW_CONSTEXPR u8 rtcDecodeBcd(u8 bcd)
+MK_CONSTEXPR u8 rtcDecodeBcd(u8 bcd)
 {
 	return 10*(bcd>>4) + (bcd & 0xf);
 }
@@ -77,23 +77,23 @@ void rtcWriteRegister(RtcRegister reg, const void* data, size_t size);
 void rtcReadDateTime(RtcDateTime* t);
 u32 rtcDateTimeToUnix(const RtcDateTime* t);
 
-MEOW_INLINE u8 rtcReadRegister8(RtcRegister reg)
+MK_INLINE u8 rtcReadRegister8(RtcRegister reg)
 {
 	u8 value;
 	rtcReadRegister(reg, &value, 1);
 	return value;
 }
 
-MEOW_INLINE void rtcWriteRegister8(RtcRegister reg, u8 value)
+MK_INLINE void rtcWriteRegister8(RtcRegister reg, u8 value)
 {
 	rtcWriteRegister(reg, &value, 1);
 }
 
-MEOW_INLINE u32 rtcReadUnixTime(void)
+MK_INLINE u32 rtcReadUnixTime(void)
 {
 	RtcDateTime t;
 	rtcReadDateTime(&t);
 	return rtcDateTimeToUnix(&t);
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

@@ -4,7 +4,7 @@
 #include "../system/sysclock.h"
 #include "tmio_regs.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct TmioPort TmioPort;
 typedef struct TmioResp TmioResp;
@@ -64,7 +64,7 @@ struct TmioTx {
 	void* user;
 };
 
-MEOW_CONSTEXPR u16 tmioSelectClock(unsigned freq)
+MK_CONSTEXPR u16 tmioSelectClock(unsigned freq)
 {
 	if (freq < (SYSTEM_CLOCK>>8)) // HCLK/256
 		return 0x80; // HCLK/512
@@ -85,12 +85,12 @@ MEOW_CONSTEXPR u16 tmioSelectClock(unsigned freq)
 	return 0x00; // HCLK/2
 }
 
-MEOW_INLINE void* tmioGetPortUserData(TmioCtl* ctl, unsigned port)
+MK_INLINE void* tmioGetPortUserData(TmioCtl* ctl, unsigned port)
 {
 	return ctl->port_isr[port].user;
 }
 
-MEOW_INLINE void tmioSetPortUserData(TmioCtl* ctl, unsigned port, void* data)
+MK_INLINE void tmioSetPortUserData(TmioCtl* ctl, unsigned port, void* data)
 {
 	ctl->port_isr[port].user = data;
 }
@@ -111,4 +111,4 @@ void tmioXferSendByCpu(TmioCtl* ctl, TmioTx* tx);
 
 unsigned tmioDecodeTranSpeed(u8 tran_speed);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

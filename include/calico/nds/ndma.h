@@ -19,14 +19,14 @@
 //      The operation is split up into multiple transfers. The last one
 //      may be smaller in order to copy the remaining data.
 
-#define REG_NDMAGCNT       MEOW_REG(u32, IO_NDMAGCNT)
-#define REG_NDMAxSAD(_x)   MEOW_REG(u32, IO_NDMAxSAD(_x))
-#define REG_NDMAxDAD(_x)   MEOW_REG(u32, IO_NDMAxDAD(_x))
-#define REG_NDMAxTCNT(_x)  MEOW_REG(u32, IO_NDMAxTCNT(_x))
-#define REG_NDMAxWCNT(_x)  MEOW_REG(u32, IO_NDMAxWCNT(_x))
-#define REG_NDMAxBCNT(_x)  MEOW_REG(u32, IO_NDMAxBCNT(_x))
-#define REG_NDMAxFDATA(_x) MEOW_REG(u32, IO_NDMAxFDATA(_x))
-#define REG_NDMAxCNT(_x)   MEOW_REG(u32, IO_NDMAxCNT(_x))
+#define REG_NDMAGCNT       MK_REG(u32, IO_NDMAGCNT)
+#define REG_NDMAxSAD(_x)   MK_REG(u32, IO_NDMAxSAD(_x))
+#define REG_NDMAxDAD(_x)   MK_REG(u32, IO_NDMAxDAD(_x))
+#define REG_NDMAxTCNT(_x)  MK_REG(u32, IO_NDMAxTCNT(_x))
+#define REG_NDMAxWCNT(_x)  MK_REG(u32, IO_NDMAxWCNT(_x))
+#define REG_NDMAxBCNT(_x)  MK_REG(u32, IO_NDMAxBCNT(_x))
+#define REG_NDMAxFDATA(_x) MK_REG(u32, IO_NDMAxFDATA(_x))
+#define REG_NDMAxCNT(_x)   MK_REG(u32, IO_NDMAxCNT(_x))
 
 #define NDMA_G_RR_CYCLES(_x) ((__builtin_ffs(_x)&0xf)<<16)
 #define NDMA_G_FIXED_PRIO    (0<<31)
@@ -47,7 +47,7 @@
 #define NDMA_IRQ_ENABLE    (1<<30)
 #define NDMA_START         (1<<31)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef enum NdmaMode {
 	NdmaMode_Increment = 0,
@@ -86,7 +86,7 @@ typedef enum NdmaTiming {
 #endif
 } NdmaTiming;
 
-MEOW_CONSTEXPR u32 ndmaCalcBlockTimer(unsigned prescaler, unsigned freq)
+MK_CONSTEXPR u32 ndmaCalcBlockTimer(unsigned prescaler, unsigned freq)
 {
 	unsigned basefreq = SYSTEM_CLOCK;
 	basefreq >>= ((prescaler>>16)&2) * 2;
@@ -96,17 +96,17 @@ MEOW_CONSTEXPR u32 ndmaCalcBlockTimer(unsigned prescaler, unsigned freq)
 	return interval | prescaler;
 }
 
-MEOW_INLINE bool ndmaIsBusy(unsigned id)
+MK_INLINE bool ndmaIsBusy(unsigned id)
 {
 	return REG_NDMAxCNT(id) & NDMA_START;
 }
 
-MEOW_INLINE void ndmaBusyWait(unsigned id)
+MK_INLINE void ndmaBusyWait(unsigned id)
 {
 	while (ndmaIsBusy(id));
 }
 
-MEOW_INLINE void ndmaStartCopy32(unsigned id, void* dst, const void* src, size_t size)
+MK_INLINE void ndmaStartCopy32(unsigned id, void* dst, const void* src, size_t size)
 {
 	REG_NDMAxSAD(id) = (u32)src;
 	REG_NDMAxDAD(id) = (u32)dst;
@@ -120,7 +120,7 @@ MEOW_INLINE void ndmaStartCopy32(unsigned id, void* dst, const void* src, size_t
 		NDMA_START;
 }
 
-MEOW_INLINE void ndmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
+MK_INLINE void ndmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 {
 	REG_NDMAxFDATA(id) = value;
 	REG_NDMAxDAD(id) = (u32)dst;
@@ -134,4 +134,4 @@ MEOW_INLINE void ndmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 		NDMA_START;
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

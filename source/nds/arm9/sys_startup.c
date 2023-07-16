@@ -10,12 +10,12 @@
 #include <calico/nds/pm.h>
 #include <calico/nds/arm9/vram.h>
 
-MEOW_WEAK void systemUserStartup(void)
+MK_WEAK void systemUserStartup(void)
 {
 	// Nothing
 }
 
-MEOW_WEAK void systemStartup(void)
+MK_WEAK void systemStartup(void)
 {
 	// Clear video display registers
 	REG_POWCNT = POWCNT_LCD | POWCNT_2D_GFX_A | POWCNT_2D_GFX_B | POWCNT_LCD_SWAP;

@@ -1,7 +1,7 @@
 #pragma once
 #include "types.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct MwlMlmeCallbacks {
 	void (* onBssInfo)(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);
@@ -21,4 +21,4 @@ bool mwlMlmeAuthenticate(unsigned timeout);
 bool mwlMlmeAssociate(unsigned timeout, bool fake_cck_rates);
 bool mwlMlmeDeauthenticate(void);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

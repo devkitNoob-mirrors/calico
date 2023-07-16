@@ -7,12 +7,12 @@ static bool s_tickInit;
 static vu64 s_highTickCount;
 static TickTask* s_firstTask;
 
-MEOW_CONSTEXPR bool _tickIsSequential32(u32 lhs, u32 rhs)
+MK_CONSTEXPR bool _tickIsSequential32(u32 lhs, u32 rhs)
 {
 	return (s32)(rhs - lhs) > 0;
 }
 
-MEOW_INLINE TickTask* _tickTaskGetInsertPosition(TickTask* t)
+MK_INLINE TickTask* _tickTaskGetInsertPosition(TickTask* t)
 {
 	TickTask* pos = NULL;
 	for (TickTask* cur = s_firstTask; cur && _tickIsSequential32(cur->target, t->target); cur = cur->next)
@@ -20,7 +20,7 @@ MEOW_INLINE TickTask* _tickTaskGetInsertPosition(TickTask* t)
 	return pos;
 }
 
-MEOW_INLINE TickTask* _tickTaskGetPrevious(TickTask* t)
+MK_INLINE TickTask* _tickTaskGetPrevious(TickTask* t)
 {
 	TickTask* pos = NULL;
 	for (TickTask* cur = s_firstTask; cur && cur != t; cur = cur->next)
@@ -28,7 +28,7 @@ MEOW_INLINE TickTask* _tickTaskGetPrevious(TickTask* t)
 	return pos;
 }
 
-MEOW_INLINE void _tickTaskEnqueue(TickTask* t)
+MK_INLINE void _tickTaskEnqueue(TickTask* t)
 {
 	TickTask* pos = _tickTaskGetInsertPosition(t);
 	if (pos) {
@@ -40,7 +40,7 @@ MEOW_INLINE void _tickTaskEnqueue(TickTask* t)
 	}
 }
 
-MEOW_INLINE void _tickTaskDequeue(TickTask* t)
+MK_INLINE void _tickTaskDequeue(TickTask* t)
 {
 	TickTask* prev = _tickTaskGetPrevious(t);
 	if (prev)

@@ -9,7 +9,7 @@
 #error "ARM9 or ARM7 must be defined"
 #endif
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 // Spin-mutex, or "Super-mutex"
 typedef struct SMutex {
@@ -18,8 +18,8 @@ typedef struct SMutex {
 	u32 cpu_id : 4;
 } SMutex;
 
-MEOW_EXTERN32 void smutexLock(SMutex* m);
-MEOW_EXTERN32 bool smutexTryLock(SMutex* m);
-MEOW_EXTERN32 void smutexUnlock(SMutex* m);
+MK_EXTERN32 void smutexLock(SMutex* m);
+MK_EXTERN32 bool smutexTryLock(SMutex* m);
+MK_EXTERN32 void smutexUnlock(SMutex* m);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

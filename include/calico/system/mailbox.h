@@ -2,7 +2,7 @@
 #include "../types.h"
 #include "thread.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct Mailbox {
 	u32* slots;
@@ -13,7 +13,7 @@ typedef struct Mailbox {
 	u8 recv_waiters : 4;
 } Mailbox;
 
-MEOW_INLINE void mailboxPrepare(Mailbox* mb, u32* slots, unsigned num_slots)
+MK_INLINE void mailboxPrepare(Mailbox* mb, u32* slots, unsigned num_slots)
 {
 	mb->slots = slots;
 	mb->num_slots = num_slots;
@@ -26,4 +26,4 @@ bool mailboxTryRecv(Mailbox* mb, u32* out);
 
 u32 mailboxRecv(Mailbox* mb);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

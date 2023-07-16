@@ -7,17 +7,17 @@ typedef struct _Ar6kHtcCtrlPktMem {
 	alignas(4) u8 mem[SDIO_BLOCK_SZ];
 } _Ar6kHtcCtrlPktMem;
 
-MEOW_CONSTEXPR Ar6kHtcEndpointId _ar6kHtcLookaheadGetEndpointId(u32 lookahead)
+MK_CONSTEXPR Ar6kHtcEndpointId _ar6kHtcLookaheadGetEndpointId(u32 lookahead)
 {
 	return (Ar6kHtcEndpointId)(lookahead & 0xff);
 }
 
-MEOW_CONSTEXPR u16 _ar6kHtcLookaheadGetPayloadLen(u32 lookahead)
+MK_CONSTEXPR u16 _ar6kHtcLookaheadGetPayloadLen(u32 lookahead)
 {
 	return lookahead >> 16;
 }
 
-MEOW_CONSTEXPR unsigned _ar6kHtcBytesToCredits(Ar6kDev* dev, unsigned pkt_size)
+MK_CONSTEXPR unsigned _ar6kHtcBytesToCredits(Ar6kDev* dev, unsigned pkt_size)
 {
 	// Calculate number of needed credits for sending a packet of the given size.
 	// This is actually just (pkt_size + dev->credit_size - 1) / dev->credit_size,
@@ -204,7 +204,7 @@ bool _ar6kHtcRecvMessagePendingHandler(Ar6kDev* dev)
 		}
 
 		// Compiler optimization
-		MEOW_ASSUME(pPacket->pos == 0 && pPacket->len == len);
+		MK_ASSUME(pPacket->pos == 0 && pPacket->len == len);
 
 		// Validate packet against lookahead
 		if (*(u32*)netbufGet(pPacket) != lookahead) {

@@ -6,7 +6,7 @@
 #include "../types.h"
 #include "cp15.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 void armDrainWriteBuffer(void);
 
@@ -17,4 +17,4 @@ void armDCacheInvalidate(void* addr, size_t size);
 void armICacheInvalidateAll(void);
 void armICacheInvalidate(void* addr, size_t size);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

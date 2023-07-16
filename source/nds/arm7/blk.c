@@ -79,7 +79,7 @@ void blkSetDevCallback(BlkDevCallbackFn fn)
 	s_blkDevCallback = fn;
 }
 
-MEOW_NOINLINE bool blkDevIsPresent(BlkDevice dev)
+MK_NOINLINE bool blkDevIsPresent(BlkDevice dev)
 {
 	switch (dev) {
 		default:
@@ -97,7 +97,7 @@ MEOW_NOINLINE bool blkDevIsPresent(BlkDevice dev)
 	}
 }
 
-MEOW_NOINLINE bool blkDevInit(BlkDevice dev)
+MK_NOINLINE bool blkDevInit(BlkDevice dev)
 {
 	switch (dev) {
 		default:
@@ -123,7 +123,7 @@ MEOW_NOINLINE bool blkDevInit(BlkDevice dev)
 	return false;
 }
 
-MEOW_NOINLINE u32 blkDevGetSectorCount(BlkDevice dev)
+MK_NOINLINE u32 blkDevGetSectorCount(BlkDevice dev)
 {
 	if (dev == BlkDevice_TwlNandAes) {
 		dev = BlkDevice_TwlNand;
@@ -136,7 +136,7 @@ MEOW_NOINLINE u32 blkDevGetSectorCount(BlkDevice dev)
 	}
 }
 
-MEOW_NOINLINE bool blkDevReadSectors(BlkDevice dev, void* buffer, u32 first_sector, u32 num_sectors)
+MK_NOINLINE bool blkDevReadSectors(BlkDevice dev, void* buffer, u32 first_sector, u32 num_sectors)
 {
 	switch (dev) {
 		default:
@@ -156,7 +156,7 @@ MEOW_NOINLINE bool blkDevReadSectors(BlkDevice dev, void* buffer, u32 first_sect
 	}
 }
 
-MEOW_NOINLINE bool blkDevWriteSectors(BlkDevice dev, const void* buffer, u32 first_sector, u32 num_sectors)
+MK_NOINLINE bool blkDevWriteSectors(BlkDevice dev, const void* buffer, u32 first_sector, u32 num_sectors)
 {
 	switch (dev) {
 		default:

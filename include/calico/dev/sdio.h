@@ -28,7 +28,7 @@
 
 #define SDIO_BLOCK_SZ 128
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct SdioManfid {
 	u16 code;
@@ -54,4 +54,4 @@ bool sdioCardWriteDirect(SdioCard* card, unsigned func, unsigned addr, const voi
 bool sdioCardReadExtended(SdioCard* card, unsigned func, unsigned addr, void* out, size_t size);
 bool sdioCardWriteExtended(SdioCard* card, unsigned func, unsigned addr, const void* in, size_t size);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

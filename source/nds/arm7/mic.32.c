@@ -54,7 +54,7 @@ static unsigned _micReadSampleNtr(void)
 	return ret;
 }
 
-MEOW_INLINE void _micexStart(unsigned div, unsigned cnt)
+MK_INLINE void _micexStart(unsigned div, unsigned cnt)
 {
 	REG_MICEX_CNT = MICEX_CNT_CLEAR_FIFO;
 	REG_MICEX_CNT = cnt | MICEX_CNT_RATE_DIV(div) | MICEX_CNT_ENABLE;

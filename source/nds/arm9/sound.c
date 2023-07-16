@@ -26,7 +26,7 @@ static void _soundPxiHandler(void* user, u32 data)
 	}
 }
 
-MEOW_NOINLINE static bool _soundPxiCheckCredits(unsigned needed_credits)
+MK_NOINLINE static bool _soundPxiCheckCredits(unsigned needed_credits)
 {
 	// If we don't have enough credits, wait until we do
 	ArmIrqState st = armIrqLockByPsr();
@@ -41,7 +41,7 @@ MEOW_NOINLINE static bool _soundPxiCheckCredits(unsigned needed_credits)
 	return avail < PXI_SOUND_CREDIT_UPDATE_THRESHOLD;
 }
 
-MEOW_INLINE void _soundIssueCmdAsync(PxiSoundCmd cmd, unsigned imm, const void* arg, size_t arg_size)
+MK_INLINE void _soundIssueCmdAsync(PxiSoundCmd cmd, unsigned imm, const void* arg, size_t arg_size)
 {
 	unsigned arg_size_words = (arg_size + 3) / 4;
 	bool update_credits = _soundPxiCheckCredits(1 + arg_size_words);
@@ -111,7 +111,7 @@ void soundSetMixerSleep(bool enable)
 	_soundIssueCmdAsync(PxiSoundCmd_SetMixerSleep, enable ? 1 : 0, NULL, 0);
 }
 
-MEOW_INLINE SoundVolDiv _soundCalcVolDiv(unsigned* vol)
+MK_INLINE SoundVolDiv _soundCalcVolDiv(unsigned* vol)
 {
 	if (*vol < 0x80) {
 		return SoundVolDiv_16;

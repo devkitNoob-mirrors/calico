@@ -28,52 +28,52 @@ typedef volatile s32 vs32; ///< 32-bit volatile signed integer.
 typedef volatile s64 vs64; ///< 64-bit volatile signed integer.
 typedef volatile sptr vsptr; ///< Pointer-sized volatile signed integer.
 
-#define MEOW_PACKED     __attribute__((packed))
-#define MEOW_DEPRECATED __attribute__((deprecated))
-#define MEOW_INLINE     __attribute__((always_inline)) static inline
-#define MEOW_NOINLINE   __attribute__((noinline))
-#define MEOW_NORETURN   __attribute__((noreturn))
-#define MEOW_PURE       __attribute__((pure))
-#define MEOW_WEAK       __attribute__((weak))
-#define MEOW_DUMMY(_x)  (void)(_x)
+#define MK_PACKED     __attribute__((packed))
+#define MK_DEPRECATED __attribute__((deprecated))
+#define MK_INLINE     __attribute__((always_inline)) static inline
+#define MK_NOINLINE   __attribute__((noinline))
+#define MK_NORETURN   __attribute__((noreturn))
+#define MK_PURE       __attribute__((pure))
+#define MK_WEAK       __attribute__((weak))
+#define MK_DUMMY(_x)  (void)(_x)
 
 #if defined(__cplusplus)
-#define MEOW_EXTERN_C       extern "C"
-#define MEOW_EXTERN_C_START MEOW_EXTERN_C {
-#define MEOW_EXTERN_C_END   }
+#define MK_EXTERN_C       extern "C"
+#define MK_EXTERN_C_START MK_EXTERN_C {
+#define MK_EXTERN_C_END   }
 #else
-#define MEOW_EXTERN_C
-#define MEOW_EXTERN_C_START
-#define MEOW_EXTERN_C_END
+#define MK_EXTERN_C
+#define MK_EXTERN_C_START
+#define MK_EXTERN_C_END
 #endif
 
 #if __thumb__
-#define MEOW_CODE32 __attribute__((target("arm")))
+#define MK_CODE32 __attribute__((target("arm")))
 #else
-#define MEOW_CODE32
+#define MK_CODE32
 #endif
 
 #if __thumb__ && __ARM_ARCH < 5
-#define MEOW_EXTERN32   __attribute__((long_call))
+#define MK_EXTERN32   __attribute__((long_call))
 #else
-#define MEOW_EXTERN32
+#define MK_EXTERN32
 #endif
 
 #if __cplusplus >= 201402L
-#define MEOW_CONSTEXPR  MEOW_INLINE constexpr
+#define MK_CONSTEXPR  MK_INLINE constexpr
 #else
-#define MEOW_CONSTEXPR  MEOW_INLINE
+#define MK_CONSTEXPR  MK_INLINE
 #endif
 
 #if __cplusplus >= 201103L
-#define MEOW_STRUCT_ALIGN(_align) alignas(_align)
+#define MK_STRUCT_ALIGN(_align) alignas(_align)
 #else
-#define MEOW_STRUCT_ALIGN(_align) __attribute__((aligned(_align)))
+#define MK_STRUCT_ALIGN(_align) __attribute__((aligned(_align)))
 #endif
 
-#define MEOW_REG(_type,_off) (*(_type volatile*)(MM_IO + (_off)))
+#define MK_REG(_type,_off) (*(_type volatile*)(MM_IO + (_off)))
 
 #define if_likely(_expr)   if(__builtin_expect(!!(_expr), 1))
 #define if_unlikely(_expr) if(__builtin_expect(!!(_expr), 0))
 
-#define MEOW_ASSUME(_expr) do { if (!(_expr)) __builtin_unreachable(); } while (0)
+#define MK_ASSUME(_expr) do { if (!(_expr)) __builtin_unreachable(); } while (0)

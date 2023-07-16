@@ -97,7 +97,7 @@ bool twlSdIsInserted(void)
 	return true; // TODO
 }
 
-MEOW_INLINE void _twlblkSetupDma(unsigned ch,
+MK_INLINE void _twlblkSetupDma(unsigned ch,
 	uptr src, NdmaMode srcmode, uptr dst, NdmaMode dstmode,
 	u32 unit_words, u32 total_words, u32 cnt)
 {

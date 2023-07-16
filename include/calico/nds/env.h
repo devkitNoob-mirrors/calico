@@ -13,7 +13,7 @@
 #define g_envExtraInfo     ((EnvExtraInfo*)         MM_ENV_FREE_FCF0)
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct EnvNdsHeader {
 	char title[12];
@@ -234,7 +234,7 @@ typedef struct EnvNdsBootstubHeader {
 	u64 magic; // ENV_NDS_BOOTSTUB_MAGIC
 
 	// Main return-to-hbmenu entrypoint, for use on ARM9.
-	MEOW_NORETURN void (*arm9_entrypoint)(void);
+	MK_NORETURN void (*arm9_entrypoint)(void);
 
 	// This entrypoint is intended for requesting return-to-hbmenu directly from ARM7.
 	void (*arm7_entrypoint)(void);
@@ -373,4 +373,4 @@ typedef struct EnvTwlDeviceList {
 void envReadNvramSettings(void);
 #endif
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

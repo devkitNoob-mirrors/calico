@@ -5,7 +5,7 @@
 
 #include "../../types.h"
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 bool twlblkInit(void);
 
@@ -18,4 +18,4 @@ bool twlNandInit(void);
 bool twlNandReadSectors(void* buffer, u32 first_sector, u32 num_sectors);
 bool twlNandReadSectorsAes(void* buffer, u32 first_sector, u32 num_sectors);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

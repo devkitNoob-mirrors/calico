@@ -17,8 +17,8 @@
 #define LCD_HEIGHT 192
 #endif
 
-#define REG_DISPSTAT MEOW_REG(u16, IO_DISPSTAT)
-#define REG_VCOUNT   MEOW_REG(u16, IO_VCOUNT)
+#define REG_DISPSTAT MK_REG(u16, IO_DISPSTAT)
+#define REG_VCOUNT   MK_REG(u16, IO_VCOUNT)
 
 #define DISPSTAT_IF_VBLANK (1U<<0)
 #define DISPSTAT_IF_HBLANK (1U<<1)
@@ -35,31 +35,31 @@
 #define DISPSTAT_LYC_MASK  (0x1ff<<7)
 #define DISPSTAT_LYC(_x)   _lcdCalcLyc(_x)
 
-MEOW_CONSTEXPR unsigned _lcdCalcLyc(unsigned lyc)
+MK_CONSTEXPR unsigned _lcdCalcLyc(unsigned lyc)
 {
 	return ((lyc&0xff) << 8) | (((lyc>>8)&1) << 7);
 }
 #endif
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
-MEOW_INLINE void lcdSetIrqMask(unsigned mask, unsigned value)
+MK_INLINE void lcdSetIrqMask(unsigned mask, unsigned value)
 {
 	mask &= DISPSTAT_IE_ALL;
 	REG_DISPSTAT = (REG_DISPSTAT &~ mask) | (value & mask);
 }
 
-MEOW_INLINE void lcdSetVBlankIrq(bool enable)
+MK_INLINE void lcdSetVBlankIrq(bool enable)
 {
 	lcdSetIrqMask(DISPSTAT_IE_VBLANK, enable ? DISPSTAT_IE_VBLANK : 0);
 }
 
-MEOW_INLINE void lcdSetHBlankIrq(bool enable)
+MK_INLINE void lcdSetHBlankIrq(bool enable)
 {
 	lcdSetIrqMask(DISPSTAT_IE_HBLANK, enable ? DISPSTAT_IE_HBLANK : 0);
 }
 
-MEOW_INLINE void lcdSetVCountCompare(bool enable, unsigned lyc)
+MK_INLINE void lcdSetVCountCompare(bool enable, unsigned lyc)
 {
 	unsigned reg = REG_DISPSTAT &~ (DISPSTAT_IE_VCOUNT|DISPSTAT_LYC_MASK);
 	if (enable) {
@@ -68,24 +68,24 @@ MEOW_INLINE void lcdSetVCountCompare(bool enable, unsigned lyc)
 	REG_DISPSTAT = reg;
 }
 
-MEOW_INLINE bool lcdInVBlank(void)
+MK_INLINE bool lcdInVBlank(void)
 {
 	return REG_DISPSTAT & DISPSTAT_IF_VBLANK;
 }
 
-MEOW_INLINE bool lcdInHBlank(void)
+MK_INLINE bool lcdInHBlank(void)
 {
 	return REG_DISPSTAT & DISPSTAT_IF_HBLANK;
 }
 
-MEOW_INLINE bool lcdInVCountMatch(void)
+MK_INLINE bool lcdInVCountMatch(void)
 {
 	return REG_DISPSTAT & DISPSTAT_IF_VCOUNT;
 }
 
-MEOW_INLINE unsigned lcdGetVCount(void)
+MK_INLINE unsigned lcdGetVCount(void)
 {
 	return REG_VCOUNT;
 }
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END

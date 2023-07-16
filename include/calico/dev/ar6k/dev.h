@@ -8,7 +8,7 @@
 
 #define AR6K_WORK_BUF_SIZE (sizeof(NetBuf) + AR6K_HTC_MAX_PACKET_SZ)
 
-MEOW_EXTERN_C_START
+MK_EXTERN_C_START
 
 typedef struct Ar6kEndpoint {
 	u16 service_id;
@@ -62,4 +62,4 @@ void ar6kDevThreadCancel(Ar6kDev* dev);
 bool ar6kDevReadRegDiag(Ar6kDev* dev, u32 addr, u32* out);
 bool ar6kDevWriteRegDiag(Ar6kDev* dev, u32 addr, u32 value);
 
-MEOW_EXTERN_C_END
+MK_EXTERN_C_END
