@@ -8,6 +8,7 @@ typedef enum PxiBlkDevMsgType {
 	PxiBlkDevMsg_Init         = 1,
 	PxiBlkDevMsg_ReadSectors  = 2,
 	PxiBlkDevMsg_WriteSectors = 3,
+	PxiBlkDevMsg_DumpDldi     = 4,
 
 	// ARM7 -> ARM9
 	PxiBlkDevMsg_Removed      = 0x1e,

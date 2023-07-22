@@ -54,6 +54,15 @@ static int _blkPxiThread(void* unused)
 				}
 				break;
 			}
+
+			case PxiBlkDevMsg_DumpDldi: {
+				void* buffer = (void*)mailboxRecv(&s_blkPxiMailbox);
+				if (s_dldiDiscIface) {
+					DldiHeader* dldi = (DldiHeader*)((u8*)s_dldiDiscIface - offsetof(DldiHeader, disc));
+					armCopyMem32(buffer, dldi, 1U << dldi->driver_sz_log2);
+					reply = 1;
+				}
+			}
 		}
 
 		pxiReply(PxiChannel_BlkDev, reply);

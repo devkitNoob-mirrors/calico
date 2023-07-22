@@ -26,4 +26,8 @@ typedef struct DldiHeader {
 	DISC_INTERFACE disc;
 } DldiHeader;
 
+#if defined(__NDS__) && defined(ARM9)
+bool dldiDumpInternal(void* buffer);
+#endif
+
 MK_EXTERN_C_END

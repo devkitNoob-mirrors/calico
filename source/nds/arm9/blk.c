@@ -3,6 +3,7 @@
 #include <calico/system/thread.h>
 #include <calico/system/mailbox.h>
 #include <calico/dev/blk.h>
+#include <calico/dev/dldi.h>
 #include <calico/nds/mm.h>
 #include <calico/nds/pxi.h>
 
@@ -131,4 +132,19 @@ bool blkDevWriteSectors(BlkDevice dev, const void* buffer, u32 first_sector, u32
 	return _blkDevReadWriteSectors(
 		pxiBlkDevMakeMsg(PxiBlkDevMsg_WriteSectors, dev),
 		(u32)buffer, first_sector, num_sectors);
+}
+
+bool dldiDumpInternal(void* buffer)
+{
+	if (!_blkIsValidAddr(buffer, ARM_CACHE_LINE_SZ)) {
+		return false;
+	}
+
+	u32 params[1] = {
+		(u32)buffer,
+	};
+
+	armDCacheInvalidate(buffer, DLDI_MAX_ALLOC_SZ);
+	return pxiSendWithDataAndReceive(PxiChannel_BlkDev,
+		pxiBlkDevMakeMsg(PxiBlkDevMsg_DumpDldi, 0), params, sizeof(params)/sizeof(u32));
 }

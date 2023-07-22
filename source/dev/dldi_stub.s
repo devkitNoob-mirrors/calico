@@ -1,8 +1,6 @@
 #include <calico/asm.inc>
 #include <calico/dev/dldi_defs.h>
 
-#define DLDI_ALLOCATED_SPACE DLDI_SIZE_16KB
-
 .section .dldi, "ax", %progbits
 .align 2
 .global __dldi_start
@@ -14,9 +12,9 @@ __dldi_start:
 
 	@ Properties
 	.byte  1              @ version_num
-	.byte  DLDI_SIZE_16KB @ driver_sz_log2
+	.byte  DLDI_SIZE_MAX  @ driver_sz_log2
 	.byte  0              @ fix_flags
-	.byte  DLDI_SIZE_16KB @ alloc_sz_log2
+	.byte  DLDI_SIZE_MAX  @ alloc_sz_log2
 
 	@ Interface name
 1:	.ascii "Default (No interface)"
@@ -47,5 +45,5 @@ __dldi_start:
 	bx  lr
 
 .pool
-.space (1<<DLDI_ALLOCATED_SPACE) - (. - __dldi_start)
+.space DLDI_MAX_ALLOC_SZ - (. - __dldi_start)
 .Ldldi_end:

@@ -16,8 +16,11 @@
 #define DLDI_FEATURE_SLOT_GBA  (1U<<4)
 #define DLDI_FEATURE_SLOT_NDS  (1U<<5)
 
+#define DLDI_SIZE_MAX          DLDI_SIZE_16KB
 #define DLDI_SIZE_16KB         14
 #define DLDI_SIZE_8KB          13
 #define DLDI_SIZE_4KB          12
 #define DLDI_SIZE_2KB          11
 #define DLDI_SIZE_1KB          10
+
+#define DLDI_MAX_ALLOC_SZ      (1U<<DLDI_SIZE_MAX)
