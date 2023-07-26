@@ -107,7 +107,7 @@ static void _micTimerIsr(void)
 }
 
 __attribute__((section(".twl._micDmaIsr")))
-void _micDmaIsr(void)
+static void _micDmaIsr(void)
 {
 	MicBuf tmp = s_micState.front;
 	s_micState.front = s_micState.back;

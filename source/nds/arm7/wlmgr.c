@@ -45,7 +45,7 @@ MK_INLINE void _wlmgrSendEvent(WlMgrEvent evt, unsigned imm)
 	pxiSend(PxiChannel_WlMgr, pxiWlMgrMakeEvent(evt, imm));
 }
 
-void _wlmgrSetState(WlMgrState state)
+static void _wlmgrSetState(WlMgrState state)
 {
 	if (state != s_wlmgrState.state) {
 		s_wlmgrState.state = state;
