@@ -171,7 +171,7 @@ u32 rtcDateTimeToUnix(const RtcDateTime* t)
 
 	// Unpack/adjust values from RTC
 	unsigned YY,MM,DD,hh,mm,ss;
-	YY = 2000 + t->year - 1970;
+	YY = 2000 + t->year;
 	MM = t->month - 1;
 	DD = t->day - 1;
 	hh = t->hour;
@@ -195,7 +195,7 @@ u32 rtcDateTimeToUnix(const RtcDateTime* t)
 	// Add year offset (including extra days for leap years)
 	// Using a count of leap years since 1968 (which was leap)
 	// Not including 100-year exceptions (see above comment)
-	days += 365U*YY + (2+YY)/4U;
+	YY -= 1970; days += 365U*YY + (YY+1)/4U;
 
 	// Final calculation
 	return seconds + 86400U*days;
