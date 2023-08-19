@@ -44,6 +44,9 @@ PROVIDE_HIDDEN( __end__ = 0 );
 SECTIONS {
 	/* Initialization code section (crt0) */
 	.crt0 : {
+		KEEP ( *(.prepad) )
+		. = ALIGN(4);
+
 		KEEP( *(.bootstub .bootstub.*) )
 		*(.crt0 .crt0.*
 			/* libc functions that are only used during crt0 */
