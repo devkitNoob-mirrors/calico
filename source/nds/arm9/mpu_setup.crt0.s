@@ -54,6 +54,6 @@ FUNC_START32 crt0SetupMPU
 	.word CP15_PU_ENABLE | CP15_PU_64K | MM_DTCM @ DTCM + high shared memory
 	.word CP15_PU_ENABLE | CP15_PU_32K | MM_ITCM @ ITCM
 	.word CP15_PU_ENABLE | CP15_PU_32K | MM_BIOS @ BIOS
-	.word CP15_PU_ENABLE | ((5-1)<<1)            @ Exception vectors (in ITCM)
+	.word CP15_PU_ENABLE | CP15_PU_4K            @ Exception vectors (in ITCM)
 
 FUNC_END
