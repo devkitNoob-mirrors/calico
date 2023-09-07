@@ -72,9 +72,14 @@
 // DSi hardware info (sourced from HWINFO_S.dat)
 #define MM_ENV_TWL_HWINFO_S       0x2fffd68
 
-// Debug exception stack
-#define MM_ENV_DEBUG_STACK_BOTTOM 0x2fffd80
-#define MM_ENV_DEBUG_STACK_TOP    0x2fffdf0
+// ARM9 exception stack + vector
+#define MM_ENV_EXCPT_STACK_BOTTOM 0x2fffd80
+#define MM_ENV_EXCPT_STACK_TOP    0x2fffd9c
+#define MM_ENV_EXCPT_VECTOR       MM_ENV_EXCPT_STACK_TOP
+
+// Free area
+#define MM_ENV_FREE_FDA0          0x2fffda0
+#define MM_ENV_FREE_FDA0_SZ       0x50
 
 // SCFG registers backup
 #define MM_ENV_TWL_SCFG_BACKUP    0x2fffdf0
