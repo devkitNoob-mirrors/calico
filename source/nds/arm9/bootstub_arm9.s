@@ -16,9 +16,9 @@ REFERENCE __newlib_syscalls
 	b .Lsvc
 	b .Lpabt
 	b .Ldabt
-	udf #0x14
+	bkpt #0x8014
 	b .Lirq
-	b .Lfiq
+	bkpt #0x801c
 
 .section .itcm, "ax", %progbits
 .align 2
@@ -28,22 +28,16 @@ REFERENCE __newlib_syscalls
 .Lpabt: ldr pc, .Lvec_pabt
 .Ldabt: ldr pc, .Lvec_dabt
 .Lirq:  ldr pc, .Lvec_irq
-.Lfiq:  ldr pc, .Lvec_fiq
 
-.weak __arm_excpt_rst
-.weak __arm_excpt_und
-.weak __arm_excpt_svc
-.weak __arm_excpt_pabt
-.weak __arm_excpt_dabt
-.weak __arm_excpt_fiq
-
+.global __excpt_vectors
+__excpt_vectors:
 .Lvec_rst:  .word __arm_excpt_rst
 .Lvec_und:  .word __arm_excpt_und
 .Lvec_svc:  .word __arm_excpt_svc
 .Lvec_pabt: .word __arm_excpt_pabt
 .Lvec_dabt: .word __arm_excpt_dabt
 .Lvec_irq:  .word __arm_excpt_irq
-.Lvec_fiq:  .word __arm_excpt_fiq
+.size __excpt_vectors, .-__excpt_vectors
 
 FUNC_START32 __ds9_bootstub, bootstub
 	b .Lactual_start

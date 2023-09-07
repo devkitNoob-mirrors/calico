@@ -4,15 +4,16 @@
 #include <calico/nds/io.h>
 
 #if defined(ARM9)
-.global __arm_excpt_irq
-.set __arm_excpt_irq, __irq_handler
-#endif
+
+FUNC_START32 __arm_excpt_irq
+
+	sub   lr, lr, #4
+	push  {r0-r3,r12,lr}
+
+#elif defined(ARM7)
 
 FUNC_START32 __irq_handler
 
-#if defined(ARM9)
-	sub   lr, lr, #4
-	push  {r0-r3,r12,lr}
 #endif
 
 	@ Retrieve active interrupt mask

@@ -110,6 +110,7 @@ if(NINTENDO_DS)
 			source/nds/arm9/bootstub_arm9.s
 			source/nds/arm9/mpu_setup.crt0.s
 			source/nds/arm9/sys_startup.c
+			source/nds/arm9/excpt_handler.32.s
 
 			source/dev/dldi_stub.s
 
