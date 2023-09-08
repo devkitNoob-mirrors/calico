@@ -106,6 +106,11 @@ if(NINTENDO_DS)
 	)
 
 	if(ARM9)
+		set_source_files_properties(
+			source/system/dietprint.c
+			PROPERTIES COMPILE_FLAGS -mthumb
+		)
+
 		target_sources(${PROJECT_NAME} PRIVATE
 			source/nds/arm9/bootstub_arm9.s
 			source/nds/arm9/mpu_setup.crt0.s
