@@ -39,8 +39,6 @@ MK_INLINE void armMpuSet##_name(u32 value) \
 	__asm__ __volatile__ ("mcr p15, 0, %0, " _reg :: "r" (value)); \
 }
 
-_MPU_ACCESSORS
-
 #else
 
 #define _MPU_AUTOGEN(_name, _reg) \
@@ -48,6 +46,8 @@ MK_EXTERN32 u32 armMpuGet##_name(void); \
 MK_EXTERN32 void armMpuSet##_name(u32 value);
 
 #endif
+
+_MPU_ACCESSORS
 
 #undef _MPU_AUTOGEN
 
