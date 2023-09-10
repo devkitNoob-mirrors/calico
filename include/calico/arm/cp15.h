@@ -60,3 +60,10 @@
 #define CP15_PU_1G   (0b11101 << 1)
 #define CP15_PU_2G   (0b11110 << 1)
 #define CP15_PU_4G   (0b11111 << 1)
+
+#define CP15_PU_PERM_NONE    0
+#define CP15_PU_PERM_PRIV_RW 1
+#define CP15_PU_PERM_RW_R    2
+#define CP15_PU_PERM_RW      3
+#define CP15_PU_PERM_PRIV_RO 5
+#define CP15_PU_PERM_RO      6

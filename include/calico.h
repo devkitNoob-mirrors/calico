@@ -36,6 +36,7 @@
 #include "calico/arm/common.h"
 #if __ARM_ARCH >= 5
 #include "calico/arm/cache.h"
+#include "calico/arm/mpu.h"
 #endif
 
 #include "calico/system/irq.h"

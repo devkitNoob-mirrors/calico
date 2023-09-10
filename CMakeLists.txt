@@ -67,6 +67,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 if(NOT ARM7)
 	target_sources(${PROJECT_NAME} PRIVATE
 		source/arm/arm-cache.32.s
+		source/arm/arm-shims-mpu.32.c
 	)
 endif()
 
