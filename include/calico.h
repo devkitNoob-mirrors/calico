@@ -75,6 +75,7 @@
 #include "calico/dev/wlan.h"
 #include "calico/nds/wlmgr.h"
 
+#include "calico/nds/gbacart.h"
 #include "calico/nds/ntrcard.h"
 #include "calico/nds/nitrorom.h"
 
