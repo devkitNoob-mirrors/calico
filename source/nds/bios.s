@@ -45,7 +45,7 @@ BIOSFUNC 0x1a, GetSineTable
 BIOSFUNC 0x1c, GetVolumeTable
 BIOSFUNC 0x1d, GetBootProcs
 @ 0x1e: (unused)
-BIOSFUNC 0x1f, CustomHalt
+@ 0x1f: CustomHalt (param in r2, see wrapper below)
 #endif
 #ifdef ARM9
 BIOSFUNC 0x1f, CustomPost
@@ -85,6 +85,11 @@ FUNC_START16 svcGetPitchTable
 	lsr  r0, #16
 
 	bx   lr
+FUNC_END
+
+FUNC_START16 svcCustomHalt
+	mov  r2, r0
+	svc  0x1f
 FUNC_END
 
 #endif

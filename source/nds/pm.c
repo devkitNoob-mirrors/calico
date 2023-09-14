@@ -8,6 +8,7 @@
 #include <calico/nds/system.h>
 #include <calico/nds/pxi.h>
 #include <calico/nds/keypad.h>
+#include <calico/nds/lcd.h>
 #include <calico/nds/pm.h>
 #include "pxi/reset.h"
 #include "pxi/pm.h"
@@ -247,7 +248,14 @@ void __SYSCALL(exit)(int rc)
 	// Retrieve jump target address
 	void (* jump_target)(void);
 	if (g_envExtraInfo->pm_chainload_flag) {
-		jump_target = (void(*)(void)) g_envAppNdsHeader->arm9_entrypoint;
+		if (g_envExtraInfo->pm_chainload_flag == 1) {
+			jump_target = (void(*)(void)) g_envAppNdsHeader->arm9_entrypoint;
+		} else {
+			// When switching to GBA mode, hang the ARM9
+			// XX: gbatek claims EXMEMCNT.bit14 should be cleared, however
+			// a) this bit stays 1 regardless, b) GBA mode switch works anyway
+			jump_target = armWaitForIrq;
+		}
 
 		// Perform PXI sync sequence
 		while (PXI_SYNC_RECV(REG_PXI_SYNC) != 1);
@@ -308,7 +316,13 @@ void __SYSCALL(exit)(int rc)
 
 	// Jump to new ARM7 entrypoint
 	if (g_envExtraInfo->pm_chainload_flag) {
-		_pmJumpToNextApp();
+		if (g_envExtraInfo->pm_chainload_flag == 1) {
+			_pmJumpToNextApp();
+		} else {
+			// Switch to GBA mode
+			while (lcdGetVCount() != 200);
+			svcCustomHalt(0x40);
+		}
 	} else {
 		_pmJumpToBootstub();
 	}

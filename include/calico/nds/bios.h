@@ -65,6 +65,10 @@ void svcRLUncompWram(const void* src, void* dst);
 void svcDiff8bitUnfilterWram(const void* src, void* dst);
 void svcDiff16bitUnfilter(const void* src, void* dst);
 
+#ifdef ARM7
+MK_NORETURN void svcCustomHalt(unsigned mode);
+#endif
+
 void svcRsaHeapInitTWL(SvcRsaHeapContext* ctx, void* mem, size_t size);
 bool svcRsaDecryptRawTWL(SvcRsaHeapContext* ctx, const SvcRsaParams* params, size_t* out_size);
 bool svcRsaDecryptUnpadTWL(SvcRsaHeapContext* ctx, void* output, const void* input, const void* key); // sizeof(output) >= SVC_RSA_BUFFER_SZ
