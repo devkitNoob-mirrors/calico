@@ -52,9 +52,11 @@ BIOSFUNC 0x1f, CustomPost
 #endif
 
 FUNC_START16 svcLZ77UncompVramCallback
+	push {r3}
 	ldr  r3, =g_isTwlMode
 	ldrb r3, [r3]
 	cmp  r3, #0
+	pop  {r3}
 	beq  1f
 
 	@ DSi BIOS
