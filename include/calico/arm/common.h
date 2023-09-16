@@ -90,20 +90,10 @@ MK_INLINE void armIrqUnlockByPsr(ArmIrqState st)
 
 #else
 
-MK_EXTERN32 ArmIrqState armIrqLockByPsrFromThumb(void);
-MK_EXTERN32 void armIrqUnlockByPsrFromThumb(ArmIrqState st);
-MK_EXTERN32 u32 armSwapWordFromThumb(u32 value, u32* addr);
-MK_EXTERN32 u8 armSwapByteFromThumb(u8 value, u8* addr);
-
-MK_INLINE ArmIrqState armIrqLockByPsr(void)
-{
-	return armIrqLockByPsrFromThumb();
-}
-
-MK_INLINE void armIrqUnlockByPsr(ArmIrqState st)
-{
-	armIrqUnlockByPsrFromThumb(st);
-}
+MK_EXTERN32 ArmIrqState armIrqLockByPsr(void);
+MK_EXTERN32 void armIrqUnlockByPsr(ArmIrqState st);
+MK_EXTERN32 u32 armSwapWordFromThumb(u32 value, u32* addr) __asm__("armSwapWord");
+MK_EXTERN32 u8 armSwapByteFromThumb(u8 value, u8* addr) __asm__("armSwapByte");
 
 MK_INLINE u32 armSwapWord(u32* addr, u32 value)
 {
