@@ -14,12 +14,10 @@
 
 MK_EXTERN_C_START
 
-/* TODO: ABI. This is intended to be returned as r0/r1
 typedef struct SvcDivResult {
-	s32 quotient;
-	s32 remainder;
+	s32 quot;
+	s32 rem;
 } SvcDivResult;
-*/
 
 typedef struct SvcBitUnpackParams {
 	u16 in_length_bytes;
@@ -55,7 +53,7 @@ void svcHalt(void);
 void svcSleep(void);
 void svcSoundBias(bool enable, u32 delay_count);
 #endif
-//SvcDivResult svcDiv(s32 num, s32 den);
+u64 svcDivModImpl(s32 num, s32 den) __asm__("svcDivMod");
 void svcCpuSet(const void* src, void* dst, u32 mode);
 u16 svcSqrt(u32 num);
 u16 svcGetCRC16(u16 initial_crc, const void* mem, u32 size);
@@ -64,6 +62,15 @@ void svcLZ77UncompWram(const void* src, void* dst);
 void svcRLUncompWram(const void* src, void* dst);
 void svcDiff8bitUnfilterWram(const void* src, void* dst);
 void svcDiff16bitUnfilter(const void* src, void* dst);
+
+MK_INLINE SvcDivResult svcDivMod(s32 num, s32 den)
+{
+	union {
+		u64 ret;
+		SvcDivResult res;
+	} u = { svcDivModImpl(num, den) };
+	return u.res;
+}
 
 #ifdef ARM7
 MK_NORETURN void svcCustomHalt(unsigned mode);

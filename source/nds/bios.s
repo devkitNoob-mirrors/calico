@@ -20,7 +20,7 @@ BIOSFUNC 0x06, Halt
 BIOSFUNC 0x07, Sleep
 BIOSFUNC 0x08, SoundBias
 #endif
-BIOSFUNC 0x09, Div
+BIOSFUNC 0x09, DivMod
 @ 0x0a: (unused)
 BIOSFUNC 0x0b, CpuSet
 @ 0x0c: CpuFastSet (bugged on both NTR and TWL)
@@ -90,6 +90,7 @@ FUNC_END
 FUNC_START16 svcCustomHalt
 	mov  r2, r0
 	svc  0x1f
+	bx   lr
 FUNC_END
 
 #endif
