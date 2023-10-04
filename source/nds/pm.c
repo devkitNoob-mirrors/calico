@@ -58,7 +58,9 @@ static alignas(8) u8 s_pmPxiThreadStack[0x200];
 
 MK_NOINLINE static void _pmCallEventHandlers(PmEvent event)
 {
-	for (PmEventCookie* c = s_pmState.cookie_list; c; c = c->next) {
+	PmEventCookie* next;
+	for (PmEventCookie* c = s_pmState.cookie_list; c; c = next) {
+		next = c->next;
 		c->handler(c->user, event);
 	}
 }
@@ -401,7 +403,16 @@ void pmAddEventHandler(PmEventCookie* cookie, PmEventFn handler, void* user)
 
 void pmRemoveEventHandler(PmEventCookie* cookie)
 {
-	// TODO
+	IrqState st = irqLock();
+
+	PmEventCookie** link = &s_pmState.cookie_list;
+	for (PmEventCookie* cur = s_pmState.cookie_list; cur && cur != cookie; cur = cur->next) {
+		link = &cur->next;
+	}
+
+	*link = cookie->next;
+
+	irqUnlock(st);
 }
 
 bool pmShouldReset(void)
