@@ -173,7 +173,7 @@ void threadFree(Thread* t)
 	// TODO: destruct callback goes here
 }
 
-void threadJoin(Thread* t)
+int threadJoin(Thread* t)
 {
 	ArmIrqState st = armIrqLockByPsr();
 
@@ -181,7 +181,10 @@ void threadJoin(Thread* t)
 	if (!threadIsFinished(t))
 		threadBlock(&s_joinThreads, (u32)t);
 
+	int rc = t->rc;
+
 	armIrqUnlockByPsr(st);
+	return rc;
 }
 
 void threadYield(void)

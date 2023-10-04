@@ -72,14 +72,12 @@ typedef struct ThrSchedState {
 #endif
 } ThrSchedState;
 
-//void threadInit(void);
-
 void threadPrepare(Thread* t, ThreadFunc entrypoint, void* arg, void* stack_top, u8 prio);
 size_t threadGetLocalStorageSize(void);
 void threadAttachLocalStorage(Thread* t, void* storage);
 void threadStart(Thread* t);
 void threadFree(Thread* t);
-void threadJoin(Thread* t);
+int threadJoin(Thread* t);
 
 void threadYield(void);
 u32  threadIrqWait(bool next_irq, IrqMask mask);
