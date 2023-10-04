@@ -133,9 +133,13 @@ SECTIONS {
 	/* IWRAM section */
 	.iwram : {
 		*(.iwram .iwram.*)
+		*.iwram.* (.text .stub .text.* .gnu.linkonce.t.*)
 		*.32.o (.text .stub .text.* .gnu.linkonce.t.*)
+		*.iwram.* (.glue_7t .glue_7 .vfp11_veneer .v4_bx)
 		*.32.o (.glue_7t .glue_7 .vfp11_veneer .v4_bx)
+		*.iwram.* (.rodata .rodata.* .gnu.linkonce.r.*)
 		*.32.o (.rodata .rodata.* .gnu.linkonce.r.*)
+		*.iwram.* (.rodata1)
 		*.32.o (.rodata1)
 		EXCLUDE_FILE(*.16.o) *(.data .data.* .gnu.linkonce.d.*)
 		EXCLUDE_FILE(*.16.o) *(.data1)

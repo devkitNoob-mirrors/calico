@@ -197,9 +197,13 @@ SECTIONS {
 	/* ITCM section */
 	.itcm : {
 		*(.itcm .itcm.*)
+		*.itcm.* (.text .stub .text.* .gnu.linkonce.t.*)
 		*.32.o (.text .stub .text.* .gnu.linkonce.t.*)
+		*.itcm.* (.glue_7t .glue_7 .vfp11_veneer .v4_bx)
 		*.32.o (.glue_7t .glue_7 .vfp11_veneer .v4_bx)
+		*.itcm.* (.rodata .rodata.* .gnu.linkonce.r.*)
 		*.32.o (.rodata .rodata.* .gnu.linkonce.r.*)
+		*.itcm.* (.rodata1)
 		*.32.o (.rodata1)
 		. = ALIGN(4);
 	} >itcm AT>lma9 :itcm = 0xff
