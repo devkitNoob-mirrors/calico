@@ -5,6 +5,10 @@ void armIrqUnlockByPsrFromThumb(ArmIrqState st) __asm__("armIrqUnlockByPsr");
 u32 armSwapWordFromThumb(u32 value, u32* addr) __asm__("armSwapWord");
 u8 armSwapByteFromThumb(u8 value, u8* addr) __asm__("armSwapByte");
 
+#if __ARM_ARCH >= 5
+extern void armWaitForIrq(void);
+#endif
+
 ArmIrqState armIrqLockByPsrFromThumb(void)
 {
 	return armIrqLockByPsr();

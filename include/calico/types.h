@@ -31,6 +31,7 @@ typedef volatile sptr vsptr; ///< Pointer-sized volatile signed integer.
 #define MK_PACKED     __attribute__((packed))
 #define MK_DEPRECATED __attribute__((deprecated))
 #define MK_INLINE     __attribute__((always_inline)) static inline
+#define MK_EXTINLINE  __attribute__((always_inline)) inline
 #define MK_NOINLINE   __attribute__((noinline))
 #define MK_NORETURN   __attribute__((noreturn))
 #define MK_PURE       __attribute__((pure))

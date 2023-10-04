@@ -67,7 +67,7 @@ MK_INLINE u8 armSwapByte(u8* addr, u8 value)
 
 #if __ARM_ARCH >= 5
 
-MK_INLINE void armWaitForIrq(void)
+MK_EXTINLINE void armWaitForIrq(void)
 {
 	// Clobber is used, as user may expect variables to be updated by ISRs
 	__asm__ __volatile__ ("mcr p15, 0, r0, c7, c0, 4" ::: "memory");
