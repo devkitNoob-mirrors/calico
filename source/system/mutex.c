@@ -1,7 +1,10 @@
 #include <calico/types.h>
 #include <calico/arm/common.h>
 #include <calico/system/mutex.h>
+#include <calico/system/condvar.h>
 #include "thread-priv.h"
+
+static ThrListNode s_cvWaitQueue;
 
 static void threadUpdateDynamicPrio(Thread* t)
 {
@@ -127,4 +130,30 @@ void mutexUnlock(Mutex* m)
 		threadSwitchTo(next, st);
 	else
 		armIrqUnlockByPsr(st);
+}
+
+void condvarSignal(CondVar* cv)
+{
+	threadUnblockOneByValue(&s_cvWaitQueue, (u32)cv);
+}
+
+void condvarBroadcast(CondVar* cv)
+{
+	threadUnblockAllByValue(&s_cvWaitQueue, (u32)cv);
+}
+
+void condvarWait(CondVar* cv, Mutex* m)
+{
+	Thread* self = threadGetSelf();
+	ArmIrqState st = armIrqLockByPsr();
+
+	if_unlikely (m->owner != self) {
+		for (;;); // ERROR
+	}
+
+	m->owner = threadRemoveWaiter(self, (u32)m);
+	threadBlock(&s_cvWaitQueue, (u32)cv);
+	armIrqUnlockByPsr(st);
+
+	mutexLock(m);
 }

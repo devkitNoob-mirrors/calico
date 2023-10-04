@@ -43,6 +43,7 @@
 #include "calico/system/tick.h"
 #include "calico/system/thread.h"
 #include "calico/system/mutex.h"
+#include "calico/system/condvar.h"
 #include "calico/system/mailbox.h"
 #include "calico/system/dietprint.h"
 
