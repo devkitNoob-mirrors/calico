@@ -26,6 +26,7 @@ PHDRS {
 	itcm    PT_LOAD FLAGS(7);
 	dtcm    PT_LOAD FLAGS(7);
 	tls     PT_LOAD FLAGS(7);
+	bss     PT_LOAD FLAGS(7);
 }
 
 /* Default initial stack locations and BIOS variables */
@@ -75,7 +76,7 @@ SECTIONS {
 	} >lma9 :main = 0xff
 
 	/* Loadlist data */
-	.loadlist : {
+	.loadlist : ALIGN_WITH_INPUT {
 		LONG(__itcm_start)
 		LONG(__itcm_end)
 		LONG(__itcm_end)
@@ -89,8 +90,8 @@ SECTIONS {
 		LONG(__main_bss_end)
 	} >lma9 :main = 0xff
 
-	/* Main user code/data section */
-	.main : {
+	/* Main user code/read-only data section */
+	.main : ALIGN_WITH_INPUT {
 		KEEP( *(SORT_NONE(.init)) )
 		EXCLUDE_FILE(*.32.o) *(.text.unlikely .text.*_unlikely .text.unlikely.*)
 		EXCLUDE_FILE(*.32.o) *(.text.exit .text.exit.*)
@@ -102,23 +103,25 @@ SECTIONS {
 
 		EXCLUDE_FILE(*.32.o) *(.rodata .rodata.* .gnu.linkonce.r.*)
 		EXCLUDE_FILE(*.32.o) *(.rodata1)
-		EXCLUDE_FILE(*.32.o) *(.igot.plt)
+		. = ALIGN(4);
+	} >lma9 :main = 0xff
 
+	/* Main user data section */
+	.main.rw : ALIGN_WITH_INPUT {
 		EXCLUDE_FILE(*.32.o) *(.data .data.* .gnu.linkonce.d.*)
 		EXCLUDE_FILE(*.32.o) *(.data1)
+		EXCLUDE_FILE(*.32.o) *(.igot.plt)
 		SORT(CONSTRUCTORS)
-
 		. = ALIGN(4);
 	} >lma9 :main = 0xff
 
 	/* ARM exception table */
-	.ARM.extab : {
+	.ARM.extab : ALIGN_WITH_INPUT {
 		*(.ARM.extab* .gnu.linkonce.armextab.*)
-		. = ALIGN(4);
 	} >lma9 :main = 0xff
 
 	/* ARM exception index table (replaces .eh_frame on AArch32) */
-	.ARM.exidx : {
+	.ARM.exidx : ALIGN_WITH_INPUT {
 		*(.ARM.exidx* .gnu.linkonce.armexidx.*)
 	} >lma9 :main = 0xff
 
@@ -127,29 +130,29 @@ SECTIONS {
 	PROVIDE_HIDDEN( __exidx_end   = ADDR(.ARM.exidx) + SIZEOF(.ARM.exidx) );
 
 	/* Exception frame header (not used on AArch32) */
-	.eh_frame_hdr : {
+	.eh_frame_hdr : ALIGN_WITH_INPUT {
 		*(.eh_frame_hdr)
 		*(.eh_frame_entry .eh_frame_entry.*)
 	} >lma9 :main = 0xff
 
 	/* Exception frame information (not used on AArch32) */
-	.eh_frame : {
+	.eh_frame : ALIGN_WITH_INPUT {
 		KEEP( *(.eh_frame) )
 		*(.eh_frame.*)
 	} >lma9 :main = 0xff
 
 	/* GCC language agnostic exception table (not used on AArch32?) */
-	.gcc_except_table : {
+	.gcc_except_table : ALIGN_WITH_INPUT {
 		*(.gcc_except_table .gcc_except_table.*)
 	} >lma9 :main = 0xff
 
 	/* GNU exception table (not used on AArch32?) */
-	.gnu_extab : {
+	.gnu_extab : ALIGN_WITH_INPUT {
 		*(.gnu_extab*)
 	} >lma9 :main = 0xff
 
 	/* TLS metadata */
-	.tinfo : ALIGN(4) {
+	.tinfo : ALIGN_WITH_INPUT {
 		LONG(__tls_start)
 		LONG(SIZEOF(.main.tls))
 		LONG(SIZEOF(.tdata))
@@ -158,14 +161,14 @@ SECTIONS {
 	PROVIDE_HIDDEN( __tls_info = ADDR(.tinfo) );
 
 	/* Table of special constructors that run before _init */
-	.preinit_array : {
+	.preinit_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __preinit_array_start = . );
 		KEEP( *(.preinit_array) )
 		PROVIDE_HIDDEN( __preinit_array_end = . );
 	} >lma9 :main = 0xff
 
 	/* Table of global constructors (runs after _init) */
-	.init_array : {
+	.init_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __init_array_start = . );
 		KEEP( *(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)) )
 		KEEP( *(.init_array .ctors) )
@@ -173,7 +176,7 @@ SECTIONS {
 	} >lma9 :main = 0xff
 
 	/* Table of global destructors (runs before _fini) */
-	.fini_array : {
+	.fini_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __fini_array_start = . );
 		KEEP( *(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)) )
 		KEEP( *(.fini_array .dtors) )
@@ -228,13 +231,13 @@ SECTIONS {
 	PROVIDE_HIDDEN( __dtcm_end   = ADDR(.dtcm) + SIZEOF(.dtcm) );
 
 	/* DTCM BSS area */
-	.dtcm.bss (NOLOAD) : {
+	.dtcm.bss . (NOLOAD) : {
 		*(.sbss .sbss.*)
 		*.32.o (.dynbss)
 		*.32.o (.bss .bss.* .gnu.linkonce.b.*)
 		*.32.o (COMMON)
 		. = ALIGN(4);
-	} >dtcm :NONE
+	} >dtcm AT>lma9 :dtcm
 
 	/* Information for DTCM BSS */
 	PROVIDE_HIDDEN( __dtcm_bss_start = ADDR(.dtcm.bss)                     );
@@ -251,7 +254,7 @@ SECTIONS {
 		*(.tbss .tbss.* .gnu.linkonce.tb.*)
 		*(.tcommon)
 		. = ALIGN(4);
-	} >tls :NONE
+	} >tls AT>lma9 :tls
 
 	/* TLS sanity checks */
 	ASSERT( ALIGNOF(.tdata) <= 8 || ALIGNOF(.tbss) <= 8,
@@ -277,7 +280,7 @@ SECTIONS {
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		*(COMMON)
 		. = ALIGN(4);
-	} :NONE
+	} :bss
 
 	/* Information for BSS */
 	PROVIDE_HIDDEN( __main_bss_start = ADDR(.main.bss)                     );
@@ -296,8 +299,8 @@ SECTIONS {
 	ASSERT( __itcm_lma + SIZEOF(.vectors) + SIZEOF(.itcm) == __dtcm_lma,
 		"Error: Invalid gap between ITCM and DTCM LMAs" )
 
-	PROVIDE_HIDDEN( __loadlist_start = ADDR(.loadlist)                     );
-	PROVIDE_HIDDEN( __loadlist_end   = ADDR(.loadlist) + SIZEOF(.loadlist) );
+	PROVIDE_HIDDEN( __loadlist_start = LOADADDR(.loadlist)                     );
+	PROVIDE_HIDDEN( __loadlist_end   = LOADADDR(.loadlist) + SIZEOF(.loadlist) );
 
 	/* ====================== */
 	/*   Debugging metadata   */

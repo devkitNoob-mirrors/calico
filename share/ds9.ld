@@ -15,6 +15,7 @@ MEMORY {
 	main    : ORIGIN = 0x2000c00, LENGTH = 0xf7f400 /* Main RAM (usable area for ARM9) */
 	dtcm    : ORIGIN = 0x2ff0000, LENGTH = 0x3e80   /* DTCM (minus stacks/reserved BIOS memory) */
 	dldi    : ORIGIN = 0x380b000, LENGTH = 0x4000   /* DLDI (on ARM7 WRAM) */
+	stub    : ORIGIN = 0xe000000, LENGTH = 0x4000   /* Fake bootstub memory */
 
 	/* Special TLS address space */
 	tls     : ORIGIN = 0, LENGTH = 1K
@@ -30,6 +31,7 @@ PHDRS {
 	dtcm    PT_LOAD FLAGS(7);
 	main    PT_LOAD FLAGS(7);
 	tls     PT_LOAD FLAGS(7);
+	bss     PT_LOAD FLAGS(7);
 	ldlist  PT_LOAD FLAGS(7);
 
 	/* ELF program headers for the ARM9i binary */
@@ -59,18 +61,16 @@ PROVIDE_HIDDEN( __end__ = 0 );
 SECTIONS {
 
 	/* Secure area (2K) */
-	.secure ORIGIN(lma9) + 2K: {
+	.secure : {
 		. += 2K - 4;
 		LONG(0)
-	} AT>lma9 :stub = 0
-
-	ASSERT( ADDR(.secure) == LOADADDR(.secure) + SIZEOF(.secure), "Invalid secure area" )
+	} >stub AT>lma9 :stub = 0
 
 	/* Small bootstub that copies crt0 into the scratch boot memory */
-	.bootstub ADDR(.secure) : {
+	.bootstub : {
 		KEEP( *(.bootstub .bootstub.*) )
 		. = ALIGN(4);
-	} AT>lma9 :stub = 0
+	} >stub AT>lma9 :stub = 0
 
 	/* Initialization code section (crt0) */
 	.crt0 : {
@@ -88,7 +88,7 @@ SECTIONS {
 	PROVIDE_HIDDEN( __crt0_end   = ADDR(.crt0) + SIZEOF(.crt0) );
 
 	/* Ensure crt0 does not overlap initial bootstrap */
-	ASSERT( __crt0_end <= ADDR(.bootstub) || __crt0_start >= ADDR(.bootstub) + SIZEOF(.bootstub),
+	ASSERT( __crt0_end <= LOADADDR(.bootstub) || __crt0_start >= LOADADDR(.bootstub) + SIZEOF(.bootstub),
 		"Error: crt0 section overlaps initial bootstrap" )
 
 	/* DLDI area (copied to ARM7) */
@@ -137,13 +137,13 @@ SECTIONS {
 	PROVIDE_HIDDEN( __dtcm_end   = ADDR(.dtcm) + SIZEOF(.dtcm) );
 
 	/* DTCM BSS area */
-	.dtcm.bss (NOLOAD) : {
+	.dtcm.bss . (NOLOAD) : {
 		*(.sbss .sbss.*)
 		*.32.o (.dynbss)
 		*.32.o (.bss .bss.* .gnu.linkonce.b.*)
 		*.32.o (COMMON)
 		. = ALIGN(4);
-	} >dtcm :NONE
+	} >dtcm AT>lma9 :dtcm
 
 	/* Information for DTCM BSS */
 	PROVIDE_HIDDEN( __dtcm_bss_start = ADDR(.dtcm.bss)                     );
@@ -153,8 +153,7 @@ SECTIONS {
 	/*   Main RAM area   */
 	/* ================= */
 
-	/* Main user code/data section */
-	/* Important: This is merged into a single section in order to avoid section alignment problems */
+	/* Main user code/read-only data section */
 	.main : {
 		KEEP( *(SORT_NONE(.init)) )
 		EXCLUDE_FILE(*.twl.*) *(.text.unlikely .text.*_unlikely .text.unlikely.*)
@@ -167,22 +166,25 @@ SECTIONS {
 
 		EXCLUDE_FILE(*.twl.*) *(.rodata .rodata.* .gnu.linkonce.r.*)
 		EXCLUDE_FILE(*.twl.*) *(.rodata1)
-		EXCLUDE_FILE(*.twl.*) *(.igot.plt)
+		. = ALIGN(4);
+	} >main AT>lma9 :main = 0xff
+
+	/* Main user data section */
+	.main.rw : ALIGN_WITH_INPUT {
 		EXCLUDE_FILE(*.twl.*) *(.data .data.* .gnu.linkonce.d.*)
 		EXCLUDE_FILE(*.twl.*) *(.data1)
+		EXCLUDE_FILE(*.twl.*) *(.igot.plt)
 		SORT(CONSTRUCTORS)
-
 		. = ALIGN(4);
 	} >main AT>lma9 :main = 0xff
 
 	/* ARM exception table */
-	.ARM.extab : {
+	.ARM.extab : ALIGN_WITH_INPUT {
 		*(.ARM.extab* .gnu.linkonce.armextab.*)
-		. = ALIGN(4);
 	} >main AT>lma9 :main = 0xff
 
 	/* ARM exception index table (replaces .eh_frame on AArch32) */
-	.ARM.exidx : {
+	.ARM.exidx : ALIGN_WITH_INPUT {
 		*(.ARM.exidx* .gnu.linkonce.armexidx.*)
 	} >main AT>lma9 :main = 0xff
 
@@ -191,29 +193,29 @@ SECTIONS {
 	PROVIDE_HIDDEN( __exidx_end   = ADDR(.ARM.exidx) + SIZEOF(.ARM.exidx) );
 
 	/* Exception frame header (not used on AArch32) */
-	.eh_frame_hdr : {
+	.eh_frame_hdr : ALIGN_WITH_INPUT {
 		*(.eh_frame_hdr)
 		*(.eh_frame_entry .eh_frame_entry.*)
 	} >main AT>lma9 :main = 0xff
 
 	/* Exception frame information (not used on AArch32) */
-	.eh_frame : {
+	.eh_frame : ALIGN_WITH_INPUT {
 		KEEP( *(.eh_frame) )
 		*(.eh_frame.*)
 	} >main AT>lma9 :main = 0xff
 
 	/* GCC language agnostic exception table (not used on AArch32?) */
-	.gcc_except_table : {
+	.gcc_except_table : ALIGN_WITH_INPUT {
 		*(.gcc_except_table .gcc_except_table.*)
 	} >main AT>lma9 :main = 0xff
 
 	/* GNU exception table (not used on AArch32?) */
-	.gnu_extab : {
+	.gnu_extab : ALIGN_WITH_INPUT {
 		*(.gnu_extab*)
 	} >main AT>lma9 :main = 0xff
 
 	/* TLS metadata */
-	.tinfo : ALIGN(4) {
+	.tinfo : ALIGN_WITH_INPUT SUBALIGN(4) {
 		LONG(__tls_start)
 		LONG(SIZEOF(.main.tls))
 		LONG(SIZEOF(.tdata))
@@ -222,14 +224,14 @@ SECTIONS {
 	PROVIDE_HIDDEN( __tls_info = ADDR(.tinfo) );
 
 	/* Table of special constructors that run before _init */
-	.preinit_array : {
+	.preinit_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __preinit_array_start = . );
 		KEEP( *(.preinit_array) )
 		PROVIDE_HIDDEN( __preinit_array_end = . );
 	} >main AT>lma9 :main = 0xff
 
 	/* Table of global constructors (runs after _init) */
-	.init_array : {
+	.init_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __init_array_start = . );
 		KEEP( *(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)) )
 		KEEP( *(.init_array .ctors) )
@@ -237,7 +239,7 @@ SECTIONS {
 	} >main AT>lma9 :main = 0xff
 
 	/* Table of global destructors (runs before _fini) */
-	.fini_array : {
+	.fini_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __fini_array_start = . );
 		KEEP( *(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)) )
 		KEEP( *(.fini_array .dtors) )
@@ -260,7 +262,7 @@ SECTIONS {
 		*(.tbss .tbss.* .gnu.linkonce.tb.*)
 		*(.tcommon)
 		. = ALIGN(4);
-	} >tls :NONE
+	} >tls AT>lma9 :tls
 
 	/* TLS sanity checks */
 	ASSERT( ALIGNOF(.tdata) <= 8 || ALIGNOF(.tbss) <= 8,
@@ -284,7 +286,7 @@ SECTIONS {
 		EXCLUDE_FILE(*.twl.*) *(.bss .bss.* .gnu.linkonce.b.*)
 		EXCLUDE_FILE(*.twl.*) *(COMMON)
 		. = ALIGN(4);
-	} >main :NONE
+	} >main :bss
 
 	/* Information for BSS */
 	PROVIDE_HIDDEN( __main_bss_start = ADDR(.main.bss)                     );
@@ -297,22 +299,27 @@ SECTIONS {
 	/* Ensure DS-mode sections fit within the DS's main RAM allotted to ARM9 */
 	ASSERT( . <= 0x2380000, "Error: DS-mode sections overflow DS ARM9 memory size (3.5 MB)" )
 
-	/* DSi exclusive code/data section */
+	/* DSi exclusive code/read-only data section */
 	.twl ALIGN(32) : {
 		*(.twl .twl.*)
 		*.twl.* (.text .stub .text.* .gnu.linkonce.t.*)
 		*.twl.* (.glue_7t .glue_7 .vfp11_veneer .v4_bx)
 		*.twl.* (.rodata .rodata.* .gnu.linkonce.r.*)
 		*.twl.* (.rodata1)
+		. = ALIGN(4);
+	} >main AT>lma9i :twl = 0xff
+
+	/* DSi exclusive data section */
+	.twl.rw . : ALIGN_WITH_INPUT {
 		*.twl.* (.data .data.* .gnu.linkonce.d.*)
 		*.twl.* (.data1)
 		. = ALIGN(4);
 	} >main AT>lma9i :twl = 0xff
 
 	/* Load information for the DSi exclusive section */
-	PROVIDE_HIDDEN( __twl_lma   = LOADADDR(.twl)            );
-	PROVIDE_HIDDEN( __twl_start = ADDR(.twl)                );
-	PROVIDE_HIDDEN( __twl_end   = ADDR(.twl) + SIZEOF(.twl) );
+	PROVIDE_HIDDEN( __twl_lma   = LOADADDR(.twl)                  );
+	PROVIDE_HIDDEN( __twl_start = ADDR(.twl)                      );
+	PROVIDE_HIDDEN( __twl_end   = ADDR(.twl.rw) + SIZEOF(.twl.rw) );
 
 	/* DSi exclusive BSS area */
 	.twl.bss . (NOLOAD) : {
@@ -321,7 +328,7 @@ SECTIONS {
 		*.twl.* (.bss .bss.* .gnu.linkonce.b.*)
 		*.twl.* (COMMON)
 		. = ALIGN(4);
-	} >main :NONE
+	} >main AT>lma9i :twl
 
 	/* Information for DSi exclusive BSS area */
 	PROVIDE_HIDDEN( __twl_bss_start = ADDR(.twl.bss)                    );
@@ -330,18 +337,6 @@ SECTIONS {
 	/* Define start of main heap in DSi mode */
 	. = .;
 	PROVIDE_HIDDEN( __heap_start_twl = . );
-
-	/* Ensure we can craft loadlists */
-	PROVIDE_HIDDEN( __loadlist_lma = __itcm_lma );
-	PROVIDE_HIDDEN( __twl_loadlist_lma = __twl_lma );
-	ASSERT( __itcm_lma + SIZEOF(.vectors) + SIZEOF(.itcm) == __dtcm_lma,
-		"Error: Invalid gap between ITCM and DTCM LMAs" )
-	ASSERT( __dtcm_lma + SIZEOF(.dtcm) == __main_lma,
-		"Error: Invalid gap between DTCM and main RAM LMAs" )
-	ASSERT( LOADADDR(.fini_array) + SIZEOF(.fini_array) == __tls_lma,
-		"Error: Invalid gap between main RAM and TLS LMAs" )
-	ASSERT( ADDR(.fini_array) - __main_start == LOADADDR(.fini_array) - __main_lma,
-		"Error: Invalid LMAs in sections within main RAM" )
 
 	/* Craft a loadlist */
 	.loadlist : {
@@ -360,20 +355,22 @@ SECTIONS {
 		LONG(__tls_start)
 		LONG(__tls_end)
 		LONG(__main_bss_end)
-	} >lma9 :ldlist = 0xff
+	} >stub AT>lma9 :ldlist = 0xff
 
-	PROVIDE_HIDDEN( __loadlist_start = ADDR(.loadlist)                     );
-	PROVIDE_HIDDEN( __loadlist_end   = ADDR(.loadlist) + SIZEOF(.loadlist) );
+	PROVIDE_HIDDEN( __loadlist_lma   = __itcm_lma );
+	PROVIDE_HIDDEN( __loadlist_start = LOADADDR(.loadlist)                     );
+	PROVIDE_HIDDEN( __loadlist_end   = LOADADDR(.loadlist) + SIZEOF(.loadlist) );
 
 	/* Craft a loadlist for DSi exclusive sections */
 	.twl.loadlist : {
 		LONG(__twl_start)
 		LONG(__twl_end)
 		LONG(__twl_bss_end)
-	} >lma9i :twlld = 0xff
+	} >stub AT>lma9i :twlld = 0xff
 
-	PROVIDE_HIDDEN( __twl_loadlist_start = ADDR(.twl.loadlist)                         );
-	PROVIDE_HIDDEN( __twl_loadlist_end   = ADDR(.twl.loadlist) + SIZEOF(.twl.loadlist) );
+	PROVIDE_HIDDEN( __twl_loadlist_lma   = __twl_lma );
+	PROVIDE_HIDDEN( __twl_loadlist_start = LOADADDR(.twl.loadlist)                         );
+	PROVIDE_HIDDEN( __twl_loadlist_end   = LOADADDR(.twl.loadlist) + SIZEOF(.twl.loadlist) );
 
 	/* ====================== */
 	/*   Debugging metadata   */

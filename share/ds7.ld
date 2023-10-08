@@ -62,7 +62,7 @@ SECTIONS {
 		. = ALIGN(4);
 	} >lma7 :crt0 = 0xff
 
-	/* DSi exclusive code/data section */
+	/* DSi exclusive code/read-only data section */
 	.twl : {
 		*(.twl .twl.*
 			/* Miscellaneous functions that are intended to be DSi exclusive */
@@ -73,6 +73,11 @@ SECTIONS {
 		*.twl.* (.glue_7t .glue_7 .vfp11_veneer .v4_bx)
 		*.twl.* (.rodata .rodata.* .gnu.linkonce.r.*)
 		*.twl.* (.rodata1)
+		. = ALIGN(4);
+	} >twlwram AT>lma7i :twlwram = 0xff
+
+	/* DSi exclusive data section */
+	.twl.rw : ALIGN_WITH_INPUT {
 		*.twl.* (.data .data.* .gnu.linkonce.d.*)
 		*.twl.* (.data1)
 		. = ALIGN(4);
@@ -84,19 +89,19 @@ SECTIONS {
 	PROVIDE_HIDDEN( __twl_end   = ADDR(.twl) + SIZEOF(.twl) );
 
 	/* DSi exclusive BSS area */
-	.twl.bss (NOLOAD) : {
+	.twl.bss . (NOLOAD) : {
 		*(.twl_bss .twl_bss.*)
 		*.twl.* (.dynbss)
 		*.twl.* (.bss .bss.* .gnu.linkonce.b.*)
 		*.twl.* (COMMON)
 		. = ALIGN(4);
-	} >twlwram :NONE
+	} >twlwram AT>lma7i :twlwram
 
 	/* Information for DSi exclusive BSS area */
 	PROVIDE_HIDDEN( __twl_bss_start = ADDR(.twl.bss)                    );
 	PROVIDE_HIDDEN( __twl_bss_end   = ADDR(.twl.bss) + SIZEOF(.twl.bss) );
 
-	/* Main RAM section */
+	/* Main RAM code/read-only data section */
 	.main : {
 		KEEP( *(SORT_NONE(.init)) )
 		*(.main .main.*
@@ -117,20 +122,25 @@ SECTIONS {
 
 		*.16.o (.rodata .rodata.* .gnu.linkonce.r.*)
 		*.16.o (.rodata1)
+		. = ALIGN(4);
+	} >main AT>lma7 :main = 0xff
+
+	/* Main RAM data section */
+	.main.rw : ALIGN_WITH_INPUT {
 		*(.data._impure_data) /* Likewise for this */
 		*.16.o (.data .data.* .gnu.linkonce.d.*)
 		*.16.o (.data1)
+		*(.igot.plt)
 		. = ALIGN(4);
 	} >main AT>lma7 :main = 0xff
 
 	/* ARM exception table */
-	.ARM.extab : {
+	.ARM.extab : ALIGN_WITH_INPUT {
 		*(.ARM.extab* .gnu.linkonce.armextab.*)
-		. = ALIGN(4);
 	} >main AT>lma7 :main = 0xff
 
 	/* ARM exception index table (replaces .eh_frame on AArch32) */
-	.ARM.exidx : {
+	.ARM.exidx : ALIGN_WITH_INPUT {
 		*(.ARM.exidx* .gnu.linkonce.armexidx.*)
 	} >main AT>lma7 :main = 0xff
 
@@ -139,36 +149,36 @@ SECTIONS {
 	PROVIDE_HIDDEN( __exidx_end   = ADDR(.ARM.exidx) + SIZEOF(.ARM.exidx) );
 
 	/* Exception frame header (not used on AArch32) */
-	.eh_frame_hdr : {
+	.eh_frame_hdr : ALIGN_WITH_INPUT {
 		*(.eh_frame_hdr)
 		*(.eh_frame_entry .eh_frame_entry.*)
 	} >main AT>lma7 :main = 0xff
 
 	/* Exception frame information (not used on AArch32) */
-	.eh_frame : {
+	.eh_frame : ALIGN_WITH_INPUT {
 		KEEP( *(.eh_frame) )
 		*(.eh_frame.*)
 	} >main AT>lma7 :main = 0xff
 
 	/* GCC language agnostic exception table (not used on AArch32?) */
-	.gcc_except_table : {
+	.gcc_except_table : ALIGN_WITH_INPUT {
 		*(.gcc_except_table .gcc_except_table.*)
 	} >main AT>lma7 :main = 0xff
 
 	/* GNU exception table (not used on AArch32?) */
-	.gnu_extab : {
+	.gnu_extab : ALIGN_WITH_INPUT {
 		*(.gnu_extab*)
 	} >main AT>lma7 :main = 0xff
 
 	/* Table of special constructors that run before _init */
-	.preinit_array : {
+	.preinit_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __preinit_array_start = . );
 		KEEP( *(.preinit_array) )
 		PROVIDE_HIDDEN( __preinit_array_end = . );
 	} >main AT>lma7 :main = 0xff
 
 	/* Table of global constructors (runs after _init) */
-	.init_array : {
+	.init_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __init_array_start = . );
 		KEEP( *(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)) )
 		KEEP( *(.init_array .ctors) )
@@ -176,7 +186,7 @@ SECTIONS {
 	} >main AT>lma7 :main = 0xff
 
 	/* Table of global destructors (runs before _fini) */
-	.fini_array : {
+	.fini_array : ALIGN_WITH_INPUT {
 		PROVIDE_HIDDEN( __fini_array_start = . );
 		KEEP( *(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)) )
 		KEEP( *(.fini_array .dtors) )
@@ -189,24 +199,24 @@ SECTIONS {
 	PROVIDE_HIDDEN( __main_end   = ADDR(.fini_array) + SIZEOF(.fini_array) );
 
 	/* Main RAM BSS area */
-	.main.bss (NOLOAD) : {
+	.main.bss . (NOLOAD) : {
 		*(.sbss .sbss.*)
 		*.16.o (.dynbss)
 		*.16.o (.bss .bss.* .gnu.linkonce.b.*)
 		*.16.o (COMMON)
 		. = ALIGN(4);
-	} >main :NONE
+	} >main AT>lma7 :main
 
 	/* Information for main RAM BSS */
 	PROVIDE_HIDDEN( __main_bss_start = ADDR(.main.bss)                     );
 	PROVIDE_HIDDEN( __main_bss_end   = ADDR(.main.bss) + SIZEOF(.main.bss) );
 
 	/* Define start/end of main heap */
-	PROVIDE_HIDDEN( __heap_start = __main_bss_end              );
+	. = .;
+	PROVIDE_HIDDEN( __heap_start = .                           );
 	PROVIDE_HIDDEN( __heap_end   = ORIGIN(main) + LENGTH(main) );
 
-	/* Main user code/data section */
-	/* Important: This is merged into a single section in order to avoid section alignment problems */
+	/* WRAM code/read-only data section */
 	.wram : {
 		*(.text.unlikely .text.*_unlikely .text.unlikely.*)
 		*(.text.exit .text.exit.*)
@@ -217,38 +227,33 @@ SECTIONS {
 
 		*(.rodata .rodata.* .gnu.linkonce.r.*)
 		*(.rodata1)
-		*(.igot.plt)
+		. = ALIGN(4);
+	} >wram AT>lma7 :wram = 0xff
+
+	/* WRAM data section */
+	.wram.rw : ALIGN_WITH_INPUT {
 		*(.data .data.* .gnu.linkonce.d.*)
 		*(.data1)
 		SORT(CONSTRUCTORS)
-
 		. = ALIGN(4);
 	} >wram AT>lma7 :wram = 0xff
 
 	/* Load information for code/data on ARM7 RAM */
-	PROVIDE_HIDDEN( __wram_lma   = LOADADDR(.wram)             );
-	PROVIDE_HIDDEN( __wram_start = ADDR(.wram)                 );
-	PROVIDE_HIDDEN( __wram_end   = ADDR(.wram) + SIZEOF(.wram) );
+	PROVIDE_HIDDEN( __wram_lma   = LOADADDR(.wram)                   );
+	PROVIDE_HIDDEN( __wram_start = ADDR(.wram)                       );
+	PROVIDE_HIDDEN( __wram_end   = ADDR(.wram.rw) + SIZEOF(.wram.rw) );
 
-	/* Main BSS area */
-	.wram.bss (NOLOAD) : {
+	/* WRAM BSS area */
+	.wram.bss . (NOLOAD) : {
 		*(.dynbss)
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		*(COMMON)
 		. = ALIGN(4);
-	} >wram :NONE
+	} >wram AT>lma7 :wram
 
 	/* Information for BSS */
 	PROVIDE_HIDDEN( __wram_bss_start = ADDR(.wram.bss)                     );
 	PROVIDE_HIDDEN( __wram_bss_end   = ADDR(.wram.bss) + SIZEOF(.wram.bss) );
-
-	/* Ensure we can craft loadlists */
-	PROVIDE_HIDDEN( __loadlist_lma = __main_lma );
-	PROVIDE_HIDDEN( __twl_loadlist_lma = __twl_lma );
-	ASSERT( ADDR(.fini_array) - __main_start == LOADADDR(.fini_array) - __main_lma,
-		"Error: Invalid LMAs in sections within main RAM" )
-	ASSERT( LOADADDR(.fini_array) + SIZEOF(.fini_array) == __wram_lma,
-		"Error: Invalid gap between main RAM and WRAM LMAs" )
 
 	/* Craft a loadlist */
 	.loadlist : {
@@ -261,8 +266,9 @@ SECTIONS {
 		LONG(__wram_bss_end)
 	} >lma7 :ldlist = 0xff
 
-	PROVIDE_HIDDEN( __loadlist_start = ADDR(.loadlist)                     );
-	PROVIDE_HIDDEN( __loadlist_end   = ADDR(.loadlist) + SIZEOF(.loadlist) );
+	PROVIDE_HIDDEN( __loadlist_lma   = __main_lma                              );
+	PROVIDE_HIDDEN( __loadlist_start = LOADADDR(.loadlist)                     );
+	PROVIDE_HIDDEN( __loadlist_end   = LOADADDR(.loadlist) + SIZEOF(.loadlist) );
 
 	/* Craft a loadlist for DSi exclusive sections */
 	.twl.loadlist : {
@@ -271,8 +277,9 @@ SECTIONS {
 		LONG(__twl_bss_end)
 	} >lma7i :twlld = 0xff
 
-	PROVIDE_HIDDEN( __twl_loadlist_start = ADDR(.twl.loadlist)                     );
-	PROVIDE_HIDDEN( __twl_loadlist_end   = ADDR(.twl.loadlist) + SIZEOF(.twl.loadlist) );
+	PROVIDE_HIDDEN( __twl_loadlist_lma   = __twl_lma                                       );
+	PROVIDE_HIDDEN( __twl_loadlist_start = LOADADDR(.twl.loadlist)                         );
+	PROVIDE_HIDDEN( __twl_loadlist_end   = LOADADDR(.twl.loadlist) + SIZEOF(.twl.loadlist) );
 
 	/* ====================== */
 	/*   Debugging metadata   */
