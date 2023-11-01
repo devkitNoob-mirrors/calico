@@ -335,7 +335,7 @@ typedef struct EnvUserSettingsNvram {
 } EnvUserSettingsNvram;
 
 typedef enum EnvConsoleType {
-	EnvConsoleType_DS         = 0xff,
+	EnvConsoleType_DS         = 0,
 	EnvConsoleType_DSLite     = 0x20,
 	EnvConsoleType_DSi        = 0x57,
 	EnvConsoleType_iQueDS     = 0x43,
