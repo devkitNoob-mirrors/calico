@@ -1,5 +1,6 @@
 #include <calico/types.h>
 #include <calico/nds/system.h>
+#include <calico/nds/env.h>
 #include <calico/nds/arm7/pmic.h>
 #include <calico/nds/arm7/nvram.h>
 #include <calico/nds/arm7/codec.h>
@@ -20,10 +21,12 @@ unsigned pmGetBatteryState(void)
 		i2cUnlock();
 	} else {
 		// DS mode: Read state from PMIC
-		// TODO: detect DS Lite, only read PmicReg_BacklightLevel on DS Lite
 		spiLock();
 		ret = (pmicReadRegister(PmicReg_BatteryStatus) & PMIC_BATT_STAT_LOW) ? 3 : 15;
-		ret |= (pmicReadRegister(PmicReg_BacklightLevel) & PMIC_BL_CHARGER_DETECTED) ? PM_BATT_CHARGING : 0;
+		if (g_envExtraInfo->nvram_console_type & EnvConsoleType_DSLite) {
+			// If on DS Lite: read charger status too
+			ret |= (pmicReadRegister(PmicReg_BacklightLevel) & PMIC_BL_CHARGER_DETECTED) ? PM_BATT_CHARGING : 0;
+		}
 		spiUnlock();
 	}
 
