@@ -184,7 +184,8 @@ MK_NOINLINE static void _wpaPairwiseHandshake12(WpaState* st, WpaWork* wk)
 	memcpy(st->anonce, wk->hdr->key_nonce, WPA_EAPOL_NONCE_LEN);
 
 	// Generate a nonce for ourselves
-	u8 snonce[WPA_EAPOL_NONCE_LEN] = "TEMP key please use random one";
+	alignas(4) u8 snonce[WPA_EAPOL_NONCE_LEN];
+	wpaGenerateEapolNonce(snonce);
 
 	// Initialize the pad used to generate the PTK
 	WpaPtkPad pad;

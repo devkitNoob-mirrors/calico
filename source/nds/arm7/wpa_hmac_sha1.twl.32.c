@@ -1,6 +1,9 @@
 #include <calico/types.h>
+#include <calico/system/tick.h>
 #include <calico/dev/wpa.h>
+#include <calico/nds/lcd.h>
 #include <calico/nds/bios.h>
+#include "../transfer.h"
 
 void wpaHmacSha1(void* out, const void* key, size_t key_len, const void* data, size_t data_len)
 {
@@ -42,4 +45,26 @@ void wpaHmacSha1(void* out, const void* key, size_t key_len, const void* data, s
 	svcSha1UpdateTWL(&ctx, keyblock, sizeof(keyblock));
 	svcSha1UpdateTWL(&ctx, out, SVC_SHA1_DIGEST_SZ);
 	svcSha1DigestTWL(out, &ctx);
+}
+
+void wpaGenerateEapolNonce(void* out)
+{
+	u32 data[8];
+	data[0] = *(u32*)&g_envExtraInfo->wlmgr_macaddr[0];
+	data[1] = *(u16*)&g_envExtraInfo->wlmgr_macaddr[4] | (lcdGetVCount()<<16);
+	data[2] = g_envAppNdsHeader->arm9_size;
+	data[3] = g_envAppNdsHeader->arm7_size;
+	data[4] = g_envAppTwlHeader->arm9i_size;
+	data[5] = g_envAppTwlHeader->arm7i_size;
+	data[6] = s_transferRegion->unix_time;
+	data[7] = tickGetCount();
+
+	u32* inner = (u32*)out + (WPA_EAPOL_NONCE_LEN - SVC_SHA1_DIGEST_SZ)/4;
+	svcSha1CalcTWL(inner, data, sizeof(data));
+
+	for (unsigned i = 0; i < 8; i ++) {
+		data[i] ^= inner[i&1];
+	}
+
+	svcSha1CalcTWL(out, data, sizeof(data));
 }

@@ -106,6 +106,7 @@ struct WpaState {
 
 void wpaHmacSha1(void* out, const void* key, size_t key_len, const void* data, size_t data_len);
 void wpaPseudoRandomFunction(void* out, size_t out_len, const void* key, size_t key_size, void* pad, size_t pad_len);
+void wpaGenerateEapolNonce(void* out);
 
 void wpaAesEncrypt(const void* in, void* out, WpaAesContext const* ctx);
 void wpaAesDecrypt(const void* in, void* out, WpaAesContext const* ctx);
