@@ -3,6 +3,13 @@
 #include <calico/system/thread.h>
 #include <calico/nds/dma.h>
 
+MK_INLINE u32 _mwlGenWepIv(void)
+{
+	u16 lo = MWL_REG(W_RANDOM) * 0x101;
+	u16 hi = MWL_REG(W_RANDOM) & 0xff;
+	return lo | (hi << 16);
+}
+
 static void _mwlTxWrite(const void* src, unsigned len)
 {
 	const u16* src16 = (const u16*)src;
@@ -56,7 +63,7 @@ static unsigned _mwlTxQueueWrite(unsigned qid, NetBuf* pPacket)
 		_mwlTxWrite(machdr, sizeof(*machdr));
 
 		// Write WEP IV/key ID
-		u32 wep_ctrl = 0; // XX: implement properly
+		u32 wep_ctrl = _mwlGenWepIv() | (0U << 30); // XX: always using key id = 0
 		MWL_REG(W_TXBUF_WR_DATA) = wep_ctrl;
 		MWL_REG(W_TXBUF_WR_DATA) = wep_ctrl>>16;
 
