@@ -5,32 +5,8 @@
 #include <calico/nds/arm7/debug.h>
 #include "../transfer.h"
 
-#include <stdio.h>
-#include <sys/iosupport.h>
-
 DebugBufferMode g_dbgBufMode = DbgBufMode_Line;
 static Mutex s_debugMutex;
-
-static ssize_t _debugWrite(struct _reent *r, void *fd, const char *ptr, size_t len);
-
-static const devoptab_t s_debugDevOpTab = {
-	.name    = "dbg",
-	.write_r = _debugWrite,
-};
-
-ssize_t _debugWrite(struct _reent *r, void *fd, const char *ptr, size_t len)
-{
-	debugOutput(ptr, len);
-	return len;
-}
-
-void debugSetupStreams(void)
-{
-	devoptab_list[STD_OUT] = &s_debugDevOpTab;
-	devoptab_list[STD_ERR] = &s_debugDevOpTab;
-	setvbuf(stdout, NULL, _IONBF, 0);
-	setvbuf(stderr, NULL, _IONBF, 0);
-}
 
 void debugOutput(const char* buf, size_t size)
 {

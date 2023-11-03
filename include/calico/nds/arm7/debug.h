@@ -18,7 +18,6 @@ MK_INLINE void debugSetBufferMode(DebugBufferMode mode) {
 	g_dbgBufMode = mode;
 }
 
-void debugSetupStreams(void);
 void debugOutput(const char* buf, size_t size);
 
 MK_EXTERN_C_END
