@@ -27,26 +27,26 @@ MK_INLINE void armSoftBreakpoint(void)
 
 #if !__thumb__
 
-MK_INLINE u32 armGetCpsr(void)
+MK_EXTINLINE u32 armGetCpsr(void)
 {
 	u32 reg;
 	__asm__ __volatile__ ("mrs %0, cpsr" : "=r" (reg));
 	return reg;
 }
 
-MK_INLINE void armSetCpsrC(u32 value)
+MK_EXTINLINE void armSetCpsrC(u32 value)
 {
 	__asm__ __volatile__ ("msr cpsr_c, %0" :: "r" (value) : "memory");
 }
 
-MK_INLINE u32 armGetSpsr(void)
+MK_EXTINLINE u32 armGetSpsr(void)
 {
 	u32 reg;
 	__asm__ __volatile__ ("mrs %0, spsr" : "=r" (reg));
 	return reg;
 }
 
-MK_INLINE void armSetSpsr(u32 value)
+MK_EXTINLINE void armSetSpsr(u32 value)
 {
 	__asm__ __volatile__ ("msr spsr, %0" :: "r" (value));
 }
@@ -75,14 +75,14 @@ MK_EXTINLINE void armWaitForIrq(void)
 
 #endif
 
-MK_INLINE ArmIrqState armIrqLockByPsr(void)
+MK_EXTINLINE ArmIrqState armIrqLockByPsr(void)
 {
 	u32 psr = armGetCpsr();
 	armSetCpsrC(psr | ARM_PSR_I | ARM_PSR_F);
 	return psr & (ARM_PSR_I | ARM_PSR_F);
 }
 
-MK_INLINE void armIrqUnlockByPsr(ArmIrqState st)
+MK_EXTINLINE void armIrqUnlockByPsr(ArmIrqState st)
 {
 	u32 psr = armGetCpsr() &~ (ARM_PSR_I | ARM_PSR_F);
 	armSetCpsrC(psr | st);
@@ -90,10 +90,19 @@ MK_INLINE void armIrqUnlockByPsr(ArmIrqState st)
 
 #else
 
-MK_EXTERN32 ArmIrqState armIrqLockByPsr(void);
-MK_EXTERN32 void armIrqUnlockByPsr(ArmIrqState st);
+MK_EXTERN32 u32 armGetCpsr(void);
+MK_EXTERN32 void armSetCpsrC(u32 value);
+MK_EXTERN32 u32 armGetSpsr(void);
+MK_EXTERN32 void armSetSpsr(u32 value);
 MK_EXTERN32 u32 armSwapWord(u32 value, u32* addr);
 MK_EXTERN32 u8 armSwapByte(u8 value, u8* addr);
+
+#if __ARM_ARCH >= 5
+MK_EXTERN32 void armWaitForIrq(void);
+#endif
+
+MK_EXTERN32 ArmIrqState armIrqLockByPsr(void);
+MK_EXTERN32 void armIrqUnlockByPsr(ArmIrqState st);
 
 #endif
 

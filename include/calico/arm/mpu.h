@@ -27,14 +27,14 @@ MK_EXTERN_C_START
 
 #define _MPU_AUTOGEN(_name, _reg) \
 \
-MK_INLINE u32 armMpuGet##_name(void) \
+MK_EXTINLINE u32 armMpuGet##_name(void) \
 { \
 	u32 value; \
 	__asm__ __volatile__("mrc p15, 0, %0, " _reg : "=r" (value)); \
 	return value; \
 } \
 \
-MK_INLINE void armMpuSet##_name(u32 value) \
+MK_EXTINLINE void armMpuSet##_name(u32 value) \
 { \
 	__asm__ __volatile__ ("mcr p15, 0, %0, " _reg :: "r" (value)); \
 }
