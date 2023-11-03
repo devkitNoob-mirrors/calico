@@ -51,14 +51,14 @@ MK_INLINE void armSetSpsr(u32 value)
 	__asm__ __volatile__ ("msr spsr, %0" :: "r" (value));
 }
 
-MK_INLINE u32 armSwapWord(u32* addr, u32 value)
+MK_EXTINLINE u32 armSwapWord(u32 value, u32* addr)
 {
 	u32 ret;
 	__asm__ __volatile__ ("swp %[Rd], %[Rm], [%[Rn]]" : [Rd]"=r"(ret) : [Rm]"[Rd]"(value), [Rn]"r"(addr) : "memory");
 	return ret;
 }
 
-MK_INLINE u8 armSwapByte(u8* addr, u8 value)
+MK_EXTINLINE u8 armSwapByte(u8 value, u8* addr)
 {
 	u8 ret;
 	__asm__ __volatile__ ("swpb %[Rd], %[Rm], [%[Rn]]" : [Rd]"=r"(ret) : [Rm]"[Rd]"(value), [Rn]"r"(addr) : "memory");
@@ -92,18 +92,8 @@ MK_INLINE void armIrqUnlockByPsr(ArmIrqState st)
 
 MK_EXTERN32 ArmIrqState armIrqLockByPsr(void);
 MK_EXTERN32 void armIrqUnlockByPsr(ArmIrqState st);
-MK_EXTERN32 u32 armSwapWordFromThumb(u32 value, u32* addr) __asm__("armSwapWord");
-MK_EXTERN32 u8 armSwapByteFromThumb(u8 value, u8* addr) __asm__("armSwapByte");
-
-MK_INLINE u32 armSwapWord(u32* addr, u32 value)
-{
-	return armSwapWordFromThumb(value, addr);
-}
-
-MK_INLINE u8 armSwapByte(u8* addr, u8 value)
-{
-	return armSwapByteFromThumb(value, addr);
-}
+MK_EXTERN32 u32 armSwapWord(u32 value, u32* addr);
+MK_EXTERN32 u8 armSwapByte(u8 value, u8* addr);
 
 #endif
 

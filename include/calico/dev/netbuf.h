@@ -119,7 +119,7 @@ MK_INLINE NetBuf* netbufQueueRemoveOne(NetBufListNode* q) {
 }
 
 MK_INLINE NetBuf* netbufQueueRemoveAll(NetBufListNode* q) {
-	return (NetBuf*)armSwapWord((u32*)&q->next, 0);
+	return (NetBuf*)armSwapWord(0, (u32*)&q->next);
 }
 
 MK_EXTERN_C_END

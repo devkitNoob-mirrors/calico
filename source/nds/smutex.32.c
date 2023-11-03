@@ -14,7 +14,7 @@ void smutexLock(SMutex* m)
 	bool try_again;
 	do {
 		while (m->cpu_id != SMUTEX_MY_CPU_ID) {
-			if (armSwapWord(&m->spinner, 1) == 0) {
+			if (armSwapWord(1, &m->spinner) == 0) {
 				m->cpu_id = SMUTEX_MY_CPU_ID;
 				break;
 			}
@@ -39,7 +39,7 @@ bool smutexTryLock(SMutex* m)
 
 	bool rc = m->cpu_id == SMUTEX_MY_CPU_ID;
 	if_likely (!rc) {
-		rc = armSwapWord(&m->spinner, 1) == 0;
+		rc = armSwapWord(1, &m->spinner) == 0;
 		if_likely (rc) {
 			m->cpu_id = SMUTEX_MY_CPU_ID;
 		}
