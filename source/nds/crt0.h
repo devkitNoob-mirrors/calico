@@ -27,5 +27,5 @@ typedef struct Crt0Header9 {
 	uptr dldi_addr;
 } Crt0Header9;
 
-void crt0CopyMem32(uptr dst, uptr src, uptr size);
-void crt0FillMem32(uptr dst, u32 value, uptr size);
+MK_EXTERN32 void crt0CopyMem32(uptr dst, uptr src, uptr size);
+MK_EXTERN32 void crt0FillMem32(uptr dst, u32 value, uptr size);
