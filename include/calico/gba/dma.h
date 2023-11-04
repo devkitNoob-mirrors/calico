@@ -99,6 +99,19 @@ MK_INLINE void dmaStartCopy32(unsigned id, void* dst, const void* src, size_t si
 		DMA_START;
 }
 
+MK_INLINE void dmaStartCopy16(unsigned id, void* dst, const void* src, size_t size)
+{
+	REG_DMAxSAD(id) = (u32)src;
+	REG_DMAxDAD(id) = (u32)dst;
+	REG_DMAxCNT_L(id) = size/2;
+	REG_DMAxCNT_H(id) =
+		DMA_MODE_DST(DmaMode_Increment) |
+		DMA_MODE_SRC(DmaMode_Increment) |
+		DMA_UNIT_16 |
+		DMA_TIMING(DmaTiming_Immediate) |
+		DMA_START;
+}
+
 MK_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 {
 	REG_DMAxFIL(id) = value;
@@ -109,6 +122,20 @@ MK_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 		DMA_MODE_DST(DmaMode_Increment) |
 		DMA_MODE_SRC(DmaMode_Fixed) |
 		DMA_UNIT_32 |
+		DMA_TIMING(DmaTiming_Immediate) |
+		DMA_START;
+}
+
+MK_INLINE void dmaStartFill16(unsigned id, void* dst, u16 value, size_t size)
+{
+	REG_DMAxFIL(id) = value;
+	REG_DMAxSAD(id) = (u32)&REG_DMAxFIL(id);
+	REG_DMAxDAD(id) = (u32)dst;
+	REG_DMAxCNT_L(id) = size/2;
+	REG_DMAxCNT_H(id) =
+		DMA_MODE_DST(DmaMode_Increment) |
+		DMA_MODE_SRC(DmaMode_Fixed) |
+		DMA_UNIT_16 |
 		DMA_TIMING(DmaTiming_Immediate) |
 		DMA_START;
 }
