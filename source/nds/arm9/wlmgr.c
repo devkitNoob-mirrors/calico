@@ -27,6 +27,7 @@ const WlMgrInitConfig g_wlmgrDefaultConfig = {
 
 static struct {
 	WlMgrState state;
+	bool cmd_fail;
 	NetBufListNode rx_queue;
 
 	WlMgrEventFn event_cb;
@@ -87,6 +88,11 @@ static int _wlmgrThreadMain(void* arg)
 					arg1 = imm;
 					s_wlmgrState.scan_buf = NULL;
 					break;
+				}
+
+				case WlMgrEvent_CmdFailed: {
+					s_wlmgrState.cmd_fail = true;
+					// fallthrough
 				}
 
 				case WlMgrEvent_Disconnected: {
@@ -200,13 +206,20 @@ WlMgrState wlmgrGetState(void)
 	return s_wlmgrState.state;
 }
 
+bool wlmgrLastCmdFailed(void)
+{
+	return s_wlmgrState.cmd_fail;
+}
+
 void wlmgrStart(WlMgrMode mode)
 {
+	s_wlmgrState.cmd_fail = false;
 	pxiSend(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_Start, mode));
 }
 
 void wlmgrStop(void)
 {
+	s_wlmgrState.cmd_fail = false;
 	pxiSend(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_Stop, 0));
 }
 
@@ -224,6 +237,7 @@ void wlmgrStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter)
 
 	// Send command
 	s_wlmgrState.scan_buf = out_table;
+	s_wlmgrState.cmd_fail = false;
 	pxiSendWithData(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_StartScan, 0), &buf_addr, 1);
 }
 
@@ -237,11 +251,13 @@ void wlmgrAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 		.auth = auth,
 	};
 
+	s_wlmgrState.cmd_fail = false;
 	pxiSendWithData(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_Associate, 0), (const u32*)&arg, sizeof(arg)/sizeof(u32));
 }
 
 void wlmgrDisassociate(void)
 {
+	s_wlmgrState.cmd_fail = false;
 	pxiSend(PxiChannel_WlMgr, pxiWlMgrMakeCmd(PxiWlMgrCmd_Disassociate, 0));
 }
 

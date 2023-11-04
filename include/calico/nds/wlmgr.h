@@ -61,6 +61,7 @@ MK_INLINE bool wlmgrInitDefault(void)
 
 void wlmgrSetEventHandler(WlMgrEventFn cb, void* user);
 WlMgrState wlmgrGetState(void);
+bool wlmgrLastCmdFailed(void);
 
 void wlmgrStart(WlMgrMode mode);
 void wlmgrStop(void);
