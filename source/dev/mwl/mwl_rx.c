@@ -46,6 +46,7 @@ MK_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
 	WlanBssExtra extra;
 	wlanParseBeacon(&desc, &extra, pPacket);
 	__builtin_memcpy(desc.bssid, dot11hdr->tx_addr, 6);
+	desc.rssi = mwlDecodeRssi(rxhdr->rssi);
 
 	// Apply contention-free duration if needed
 	if (extra.cfp && (dot11hdr->duration & 0x8000)) {
@@ -59,7 +60,7 @@ MK_NOINLINE static void _mwlRxBeaconFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr)
 
 	// Forward BSS description to MLME if we are scanning or joining
 	if (s_mwlState.mlme_state == MwlMlmeState_ScanBusy) {
-		_mwlMlmeOnBssInfo(&desc, &extra, rxhdr->rssi & 0xff);
+		_mwlMlmeOnBssInfo(&desc, &extra);
 	} else if (s_mwlState.mlme_state == MwlMlmeState_JoinBusy) {
 		_mwlMlmeHandleJoin(hdr, &desc, &extra);
 	}
@@ -108,9 +109,10 @@ MK_NOINLINE static void _mwlRxProbeResFrame(NetBuf* pPacket, MwlDataRxHdr* rxhdr
 	WlanBssExtra extra;
 	wlanParseBeacon(&desc, &extra, pPacket);
 	__builtin_memcpy(desc.bssid, dot11hdr->tx_addr, 6);
+	desc.rssi = mwlDecodeRssi(rxhdr->rssi);
 
 	// Forward BSS description to MLME
-	_mwlMlmeOnBssInfo(&desc, &extra, rxhdr->rssi & 0xff);
+	_mwlMlmeOnBssInfo(&desc, &extra);
 }
 
 void _mwlRxEndTask(void)
@@ -176,7 +178,7 @@ void _mwlRxEndTask(void)
 			dietPrint("[RX] missing 802.11 hdr!\n");
 		} else switch (pkt_type) {
 			default: {
-				dietPrint("[RX:%02X] t=%X len=%u ieee=%.4X\n", rxhdr.rssi&0xff, pkt_type, rxhdr.mpdu_len, dot11hdr->fc.value);
+				dietPrint("[RX:%02X] t=%X len=%u ieee=%.4X\n", mwlDecodeRssi(rxhdr.rssi), pkt_type, rxhdr.mpdu_len, dot11hdr->fc.value);
 				break;
 			}
 
@@ -204,7 +206,7 @@ void _mwlRxEndTask(void)
 			case MwlRxType_IeeeData: {
 				if (dot11hdr->fc.type == WlanFrameType_Data && !(dot11hdr->fc.subtype & WLAN_DATA_IS_NULL) && s_mwlState.status == MwlStatus_Class3) {
 					// Handle data frames in a separate task
-					pPacket->reserved[0] = rxhdr.rssi&0xff;
+					pPacket->reserved[0] = mwlDecodeRssi(rxhdr.rssi);
 					netbufQueueAppend(&s_mwlState.rx_data, pPacket);
 					pPacket = NULL;
 					_mwlPushTask(MwlTask_RxDataFrame);

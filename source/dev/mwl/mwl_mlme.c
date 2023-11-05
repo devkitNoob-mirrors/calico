@@ -20,7 +20,7 @@ static bool _mwlSetMlmeState(MwlMlmeState state)
 	return ok;
 }
 
-void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi)
+void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra)
 {
 	if (!s_mwlState.mlme_cb.onBssInfo) {
 		return;
@@ -30,7 +30,7 @@ void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rs
 	unsigned filter_len = s_mwlState.mlme.scan.filter.target_ssid_len;
 	if (filter_len == 0 || (filter_len == bssInfo->ssid_len &&
 		__builtin_memcmp(bssInfo->ssid, s_mwlState.mlme.scan.filter.target_ssid, filter_len) == 0)) {
-		s_mwlState.mlme_cb.onBssInfo(bssInfo, bssExtra, rssi);
+		s_mwlState.mlme_cb.onBssInfo(bssInfo, bssExtra);
 	}
 }
 

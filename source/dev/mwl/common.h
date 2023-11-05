@@ -144,7 +144,7 @@ MK_EXTERN32 void _mwlPushTaskImpl(u32 mask) __asm__("_mwlPushTask");
 MK_EXTERN32 MwlTask _mwlPopTask(void);
 void _mwlRxQueueClear(void);
 void _mwlTxQueueClear(unsigned qid);
-void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);
+void _mwlMlmeOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra);
 void _mwlMlmeHandleJoin(WlanBeaconHdr* beaconHdr, WlanBssDesc* bssInfo, WlanBssExtra* bssExtra);
 void _mwlMlmeHandleAuth(NetBuf* pPacket);
 void _mwlMlmeAuthFreeReply(void);

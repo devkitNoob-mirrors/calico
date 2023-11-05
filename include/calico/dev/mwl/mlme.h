@@ -4,7 +4,7 @@
 MK_EXTERN_C_START
 
 typedef struct MwlMlmeCallbacks {
-	void (* onBssInfo)(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi);
+	void (* onBssInfo)(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra);
 	u32 (* onScanEnd)(void);
 	void (* onJoinEnd)(bool ok);
 	void (* onAuthEnd)(unsigned status);

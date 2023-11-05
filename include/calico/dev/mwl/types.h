@@ -47,4 +47,11 @@ typedef struct MwlDataRxHdr {
 	u16 rssi;
 } MwlDataRxHdr;
 
+MK_CONSTEXPR u8 mwlDecodeRssi(u16 in)
+{
+	unsigned ret = (in & 0xfc) >> 2;
+	if (!(in & 2)) ret += 25;
+	return ret;
+}
+
 MK_EXTERN_C_END

@@ -29,7 +29,7 @@ static struct {
 	bool fake_cck_rates;
 } s_assocVars;
 
-static void _ntrwifiOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra, unsigned rssi)
+static void _ntrwifiOnBssInfo(WlanBssDesc* bssInfo, WlanBssExtra* bssExtra)
 {
 	if (!s_scanVars.bssTable) {
 		return;
