@@ -184,6 +184,13 @@ static void _twlwifiOnDisassoc(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info)
 	dietPrint("  IEEE reason = %u\n", info->reason_ieee);
 	dietPrint("  Reason = %u\n", info->reason);
 
+	// XX: The ar6k only stops trying to connect when the host issues a WMI
+	// disconnect command. In order to avoid leaving the ar6k in a dirty
+	// state, explicitly issue a disconnect when we are booted out.
+	if (info->reason != 3 && !ar6kWmiDisconnect(dev)) {
+		return;
+	}
+
 	if (s_assocVars.cb) {
 		s_assocVars.cb(s_assocVars.user, false, info->reason_ieee);
 		s_assocVars.cb = NULL;
