@@ -37,7 +37,7 @@ unsigned wlanGetRateBit(unsigned rate)
 	return bit;
 }
 
-WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, void* bssid, int rssi)
+WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, void* bssid, unsigned rssi)
 {
 	unsigned i;
 	for (i = 0; i < *num_entries; i ++) {

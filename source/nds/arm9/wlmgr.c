@@ -10,6 +10,7 @@
 #include "../pxi/wlmgr.h"
 
 #define WLMGR_NUM_MAIL_SLOTS 4
+#define WLMGR_RSSI_BUF_SZ    32
 
 void _netbufPrvInitPools(void* start, const u16* tx_counts, const u16* rx_counts);
 
@@ -28,6 +29,7 @@ const WlMgrInitConfig g_wlmgrDefaultConfig = {
 static struct {
 	WlMgrState state;
 	bool cmd_fail;
+	u8 rssi_pos;
 	NetBufListNode rx_queue;
 
 	WlMgrEventFn event_cb;
@@ -37,7 +39,32 @@ static struct {
 	void* rx_user;
 
 	WlanBssDesc* scan_buf;
+
+	u8 rssi_buf[WLMGR_RSSI_BUF_SZ];
 } s_wlmgrState;
+
+static void _wlmgrRssiBufInit(unsigned rssi)
+{
+	s_wlmgrState.rssi_pos = 0;
+	for (unsigned i = 0; i < WLMGR_RSSI_BUF_SZ; i ++) {
+		s_wlmgrState.rssi_buf[i] = rssi;
+	}
+}
+
+static void _wlmgrRssiBufUpdate(unsigned rssi)
+{
+	s_wlmgrState.rssi_buf[s_wlmgrState.rssi_pos++] = rssi;
+	s_wlmgrState.rssi_pos %= WLMGR_RSSI_BUF_SZ;
+}
+
+static unsigned _wlmgrRssiBufDigest(void)
+{
+	unsigned ret = 0;
+	for (unsigned i = 0; i < WLMGR_RSSI_BUF_SZ; i ++) {
+		ret += s_wlmgrState.rssi_buf[i];
+	}
+	return ret / WLMGR_RSSI_BUF_SZ;
+}
 
 static void _wlmgrRxPxiHandler(void* user, u32 data)
 {
@@ -114,6 +141,7 @@ static int _wlmgrThreadMain(void* arg)
 		NetBuf* pNext;
 		for (; pPacket; pPacket = pNext) {
 			pNext = pPacket->link.next;
+			_wlmgrRssiBufUpdate(pPacket->reserved[0]);
 			if (s_wlmgrState.rx_cb) {
 				s_wlmgrState.rx_cb(s_wlmgrState.rx_user, pPacket);
 			} else {
@@ -206,6 +234,11 @@ WlMgrState wlmgrGetState(void)
 	return s_wlmgrState.state;
 }
 
+unsigned wlmgrGetRssi(void)
+{
+	return s_wlmgrState.state >= WlMgrState_Associating ? _wlmgrRssiBufDigest() : 0;
+}
+
 bool wlmgrLastCmdFailed(void)
 {
 	return s_wlmgrState.cmd_fail;
@@ -243,6 +276,7 @@ void wlmgrStartScan(WlanBssDesc* out_table, WlanBssScanFilter const* filter)
 
 void wlmgrAssociate(WlanBssDesc const* bss, WlanAuthData const* auth)
 {
+	_wlmgrRssiBufInit(bss->rssi);
 	armDCacheFlush((void*)bss, sizeof(*bss));
 	armDCacheFlush((void*)auth, sizeof(*auth));
 

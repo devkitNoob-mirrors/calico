@@ -61,7 +61,13 @@ MK_INLINE bool wlmgrInitDefault(void)
 
 void wlmgrSetEventHandler(WlMgrEventFn cb, void* user);
 WlMgrState wlmgrGetState(void);
+unsigned wlmgrGetRssi(void);
 bool wlmgrLastCmdFailed(void);
+
+MK_INLINE unsigned wlmgrGetSignalStrength(void)
+{
+	return wlanCalcSignalStrength(wlmgrGetRssi());
+}
 
 void wlmgrStart(WlMgrMode mode);
 void wlmgrStop(void);

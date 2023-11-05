@@ -12,6 +12,10 @@
 #define WLAN_WEP_128_LEN     16
 #define WLAN_WPA_PSK_LEN     32
 
+#define WLAN_RSSI_STRENGTH_1 10
+#define WLAN_RSSI_STRENGTH_2 16
+#define WLAN_RSSI_STRENGTH_3 21
+
 MK_EXTERN_C_START
 
 // Potentially misaligned integer datatypes
@@ -203,7 +207,7 @@ typedef struct WlanBssDesc {
 		u8 auth_mask;
 		WlanBssAuthType auth_type;
 	};
-	s8 rssi;
+	u8 rssi;
 	u8 channel;
 } WlanBssDesc;
 
@@ -225,6 +229,14 @@ typedef union WlanAuthData {
 	u8 wpa_psk[WLAN_WPA_PSK_LEN];
 	u8 wep_key[WLAN_WEP_128_LEN];
 } WlanAuthData;
+
+MK_CONSTEXPR unsigned wlanCalcSignalStrength(unsigned rssi)
+{
+	if (rssi >= WLAN_RSSI_STRENGTH_3) return 3;
+	if (rssi >= WLAN_RSSI_STRENGTH_2) return 2;
+	if (rssi >= WLAN_RSSI_STRENGTH_1) return 1;
+	return 0;
+}
 
 MK_CONSTEXPR unsigned wlanFreqToChannel(unsigned freq_mhz)
 {
@@ -273,7 +285,7 @@ MK_INLINE unsigned wlanDecode32(const u8* data)
 }
 
 unsigned wlanGetRateBit(unsigned rate);
-WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, void* bssid, int rssi);
+WlanBssDesc* wlanFindOrAddBss(WlanBssDesc* desc_table, unsigned* num_entries, void* bssid, unsigned rssi);
 WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len);
 void wlanParseBeacon(WlanBssDesc* desc, WlanBssExtra* extra, NetBuf* pPacket);
 

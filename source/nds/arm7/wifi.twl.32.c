@@ -132,7 +132,8 @@ static void _twlwifiOnBssInfo(Ar6kDev* dev, Ar6kWmiBssInfoHdr* bssInfo, NetBuf* 
 	}
 
 	// Add new entry or find existing entry to overwrite
-	WlanBssDesc* desc = wlanFindOrAddBss(s_scanVars.bssTable, &s_scanVars.bssCount, bssInfo->bssid, bssInfo->snr);
+	unsigned rssi = bssInfo->snr >= 0 ? bssInfo->snr : 0;
+	WlanBssDesc* desc = wlanFindOrAddBss(s_scanVars.bssTable, &s_scanVars.bssCount, bssInfo->bssid, rssi);
 	if (!desc) {
 		return;
 	}
@@ -140,7 +141,7 @@ static void _twlwifiOnBssInfo(Ar6kDev* dev, Ar6kWmiBssInfoHdr* bssInfo, NetBuf* 
 	// Parse the beacon
 	wlanParseBeacon(desc, NULL, pPacket);
 	memcpy(desc->bssid, bssInfo->bssid, 6);
-	desc->rssi = bssInfo->snr;
+	desc->rssi = rssi;
 	desc->channel = wlanFreqToChannel(bssInfo->channel_mhz);
 }
 
@@ -197,12 +198,12 @@ static void _twlwifiOnDisassoc(Ar6kDev* dev, Ar6kWmiEvtDisconnected* info)
 	}
 }
 
-MK_WEAK void _netbufRx(NetBuf* pPacket, int rssi)
+MK_WEAK void _netbufRx(NetBuf* pPacket)
 {
 	netbufFree(pPacket);
 }
 
-static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
+static void _twlwifiRx(Ar6kDev* dev, NetBuf* pPacket)
 {
 	NetMacHdr* machdr = (NetMacHdr*)netbufGet(pPacket);
 	unsigned ethertype = __builtin_bswap16(machdr->len_or_ethertype_be);
@@ -215,8 +216,7 @@ static void _twlwifiRx(Ar6kDev* dev, int rssi, NetBuf* pPacket)
 		}
 	} else {
 		// Regular packet
-		//dietPrint("[RX:%2d] eth=%.4X len=%u\n", rssi, ethertype, pPacket->len);
-		_netbufRx(pPacket, rssi);
+		_netbufRx(pPacket);
 	}
 }
 

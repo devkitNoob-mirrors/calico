@@ -116,7 +116,7 @@ static void _wlmgrOnAssoc(void* user, bool success, unsigned reason)
 	mailboxTrySend(&s_wlmgrState.mbox, WLMGR_MAIL_EVENT | (pkt << 2));
 }
 
-void _netbufRx(NetBuf* pPacket, int rssi)
+void _netbufRx(NetBuf* pPacket)
 {
 	if (s_wlmgrState.state == WlMgrState_Associated) {
 		uptr addr = (uptr)pPacket - MM_MAINRAM;

@@ -286,7 +286,7 @@ void _mwlRxDataTask(void)
 
 	// Forward to callback
 	if (s_mwlState.mlme_cb.maData) {
-		s_mwlState.mlme_cb.maData(pPacket, pPacket->reserved[0]);
+		s_mwlState.mlme_cb.maData(pPacket);
 	} else {
 		netbufFree(pPacket);
 	}

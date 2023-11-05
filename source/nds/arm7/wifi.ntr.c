@@ -137,12 +137,12 @@ static void _ntrwifiOnStateLost(MwlStatus new_class, unsigned reason)
 	}
 }
 
-MK_WEAK void _netbufRx(NetBuf* pPacket, int rssi)
+MK_WEAK void _netbufRx(NetBuf* pPacket)
 {
 	netbufFree(pPacket);
 }
 
-static void _ntrwifiRx(NetBuf* pPacket, unsigned rssi)
+static void _ntrwifiRx(NetBuf* pPacket)
 {
 	// Convert 802.11+LLC+SNAP packet to DIX (Ethernet)
 	if (!mwlDevWlanToDix(pPacket)) {
@@ -152,7 +152,7 @@ static void _ntrwifiRx(NetBuf* pPacket, unsigned rssi)
 	}
 
 	// Forward packet to RX handler
-	_netbufRx(pPacket, rssi);
+	_netbufRx(pPacket);
 }
 
 bool ntrwifiInit(void)
