@@ -89,12 +89,14 @@ static void _ntrcardRecvByDma(u32 romcnt, void* buf, unsigned dma_ch, u32 size)
 #ifdef ARM9
 	armDCacheInvalidate(buf, size);
 #endif
+
 	REG_DMAxSAD(dma_ch) = (uptr)&REG_NTRCARD_FIFO;
 	REG_DMAxDAD(dma_ch) = (uptr)buf;
-	REG_DMAxCNT_L(dma_ch) = size/4;
+	REG_DMAxCNT_L(dma_ch) = 1;
 	REG_DMAxCNT_H(dma_ch) =
 		DMA_MODE_DST(DmaMode_Increment) |
 		DMA_MODE_SRC(DmaMode_Fixed) |
+		DMA_MODE_REPEAT |
 		DMA_UNIT_32 |
 		DMA_TIMING(DmaTiming_Slot1) |
 		DMA_START;
@@ -104,6 +106,8 @@ static void _ntrcardRecvByDma(u32 romcnt, void* buf, unsigned dma_ch, u32 size)
 	while (REG_NTRCARD_ROMCNT & NTRCARD_ROMCNT_BUSY) {
 		threadIrqWait(false, IRQ_SLOT1_TX);
 	}
+
+	REG_DMAxCNT_H(dma_ch) = 0;
 }
 
 static void _ntrcardRecvByCpu(u32 romcnt, void* buf)
