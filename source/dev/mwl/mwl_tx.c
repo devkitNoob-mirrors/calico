@@ -160,8 +160,9 @@ void _mwlTxQueueClear(unsigned qid)
 	MwlTxQueue* q = &s_mwlState.tx_queues[qid];
 	mutexLock(&s_mwlState.tx_mutex);
 
-	if ((s_mwlState.tx_busy & bit) && q->cb) {
-		s_mwlState.tx_busy &= ~bit;
+	unsigned prev_busy = s_mwlState.tx_busy;
+	s_mwlState.tx_busy = prev_busy &~ bit;
+	if ((prev_busy & bit) && q->cb) {
 		q->cb(q->arg, MwlTxEvent_Dropped, NULL);
 	}
 
