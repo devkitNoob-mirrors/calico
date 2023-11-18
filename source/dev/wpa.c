@@ -104,19 +104,17 @@ static WlanIeHdr* _wpaRsnSnagGtk(u8* key_data, unsigned data_len)
 {
 	while (data_len > sizeof(WlanIeHdr)) {
 		WlanIeHdr* ie = (WlanIeHdr*)key_data;
-		key_data += 2;
-		data_len -= 2;
+		data_len -= sizeof(WlanIeHdr);
 
 		if (ie->len > data_len) {
 			break;
 		}
 
-		u8* ie_data = key_data;
-		key_data += ie->len;
+		key_data = &ie->data[ie->len];
 		data_len -= ie->len;
 
 		if (ie->id == WlanEid_Vendor && ie->len >= 0x16 &&
-			ie_data[0] == 0x00 && ie_data[1] == 0x0f && ie_data[2] == 0xac && ie_data[3] == 0x01) {
+			ie->data[0] == 0x00 && ie->data[1] == 0x0f && ie->data[2] == 0xac && ie->data[3] == 0x01) {
 			return ie; // Found it!
 		}
 	}

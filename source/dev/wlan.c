@@ -69,11 +69,10 @@ WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len)
 	WlanIeHdr* wpa = NULL;
 	while (rawdata_len > sizeof(WlanIeHdr)) {
 		WlanIeHdr* ie = (WlanIeHdr*)pos;
-		pos += 2;
 		rawdata_len -= 2;
 
 		if (ie->len <= rawdata_len) {
-			pos += ie->len;
+			pos = &ie->data[ie->len];
 			rawdata_len -= ie->len;
 		} else {
 			break;
