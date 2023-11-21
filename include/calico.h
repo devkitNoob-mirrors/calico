@@ -47,6 +47,8 @@
 #include "calico/system/mailbox.h"
 #include "calico/system/dietprint.h"
 
+#include "calico/dev/fugu.h"
+
 #if defined(__GBA__)
 #include "calico/gba/bios.h"
 #include "calico/gba/keypad.h"
