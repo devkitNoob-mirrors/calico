@@ -28,6 +28,7 @@
 #define IRQ_DMA3         (1U << 11)
 #define IRQ_KEYPAD       (1U << 12)
 #define IRQ_SLOT2        (1U << 13)
+#define IRQ_SLOT1_DET    (1U << 14)
 #define IRQ_PXI_SYNC     (1U << 16)
 #define IRQ_PXI_SEND     (1U << 17)
 #define IRQ_PXI_RECV     (1U << 18)
@@ -64,7 +65,6 @@
 #ifdef ARM9
 #define MK_IRQ_NUM_HANDLERS 32
 
-#define IRQ_SLOT1_SWAP   (1U << 14)
 #define IRQ_3DFIFO       (1U << 21)
 #define IRQ_DSP          (1U << 24)
 #define IRQ_CAM          (1U << 25)
