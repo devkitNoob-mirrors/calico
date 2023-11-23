@@ -59,6 +59,7 @@
 
 #if defined(__NDS__)
 #include "calico/nds/system.h"
+#include "calico/nds/scfg.h"
 #include "calico/nds/bios.h"
 #include "calico/nds/timer.h"
 #include "calico/nds/dma.h"

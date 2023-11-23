@@ -138,7 +138,7 @@ FUNC_START32 __ds9_bootstub, bootstub
 	bne  1b
 	ldr  r3, =(1<<3) | (1<<14) | (1<<15)
 	ldr  r0, =MM_ITCM
-	ldr  r5, =MM_IO + IO_SCFG_CLK9
+	ldr  r5, =MM_IO + IO_SCFG_CLK
 	blx  r0
 
 #ifdef COLOR_DEBUG

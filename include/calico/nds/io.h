@@ -176,19 +176,18 @@
 
 // System/SoC configuration
 #define IO_SCFG_ROM   0x4000
+#define IO_SCFG_CLK   0x4004
 #ifdef ARM9
-#define IO_SCFG_CLK9  0x4004
 #define IO_SCFG_RST   0x4006
-#define IO_SCFG_EXT9  0x4008
-#define IO_SCFG_MC    0x4010
 #endif
 #ifdef ARM7
-#define IO_SCFG_CLK7  0x4004
 #define IO_SCFG_JTAG  0x4006
-#define IO_SCFG_EXT7  0x4008
+#endif
+#define IO_SCFG_EXT   0x4008
 #define IO_SCFG_MC    0x4010
-#define IO_SCFG_CARD_INSERT_DELAY   0x4012
-#define IO_SCFG_CARD_POWEROFF_DELAY 0x4014
+#ifdef ARM7
+#define IO_SCFG_MCINS 0x4012
+#define IO_SCFG_MCREM 0x4014
 #define IO_SCFG_WL    0x4020
 #define IO_SCFG_OP    0x4024
 #endif
