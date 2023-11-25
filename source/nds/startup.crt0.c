@@ -4,6 +4,7 @@
 #endif
 #include <calico/nds/mm.h>
 #include <calico/nds/system.h>
+#include <calico/nds/scfg.h>
 #include <calico/nds/dma.h>
 #include <calico/nds/ndma.h>
 #include <calico/nds/timer.h>
@@ -149,7 +150,7 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 
 	if (is_twl) {
 		// Ensure WRAM_A is mapped to the right location
-		MK_REG(u32, IO_MBK_MAP_A) = g_envAppTwlHeader->arm7_wram_setting[0];
+		REG_MBK_MAP_A = g_envAppTwlHeader->arm7_mbk_map_settings[0];
 
 		// Configure DSi GPIO
 		REG_GPIO_CNT = GPIO_CNT_DIR_OUT(GPIO_PIN_SOUND_ENABLE) | GPIO_CNT_PIN(GPIO_PIN_SOUND_ENABLE);

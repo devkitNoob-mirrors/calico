@@ -94,11 +94,11 @@ typedef struct EnvTwlHeader {
 
 	u8 _pad_0x170[0x10];
 
-	u32 global_wram_setting[5];
-	u32 arm9_wram_setting[3];
-	u32 arm7_wram_setting[3];
+	u32 mbk_slot_settings[5];
+	u32 arm9_mbk_map_settings[3];
+	u32 arm7_mbk_map_settings[3];
 	struct {
-		u32 mbk9_setting : 24;
+		u32 mbk_slotwrprot_setting : 24;
 		u32 wramcnt_setting : 8;
 	};
 

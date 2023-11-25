@@ -15,6 +15,14 @@
 #define REG_SCFG_EXT MK_REG(u32, IO_SCFG_EXT)
 #define REG_SCFG_MC  MK_REG(u16, IO_SCFG_MC)
 
+#define REG_MBK_SLOT_Ax(_x) MK_REG(u8,  IO_MBK_SLOT_Ax(_x)) // arm7 ro, arm9 rw/ro (see SLOTWRPROT)
+#define REG_MBK_SLOT_Bx(_x) MK_REG(u8,  IO_MBK_SLOT_Bx(_x))
+#define REG_MBK_SLOT_Cx(_x) MK_REG(u8,  IO_MBK_SLOT_Cx(_x))
+#define REG_MBK_MAP_A       MK_REG(u32, IO_MBK_MAP_A)       // arm7 rw, arm9 rw (per-cpu)
+#define REG_MBK_MAP_B       MK_REG(u32, IO_MBK_MAP_B)
+#define REG_MBK_MAP_C       MK_REG(u32, IO_MBK_MAP_C)
+#define REG_MBK_SLOTWRPROT  MK_REG(u32, IO_MBK_SLOTWRPROT)  // arm7 rw, arm9 ro
+
 #ifdef ARM7
 #define REG_SCFG_A9ROM MK_REG(u8,  IO_SCFG_ROM+0)
 #define REG_SCFG_A7ROM MK_REG(u8,  IO_SCFG_ROM+1)
@@ -107,7 +115,51 @@
 #define SCFG_MC_POWER_ON      (2U<<2)
 #define SCFG_MC_POWER_OFF_REQ (3U<<2)
 
+#define MBK_SLOT_OWNER(_n)  ((_n)&3)
+#define MBK_SLOT_OFFSET(_n) (((_n)&3)<<2)
+#define MBK_SLOT_ENABLE     (1U<<7)
+
+#define MBK_MAP_START(_n) (((_n)&0x1ff)<<3)
+#define MBK_MAP_SIZE(_n)  (((_n)&3)<<12)
+#define MBK_MAP_END(_n)   (((_n)&0x3ff)<<19)
+
+#define MBK_MAP_GRANULARITY 0x8000
+
+#define g_scfgBackup ((ScfgBackup*)MM_ENV_TWL_SCFG_BACKUP)
+
 MK_EXTERN_C_START
+
+typedef enum MbkSlotOwner {
+	MbkSlotOwner_Arm9 = 0,
+	MbkSlotOwner_Arm7 = 1,
+	MbkSlotOwner_Dsp  = 2, // only for WRAM_B/C
+} MbkSlotOwner;
+
+typedef enum MbkMapSize {
+	MbkMapSize_32K  = 0, // only for WRAM_B/C
+	MbkMapSize_64K  = 1,
+	MbkMapSize_128K = 2,
+	MbkMapSize_256K = 3,
+} MbkMapSize;
+
+typedef struct ScfgBackup {
+	u32 ext;
+	union {
+		u16 other;
+		struct {
+			u16 op    : 3;
+			u16 a9rom : 2;
+			u16 a7rom : 2;
+			u16 wl    : 1;
+			u16 jtag  : 3;
+			u16 clk   : 5;
+		};
+	};
+} ScfgBackup;
+
+#ifdef ARM7
+extern ScfgBackup __scfg_buf;
+#endif
 
 MK_CONSTEXPR u16 scfgCalcMcInsRem(unsigned ms)
 {
@@ -117,6 +169,18 @@ MK_CONSTEXPR u16 scfgCalcMcInsRem(unsigned ms)
 MK_INLINE bool scfgIsPresent(void)
 {
 	return (REG_SCFG_EXT & SCFG_EXT_HAS_SCFG) != 0;
+}
+
+MK_INLINE u8 mbkMakeSlot(MbkSlotOwner owner, unsigned offset)
+{
+	return MBK_SLOT_OWNER(owner) | MBK_SLOT_OFFSET(offset) | MBK_SLOT_ENABLE;
+}
+
+MK_INLINE u32 mbkMakeMapping(uptr start_addr, uptr end_addr, MbkMapSize sz)
+{
+	unsigned start_off = (start_addr - MM_TWLWRAM_MAP) / MBK_MAP_GRANULARITY;
+	unsigned end_off   = (end_addr   - MM_TWLWRAM_MAP) / MBK_MAP_GRANULARITY;
+	return MBK_MAP_START(start_off) | MBK_MAP_SIZE(sz) | MBK_MAP_END(end_off);
 }
 
 MK_EXTERN_C_END

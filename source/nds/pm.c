@@ -6,6 +6,7 @@
 #include <calico/nds/env.h>
 #include <calico/nds/bios.h>
 #include <calico/nds/system.h>
+#include <calico/nds/scfg.h>
 #include <calico/nds/pxi.h>
 #include <calico/nds/keypad.h>
 #include <calico/nds/lcd.h>
@@ -169,10 +170,10 @@ MK_CODE32 MK_EXTERN32 MK_NOINLINE MK_NORETURN static void _pmJumpToNextApp(void)
 
 	// Set up MBK regs if needed
 	if (is_twl) {
-		MK_REG(u32, IO_MBK_SLOTWRPROT) = g_envAppTwlHeader->mbk9_setting;
-		MK_REG(u32, IO_MBK_MAP_A) = g_envAppTwlHeader->arm7_wram_setting[0];
-		MK_REG(u32, IO_MBK_MAP_B) = g_envAppTwlHeader->arm7_wram_setting[1];
-		MK_REG(u32, IO_MBK_MAP_C) = g_envAppTwlHeader->arm7_wram_setting[2];
+		REG_MBK_SLOTWRPROT = g_envAppTwlHeader->mbk_slotwrprot_setting;
+		REG_MBK_MAP_A = g_envAppTwlHeader->arm7_mbk_map_settings[0];
+		REG_MBK_MAP_B = g_envAppTwlHeader->arm7_mbk_map_settings[1];
+		REG_MBK_MAP_C = g_envAppTwlHeader->arm7_mbk_map_settings[2];
 	}
 
 	// Jump to ARM7 entrypoint
@@ -185,7 +186,7 @@ MK_CODE32 MK_EXTERN32 MK_NOINLINE MK_NORETURN static void _pmJumpToBootstub(void
 	// Remap WRAM_A to the location used by DSi-enhanced (hybrid) apps
 	// This is needed for compatibility with libnds v1.x infrastructure
 	if (systemIsTwlMode()) {
-		MK_REG(u32, IO_MBK_MAP_A) = 0x00403000;
+		REG_MBK_MAP_A = mbkMakeMapping(MM_TWLWRAM_MAP, MM_TWLWRAM_MAP+MM_TWLWRAM_BANK_SZ, MbkMapSize_256K);
 	}
 
 	// Jump to ARM7 entrypoint

@@ -193,13 +193,13 @@
 #endif
 
 // New WRAM configuration
-#define IO_MBK_SLOTAxCNT(_x) (0x4040 + (_x)) // aka MBK1
-#define IO_MBK_SLOTBxCNT(_x) (0x4044 + (_x)) // aka MBK2/3
-#define IO_MBK_SLOTCxCNT(_x) (0x404c + (_x)) // aka MBK4/5
-#define IO_MBK_MAP_A          0x4054         // aka MBK6
-#define IO_MBK_MAP_B          0x4058         // aka MBK7
-#define IO_MBK_MAP_C          0x405c         // aka MBK8
-#define IO_MBK_SLOTWRPROT     0x4060         // aka MBK9
+#define IO_MBK_SLOT_Ax(_x) (0x4040 + (_x)) // aka MBK1
+#define IO_MBK_SLOT_Bx(_x) (0x4044 + (_x)) // aka MBK2/3
+#define IO_MBK_SLOT_Cx(_x) (0x404c + (_x)) // aka MBK4/5
+#define IO_MBK_MAP_A        0x4054         // aka MBK6
+#define IO_MBK_MAP_B        0x4058         // aka MBK7
+#define IO_MBK_MAP_C        0x405c         // aka MBK8
+#define IO_MBK_SLOTWRPROT   0x4060         // aka MBK9
 
 // New DMA
 #define IO_NDMAGCNT        0x4100
