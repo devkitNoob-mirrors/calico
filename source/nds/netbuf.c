@@ -19,7 +19,7 @@ MK_INLINE void _netbufFlushHdr(NetBuf* nb)
 
 #define NETBUF_NUM_SUBPOOLS 5
 
-#define s_netbufMgr ((_NetbufMgr*) MM_ENV_FREE_FBE0)
+#define s_netbufMgr ((_NetbufMgr*) MM_ENV_FREE_FCF0)
 
 static const u16 s_netbufListSizes[NETBUF_NUM_SUBPOOLS] = { 128, 256, 512, 1024, 2048 };
 

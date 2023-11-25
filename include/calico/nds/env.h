@@ -8,12 +8,15 @@
 #define g_envCardTwlHeader ((EnvTwlHeader*)         MM_ENV_CARD_TWL_HEADER)
 #define g_envNdsArgvHeader ((EnvNdsArgvHeader*)     MM_ENV_ARGV_HEADER)
 #define g_envNdsBootstub   ((EnvNdsBootstubHeader*) MM_ENV_HB_BOOTSTUB)
+#define g_envFwBootInfo    ((EnvFwBootInfo*)        MM_ENV_FW_BOOT_INFO)
 #define g_envBootParam     ((EnvBootParam*)         MM_ENV_BOOT_PARAM)
 #define g_envUserSettings  ((EnvUserSettings*)      MM_ENV_USER_SETTINGS)
-#define g_envExtraInfo     ((EnvExtraInfo*)         MM_ENV_FREE_FCF0)
+#define g_envExtraInfo     ((EnvExtraInfo*)         MM_ENV_FREE_FDA0)
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
 
 MK_EXTERN_C_START
+
+#define ENV_NIN_LOGO_CRC16 0xcf56
 
 typedef struct EnvNdsHeader {
 	char title[12];
@@ -58,7 +61,7 @@ typedef struct EnvNdsHeader {
 	u32 arm9_loadlist_hook;
 	u32 arm7_loadlist_hook;
 
-	u8 secure_area_disable_magic[8];
+	u32 secure_area_disable_magic[2];
 
 	u32 ntr_rom_size;
 	u32 rom_header_size;
@@ -241,12 +244,39 @@ typedef struct EnvNdsBootstubHeader {
 } EnvNdsBootstubHeader;
 
 typedef enum EnvBootSrc {
-	EnvBootSrc_Unknown  = 0, // Unspecified or homebrew flashcard
-	EnvBootSrc_Card     = 1, // Booted from a real NDS card in Slot 1
-	EnvBootSrc_Wireless = 2, // Booted from DS Download Play or dslink
+	EnvBootSrc_Unknown  = 0, // Unspecified
+	EnvBootSrc_Card     = 1, // Booted from NDS card in Slot 1
+	EnvBootSrc_Wireless = 2, // Booted from DS Download Play
 	EnvBootSrc_TwlBlk   = 3, // Booted from DSi SD card or NAND (DSiWare)
 	EnvBootSrc_Ram      = 4, // Booted directly from RAM
 } EnvBootSrc;
+
+#define ENV_BIOS7_CRC16   0x5835
+#define ENV_NDS_ARM_UNDEF 0xe7ffdeff
+
+typedef struct EnvFwBootInfo {
+	u32 card_chip_id_normal;
+	u32 card_chip_id_secure;
+	u16 card_header_crc16;
+	u16 card_secure_crc16;
+	u16 card_header_bad;     // 1 if EnvNdsHeader::header_crc16 is incorrect or nintendo_logo_crc16 != ENV_NIN_LOGO_CRC16
+	u16 card_secure_invalid; // 1 if the secure area has been destroyed with ENV_NDS_ARM_UNDEF
+	u16 bios7_crc16;         // ENV_BIOS7_CRC16
+	u16 card_secure_disable; // 1 if EnvNdsHeader::secure_area_disable_magic is NmMdOnly after decryption
+	u16 has_serial_debugger;
+	u8  rtc_is_bad;
+	u8  rtc_random;
+
+	u8  _pad_0x18[0x18];
+
+	u16 gba_id;         // from 0x80000be
+	u8  gba_id_ext[3];  // from 0x80000b5..7
+	u8  gba_flags;
+	u16 gba_maker_code; // from 0x80000b0
+	u32 gba_game_code;  // from 0x80000ac
+
+	u32 vblank_count;
+} EnvFwBootInfo;
 
 typedef struct EnvBootParam {
 	u16 boot_src; // EnvBootSrc

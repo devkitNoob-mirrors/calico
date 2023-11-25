@@ -54,11 +54,14 @@
 // NDS ROM header for the currently inserted gamecard
 #define MM_ENV_CARD_NDS_HEADER    0x2fffa80
 
-// Free area
-#define MM_ENV_FREE_FBE0          0x2fffbe0
-#define MM_ENV_FREE_FBE0_SZ       0x60
+// More parameters used by DS Download Play
+#define MM_ENV_BOOT_PARAM_EX      0x2fffbe0
+#define MM_ENV_BOOT_PARAM_EX_SZ   0x20
 
-// Application boot indicator + info (used by DS Download Play)
+// Information filled in by the firmware during boot
+#define MM_ENV_FW_BOOT_INFO       0x2fffc00
+
+// Application boot indicator + parameters used by DS Download Play
 #define MM_ENV_BOOT_PARAM         0x2fffc40
 #define MM_ENV_BOOT_PARAM_SZ      0x40
 

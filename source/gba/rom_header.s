@@ -24,7 +24,7 @@ __gba_rom_header_mb:
 	.fill  7,1,0     @ (0x0b5) Reserved Area
 	.byte  0         @ (0x0bc) Software Version
 	.byte  0xf0      @ (0x0bd) Complement Check
-	.hword 0         @ (0x0be) Checksum
+	.hword 0         @ (0x0be) Reserved Area
 
 #ifndef MULTIBOOT
 1:	b 1b             @ (0x0c0) RAM Entrypoint
