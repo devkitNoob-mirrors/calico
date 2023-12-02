@@ -183,4 +183,6 @@ MK_INLINE u32 mbkMakeMapping(uptr start_addr, uptr end_addr, MbkMapSize sz)
 	return MBK_MAP_START(start_off) | MBK_MAP_SIZE(sz) | MBK_MAP_END(end_off);
 }
 
+bool scfgSetMcPower(bool on);
+
 MK_EXTERN_C_END

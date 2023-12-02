@@ -142,6 +142,11 @@ static int _pmPxiThreadMain(void* arg)
 				break;
 			}
 
+			case PxiPmMsg_SetMcPower: {
+				pxiReply(PxiChannel_Power, systemIsTwlMode() && scfgSetMcPower(imm&1));
+				break;
+			}
+
 #endif
 
 		}

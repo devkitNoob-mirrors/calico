@@ -10,6 +10,7 @@ typedef enum PxiPmMsgType {
 	PxiPmMsg_ReadNvram       = 3,
 	PxiPmMsg_MicSetAmp       = 4,
 	PxiPmMsg_SetPowerLed     = 5,
+	PxiPmMsg_SetMcPower      = 6,
 
 } PxiPmMsgType;
 

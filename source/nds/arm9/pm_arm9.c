@@ -1,6 +1,7 @@
 #include <calico/types.h>
 #include <calico/arm/cache.h>
 #include <calico/nds/pxi.h>
+#include <calico/nds/scfg.h>
 #include <calico/nds/pm.h>
 #include "../pxi/pm.h"
 
@@ -37,4 +38,10 @@ void pmMicSetAmp(bool enable, unsigned gain)
 
 	u32 msg = pxiPmMakeMsg(PxiPmMsg_MicSetAmp, gain | (enable << 8));
 	pxiSendAndReceive(PxiChannel_Power, msg);
+}
+
+bool scfgSetMcPower(bool on)
+{
+	u32 msg = pxiPmMakeMsg(PxiPmMsg_SetMcPower, on ? 1 : 0);
+	return pxiSendAndReceive(PxiChannel_Power, msg);
 }
