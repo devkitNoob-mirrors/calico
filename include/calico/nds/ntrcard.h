@@ -67,8 +67,72 @@ typedef enum NtrCardBlkSize {
 	NtrCardBlkSize_Sector = NtrCardBlkSize_0x200,
 } NtrCardBlkSize;
 
+typedef enum NtrCardMode {
+	NtrCardMode_None   = 0,
+	NtrCardMode_Init   = 1,
+	NtrCardMode_Secure = 2,
+	NtrCardMode_Main   = 3,
+} NtrCardMode;
+
+typedef enum NtrCardCmd {
+	// Initialization mode commands (unencrypted)
+	NtrCardCmd_Init               = 0x9f,
+	NtrCardCmd_InitGetChipId      = 0x90,
+	NtrCardCmd_InitRomRead        = 0x00,
+	NtrCardCmd_InitEnterSecureNtr = 0x3c,
+	NtrCardCmd_InitEnterSecureTwl = 0x3d,
+
+	// Secure mode commands (encrypted with Blowfish aka "KEY1")
+	NtrCardCmd_SecurePngOn        = 0x40,
+	NtrCardCmd_SecurePngOff       = 0x60,
+	NtrCardCmd_SecureGetChipId    = 0x10,
+	NtrCardCmd_SecureReadBlock    = 0x20,
+	NtrCardCmd_SecureEnterMain    = 0xa0,
+
+	// Main mode commands (encrypted with PNG aka "KEY2")
+	NtrCardCmd_MainGetChipId      = 0xb8,
+	NtrCardCmd_MainRomRead        = 0xb7,
+	NtrCardCmd_MainGetStatus      = 0xd6,
+	NtrCardCmd_MainRomRefresh     = 0xb5,
+} NtrCardCmd;
+
+typedef union NtrChipId {
+	u32 raw;
+	struct {
+		u32 manuf       : 8;
+
+		u32 chip_size   : 8;
+
+		u32 has_ir      : 1;
+		u32 unk17       : 1;
+		u32 _pad18      : 5;
+		u32 unk23       : 1;
+
+		u32 _pad24      : 3;
+		u32 is_nand     : 1;
+		u32 is_ctr      : 1;
+		u32 has_refresh : 1;
+		u32 is_twl      : 1;
+		u32 is_1trom    : 1;
+	};
+} NtrChipId;
+
+MK_CONSTEXPR u32 ntrcardCalcChipSize(NtrChipId id)
+{
+	unsigned val = id.chip_size;
+	if (val < 0xf0) {
+		return 0x100000 * (val+1);
+	} else {
+		return 0x10000000 * (0x100-val);
+	}
+}
+
 bool ntrcardOpen(void);
 void ntrcardClose(void);
+
+NtrCardMode ntrcardGetMode(void);
+
+bool ntrcardGetChipId(NtrChipId* out);
 
 bool ntrcardRomReadSector(int dma_ch, u32 offset, void* buf);
 bool ntrcardRomRead(int dma_ch, u32 offset, void* buf, u32 size);

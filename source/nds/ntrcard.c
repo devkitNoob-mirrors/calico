@@ -17,10 +17,15 @@
 #define CACHE_ALIGN 4
 #endif
 
-static Mutex s_ntrcardMutex;
-static u32 s_ntrcardNormalCnt;
+static struct {
+	Mutex mutex;
+	u32 romcnt;
+	u32 cache_pos;
 
-static u32 s_ntrcardCachePos;
+	bool first_init;
+	NtrCardMode mode;
+} s_ntrcardState;
+
 alignas(CACHE_ALIGN) u8 s_ntrcardCache[NTRCARD_SECTOR_SZ];
 
 MK_INLINE bool _ntrcardIsOpenByArm9(void)
@@ -32,6 +37,18 @@ MK_INLINE bool _ntrcardIsOpenByArm7(void)
 {
 	return (s_transferRegion->exmemcnt_mirror & EXMEMCNT_NDS_SLOT_ARM7) != 0;
 }
+
+MK_INLINE bool _ntrcardIsInitOrMainMode(void)
+{
+	return s_ntrcardState.mode == NtrCardMode_Init || s_ntrcardState.mode == NtrCardMode_Main;
+}
+
+MK_INLINE NtrCardMode _ntrcardInitOrMainCmdImpl(NtrCardMode init_cmd, NtrCardMode main_cmd)
+{
+	return s_ntrcardState.mode == NtrCardMode_Main ? main_cmd : init_cmd;
+}
+
+#define _ntrcardInitOrMainCmd(_cmd) _ntrcardInitOrMainCmdImpl(NtrCardCmd_Init##_cmd, NtrCardCmd_Main##_cmd)
 
 #if defined(ARM9)
 #define _ntrcardIsOpenBySelf  _ntrcardIsOpenByArm9
@@ -59,10 +76,24 @@ static bool _ntrcardOpen(void)
 
 	irqEnable(IRQ_SLOT1_TX);
 
-	s_ntrcardNormalCnt = g_envAppNdsHeader->cardcnt_normal;
-	s_ntrcardNormalCnt &= ~NTRCARD_ROMCNT_BLK_SIZE(7);
-	s_ntrcardNormalCnt |= NTRCARD_ROMCNT_START | NTRCARD_ROMCNT_NO_RESET;
-	s_ntrcardCachePos = UINT32_MAX;
+	s_ntrcardState.cache_pos = UINT32_MAX;
+
+	if (!s_ntrcardState.first_init) {
+		s_ntrcardState.first_init = true;
+
+		if (g_envBootParam->boot_src == EnvBootSrc_Card) {
+			// If we are booted from Slot-1, assume the card is in Main mode
+			// (this is true for both flashcards and emulators)
+			s_ntrcardState.mode = NtrCardMode_Main;
+			s_ntrcardState.romcnt = g_envAppNdsHeader->cardcnt_normal;
+			s_ntrcardState.romcnt &= ~NTRCARD_ROMCNT_BLK_SIZE(7);
+			s_ntrcardState.romcnt |= NTRCARD_ROMCNT_START | NTRCARD_ROMCNT_NO_RESET;
+		} else {
+			// Otherwise, make no assumptions - leave card mode undefined
+			s_ntrcardState.mode = NtrCardMode_None;
+			s_ntrcardState.romcnt = 0;
+		}
+	}
 
 	return true;
 }
@@ -123,14 +154,25 @@ static void _ntrcardRecvByCpu(u32 romcnt, void* buf)
 	} while (romcnt & NTRCARD_ROMCNT_BUSY);
 }
 
+MK_NOINLINE static void _ntrcardGetChipId(NtrChipId* out)
+{
+	while (REG_NTRCARD_ROMCNT & NTRCARD_ROMCNT_BUSY);
+	REG_NTRCARD_CNT = NTRCARD_CNT_MODE_ROM | NTRCARD_CNT_TX_IE | NTRCARD_CNT_ENABLE;
+	REG_NTRCARD_ROMCMD_HI = __builtin_bswap32(_ntrcardInitOrMainCmd(GetChipId) << 24);
+	REG_NTRCARD_ROMCMD_LO = 0;
+
+	u32 romcnt = s_ntrcardState.romcnt | NTRCARD_ROMCNT_BLK_SIZE(NtrCardBlkSize_4);
+	_ntrcardRecvByCpu(romcnt, out);
+}
+
 MK_NOINLINE static void _ntrcardRomReadSector(int dma_ch, u32 offset, void* buf)
 {
 	while (REG_NTRCARD_ROMCNT & NTRCARD_ROMCNT_BUSY);
 	REG_NTRCARD_CNT = NTRCARD_CNT_MODE_ROM | NTRCARD_CNT_TX_IE | NTRCARD_CNT_ENABLE;
-	REG_NTRCARD_ROMCMD_HI = __builtin_bswap32((offset >> 8) | (0xb7 << 24));
+	REG_NTRCARD_ROMCMD_HI = __builtin_bswap32((offset >> 8) | (_ntrcardInitOrMainCmd(RomRead) << 24));
 	REG_NTRCARD_ROMCMD_LO = __builtin_bswap32(offset << 24);
 
-	u32 romcnt = s_ntrcardNormalCnt | NTRCARD_ROMCNT_BLK_SIZE(NtrCardBlkSize_Sector);
+	u32 romcnt = s_ntrcardState.romcnt | NTRCARD_ROMCNT_BLK_SIZE(NtrCardBlkSize_Sector);
 
 	if (dma_ch >= 0) {
 		_ntrcardRecvByDma(romcnt, buf, dma_ch & 3, NTRCARD_SECTOR_SZ);
@@ -141,17 +183,22 @@ MK_NOINLINE static void _ntrcardRomReadSector(int dma_ch, u32 offset, void* buf)
 
 bool ntrcardOpen(void)
 {
-	mutexLock(&s_ntrcardMutex);
+	mutexLock(&s_ntrcardState.mutex);
 	bool rc = _ntrcardOpen();
-	mutexUnlock(&s_ntrcardMutex);
+	mutexUnlock(&s_ntrcardState.mutex);
 	return rc;
 }
 
 void ntrcardClose(void)
 {
-	mutexLock(&s_ntrcardMutex);
+	mutexLock(&s_ntrcardState.mutex);
 	_ntrcardClose();
-	mutexUnlock(&s_ntrcardMutex);
+	mutexUnlock(&s_ntrcardState.mutex);
+}
+
+NtrCardMode ntrcardGetMode(void)
+{
+	return s_ntrcardState.mode;
 }
 
 MK_INLINE bool _ntrcardIsAligned(int dma_ch, uptr addr)
@@ -176,15 +223,36 @@ MK_INLINE unsigned _ntrcardCanAccess(int dma_ch, uptr addr)
 	return ret;
 }
 
+bool ntrcardGetChipId(NtrChipId* out)
+{
+	mutexLock(&s_ntrcardState.mutex);
+
+	if_unlikely (!_ntrcardIsOpenBySelf() || !_ntrcardIsInitOrMainMode()) {
+		mutexUnlock(&s_ntrcardState.mutex);
+		return false;
+	}
+
+	_ntrcardGetChipId(out);
+	mutexUnlock(&s_ntrcardState.mutex);
+
+	return true;
+}
+
 bool ntrcardRomReadSector(int dma_ch, u32 offset, void* buf)
 {
 	if (!_ntrcardCanAccess(dma_ch, (uptr)buf)) {
 		return false;
 	}
 
-	mutexLock(&s_ntrcardMutex);
+	mutexLock(&s_ntrcardState.mutex);
+
+	if_unlikely (!_ntrcardIsOpenBySelf() || !_ntrcardIsInitOrMainMode()) {
+		mutexUnlock(&s_ntrcardState.mutex);
+		return false;
+	}
+
 	_ntrcardRomReadSector(dma_ch, offset, buf);
-	mutexUnlock(&s_ntrcardMutex);
+	mutexUnlock(&s_ntrcardState.mutex);
 
 	return true;
 }
@@ -193,10 +261,10 @@ bool ntrcardRomRead(int dma_ch, u32 offset, void* buf, u32 size)
 {
 	u8* out = (u8*)buf;
 
-	mutexLock(&s_ntrcardMutex);
+	mutexLock(&s_ntrcardState.mutex);
 
-	if_unlikely (!_ntrcardIsOpenBySelf()) {
-		mutexUnlock(&s_ntrcardMutex);
+	if_unlikely (!_ntrcardIsOpenBySelf() || !_ntrcardIsInitOrMainMode()) {
+		mutexUnlock(&s_ntrcardState.mutex);
 		return false;
 	}
 
@@ -215,18 +283,18 @@ bool ntrcardRomRead(int dma_ch, u32 offset, void* buf, u32 size)
 		} else if (size < cur_size) {
 			cur_size = size;
 			copy_src = s_ntrcardCache;
-		} else if (cur_sector == s_ntrcardCachePos || !_ntrcardCanAccess(dma_ch, (uptr)out)) {
+		} else if (cur_sector == s_ntrcardState.cache_pos || !_ntrcardCanAccess(dma_ch, (uptr)out)) {
 			copy_src = s_ntrcardCache;
 		} else {
 			cur_buf = out;
 		}
 
-		if (cur_buf != s_ntrcardCache || s_ntrcardCachePos != cur_sector) {
+		if (cur_buf != s_ntrcardCache || s_ntrcardState.cache_pos != cur_sector) {
 			_ntrcardRomReadSector(dma_ch, cur_sector, cur_buf);
 		}
 
 		if (copy_src) {
-			s_ntrcardCachePos = cur_sector;
+			s_ntrcardState.cache_pos = cur_sector;
 			if_likely ((((uptr)copy_src | (uptr)out | cur_size) & 3) == 0) {
 				armCopyMem32(out, copy_src, cur_size);
 			} else {
@@ -239,6 +307,6 @@ bool ntrcardRomRead(int dma_ch, u32 offset, void* buf, u32 size)
 		size -= cur_size;
 	}
 
-	mutexUnlock(&s_ntrcardMutex);
+	mutexUnlock(&s_ntrcardState.mutex);
 	return true;
 }
