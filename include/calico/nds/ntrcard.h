@@ -132,6 +132,10 @@ void ntrcardClose(void);
 
 NtrCardMode ntrcardGetMode(void);
 
+void ntrcardClearState(void);
+void ntrcardSetParams(u32 params);
+
+bool ntrcardStartup(int dma_ch);
 bool ntrcardGetChipId(NtrChipId* out);
 
 bool ntrcardRomReadSector(int dma_ch, u32 offset, void* buf);

@@ -8,8 +8,11 @@
 #include <calico/system/mutex.h>
 #include <calico/nds/system.h>
 #include <calico/nds/dma.h>
+#include <calico/nds/scfg.h>
 #include <calico/nds/ntrcard.h>
 #include "transfer.h"
+
+#define NTRCARD_PARAM_MASK (NTRCARD_ROMCNT_GAP1_LEN(0x1fff)|NTRCARD_ROMCNT_GAP2_LEN(0x3f)|NTRCARD_ROMCNT_CLK_DIV_8)
 
 #if defined(ARM9)
 #define CACHE_ALIGN ARM_CACHE_LINE_SZ
@@ -36,6 +39,18 @@ MK_INLINE bool _ntrcardIsOpenByArm9(void)
 MK_INLINE bool _ntrcardIsOpenByArm7(void)
 {
 	return (s_transferRegion->exmemcnt_mirror & EXMEMCNT_NDS_SLOT_ARM7) != 0;
+}
+
+MK_INLINE bool _ntrcardIsPresent(void)
+{
+	// If SCFG is available, check if a card is inserted and the hardware is powered on
+	// If SCFG is not available, we ignore this check and succeed anyway
+	return !scfgIsPresent() || (REG_SCFG_MC & (SCFG_MC_POWER_MASK|SCFG_MC_IS_EJECTED)) == SCFG_MC_POWER_ON;
+}
+
+MK_INLINE bool _ntrcardIsNoneMode(void)
+{
+	return s_ntrcardState.mode == NtrCardMode_None;
 }
 
 MK_INLINE bool _ntrcardIsInitOrMainMode(void)
@@ -154,6 +169,61 @@ static void _ntrcardRecvByCpu(u32 romcnt, void* buf)
 	} while (romcnt & NTRCARD_ROMCNT_BUSY);
 }
 
+static void _ntrcardDummyRecvByDma(u32 romcnt, unsigned dma_ch)
+{
+	dmaBusyWait(dma_ch);
+
+	REG_DMAxSAD(dma_ch) = (uptr)&REG_NTRCARD_FIFO;
+	REG_DMAxDAD(dma_ch) = (uptr)&REG_DMAxFIL(dma_ch);
+	REG_DMAxCNT_L(dma_ch) = 1;
+	REG_DMAxCNT_H(dma_ch) =
+		DMA_MODE_DST(DmaMode_Fixed) |
+		DMA_MODE_SRC(DmaMode_Fixed) |
+		DMA_MODE_REPEAT |
+		DMA_UNIT_32 |
+		DMA_TIMING(DmaTiming_Slot1) |
+		DMA_START;
+
+	REG_NTRCARD_ROMCNT = romcnt;
+
+	while (REG_NTRCARD_ROMCNT & NTRCARD_ROMCNT_BUSY) {
+		threadIrqWait(false, IRQ_SLOT1_TX);
+	}
+
+	REG_DMAxCNT_H(dma_ch) = 0;
+}
+
+static void _ntrcardDummyRecvByCpu(u32 romcnt)
+{
+	REG_NTRCARD_ROMCNT = romcnt;
+
+	do {
+		romcnt = REG_NTRCARD_ROMCNT;
+		if (romcnt & NTRCARD_ROMCNT_DATA_READY) {
+			MK_DUMMY(REG_NTRCARD_FIFO);
+		}
+	} while (romcnt & NTRCARD_ROMCNT_BUSY);
+}
+
+MK_NOINLINE static void _ntrcardEnterInit(int dma_ch)
+{
+	while (REG_NTRCARD_ROMCNT & NTRCARD_ROMCNT_BUSY);
+	REG_NTRCARD_CNT = NTRCARD_CNT_MODE_ROM | NTRCARD_CNT_TX_IE | NTRCARD_CNT_ENABLE;
+	REG_NTRCARD_ROMCMD_HI = __builtin_bswap32(NtrCardCmd_Init << 24);
+	REG_NTRCARD_ROMCMD_LO = 0;
+
+	u32 romcnt =
+		NTRCARD_ROMCNT_START | NTRCARD_ROMCNT_NO_RESET | NTRCARD_ROMCNT_CLK_DIV_8 |
+		NTRCARD_ROMCNT_BLK_SIZE(NtrCardBlkSize_0x2000) |
+		NTRCARD_ROMCNT_GAP2_LEN(0x18);
+
+	if (dma_ch >= 0) {
+		_ntrcardDummyRecvByDma(romcnt, dma_ch & 3);
+	} else {
+		_ntrcardDummyRecvByCpu(romcnt);
+	}
+}
+
 MK_NOINLINE static void _ntrcardGetChipId(NtrChipId* out)
 {
 	while (REG_NTRCARD_ROMCNT & NTRCARD_ROMCNT_BUSY);
@@ -223,6 +293,49 @@ MK_INLINE unsigned _ntrcardCanAccess(int dma_ch, uptr addr)
 	return ret;
 }
 
+void ntrcardClearState(void)
+{
+	mutexLock(&s_ntrcardState.mutex);
+	s_ntrcardState.mode = NtrCardMode_None;
+	s_ntrcardState.romcnt = 0;
+	s_ntrcardState.cache_pos = UINT32_MAX;
+	mutexUnlock(&s_ntrcardState.mutex);
+}
+
+void ntrcardSetParams(u32 params)
+{
+	mutexLock(&s_ntrcardState.mutex);
+	if (!_ntrcardIsNoneMode()) {
+		s_ntrcardState.romcnt &= ~NTRCARD_PARAM_MASK;
+		s_ntrcardState.romcnt |= params & NTRCARD_PARAM_MASK;
+	}
+	mutexUnlock(&s_ntrcardState.mutex);
+}
+
+bool ntrcardStartup(int dma_ch)
+{
+	mutexLock(&s_ntrcardState.mutex);
+
+	if_unlikely (!_ntrcardIsOpenBySelf() || !_ntrcardIsNoneMode() || !_ntrcardIsPresent()) {
+		mutexUnlock(&s_ntrcardState.mutex);
+		return false;
+	}
+
+	// Initial configuration, using conservative timings
+	s_ntrcardState.mode = NtrCardMode_Init;
+	s_ntrcardState.romcnt = NTRCARD_ROMCNT_START | NTRCARD_ROMCNT_NO_RESET | NTRCARD_PARAM_MASK;
+
+	// Release RESET on the card
+	REG_NTRCARD_ROMCNT = s_ntrcardState.romcnt &~ NTRCARD_ROMCNT_START;
+	threadSleep(120000); // 120ms
+
+	// Send the initialization command
+	_ntrcardEnterInit(dma_ch);
+
+	mutexUnlock(&s_ntrcardState.mutex);
+	return true;
+}
+
 bool ntrcardGetChipId(NtrChipId* out)
 {
 	mutexLock(&s_ntrcardState.mutex);
@@ -233,8 +346,8 @@ bool ntrcardGetChipId(NtrChipId* out)
 	}
 
 	_ntrcardGetChipId(out);
-	mutexUnlock(&s_ntrcardState.mutex);
 
+	mutexUnlock(&s_ntrcardState.mutex);
 	return true;
 }
 
@@ -252,8 +365,8 @@ bool ntrcardRomReadSector(int dma_ch, u32 offset, void* buf)
 	}
 
 	_ntrcardRomReadSector(dma_ch, offset, buf);
-	mutexUnlock(&s_ntrcardState.mutex);
 
+	mutexUnlock(&s_ntrcardState.mutex);
 	return true;
 }
 
