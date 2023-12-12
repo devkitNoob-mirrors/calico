@@ -83,11 +83,11 @@ typedef enum NtrCardCmd {
 	NtrCardCmd_InitEnterSecureTwl = 0x3d,
 
 	// Secure mode commands (encrypted with Blowfish aka "KEY1")
-	NtrCardCmd_SecurePngOn        = 0x40,
-	NtrCardCmd_SecurePngOff       = 0x60,
-	NtrCardCmd_SecureGetChipId    = 0x10,
-	NtrCardCmd_SecureReadBlock    = 0x20,
-	NtrCardCmd_SecureEnterMain    = 0xa0,
+	NtrCardCmd_SecurePngOn        = 0x4,
+	NtrCardCmd_SecurePngOff       = 0x6,
+	NtrCardCmd_SecureGetChipId    = 0x1,
+	NtrCardCmd_SecureReadBlock    = 0x2,
+	NtrCardCmd_SecureEnterMain    = 0xa,
 
 	// Main mode commands (encrypted with PNG aka "KEY2")
 	NtrCardCmd_MainGetChipId      = 0xb8,
@@ -117,6 +117,26 @@ typedef union NtrChipId {
 	};
 } NtrChipId;
 
+typedef struct NtrCardSecure {
+	u32 romcnt;
+	u32 fixed_arg;
+	u32 counter;
+	u16 delay;
+	u16 is_1trom : 1;
+	u16 is_twl   : 1;
+	u16          : 14;
+} NtrCardSecure;
+
+typedef union NtrCardSecureCmd {
+	u32 raw[2];
+	struct {
+		u64 counter : 20;
+		u64 fixed   : 24;
+		u64 param   : 16;
+		u64 cmd     : 4;
+	};
+} NtrCardSecureCmd;
+
 MK_CONSTEXPR u32 ntrcardCalcChipSize(NtrChipId id)
 {
 	unsigned val = id.chip_size;
@@ -140,5 +160,10 @@ bool ntrcardGetChipId(NtrChipId* out);
 
 bool ntrcardRomReadSector(int dma_ch, u32 offset, void* buf);
 bool ntrcardRomRead(int dma_ch, u32 offset, void* buf, u32 size);
+
+bool ntrcardEnterSecure(NtrCardSecure* secure);
+bool ntrcardSecureCmd(int dma_ch, NtrCardSecureCmd const* cmd, NtrCardBlkSize sz, void* buf);
+bool ntrcardSetPngSeed(u64 seed0, u64 seed1);
+bool ntrcardLeaveSecure(void);
 
 MK_EXTERN_C_END
