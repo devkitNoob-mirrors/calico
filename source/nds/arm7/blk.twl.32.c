@@ -190,7 +190,17 @@ bool twlNandReadSectors(void* buffer, u32 first_sector, u32 num_sectors)
 	return sdmmcCardReadSectors(&s_sdmcDevNand, &tx, first_sector, num_sectors);
 }
 
-static void _twlblkAesStart(TmioTx* tx)
+bool twlNandWriteSectors(const void* buffer, u32 first_sector, u32 num_sectors)
+{
+	TmioTx tx;
+	tx.callback = _twlblkDmaWrite;
+	tx.xfer_isr = NULL;
+	tx.user = (void*)buffer;
+
+	return sdmmcCardWriteSectors(&s_sdmcDevNand, &tx, first_sector, num_sectors);
+}
+
+static void _twlblkAesPrepare(TmioTx* tx)
 {
 	aesBusyWaitReady();
 	aesSelectKeySlot(AesKeySlot_Nand);
@@ -200,6 +210,10 @@ static void _twlblkAesStart(TmioTx* tx)
 	REG_AES_IV = iv;
 
 	REG_AES_LEN = (tx->num_blocks*(BLK_SECTOR_SZ/AES_BLOCK_SZ)) << 16;
+}
+
+static void _twlblkAesStart(void)
+{
 	REG_AES_CNT =
 		AES_WRFIFO_FLUSH | AES_RDFIFO_FLUSH |
 		AES_WRFIFO_DMA_SIZE(AesWrfifoDma_16) | AES_RDFIFO_DMA_SIZE(AesRdfifoDma_16) |
@@ -226,6 +240,7 @@ static void _twlblkAesDmaRead(TmioCtl* ctl, TmioTx* tx)
 {
 	if (tx->status & TMIO_STAT_CMD_BUSY) {
 		dietPrint("[TWLBLK] AES-DMA Start (Read)\n");
+		_twlblkAesPrepare(tx);
 
 		_twlblkSetupDma(2,
 			ctl->fifo_base, NdmaMode_Fixed, (uptr)&REG_AES_WRFIFO, NdmaMode_Fixed,
@@ -237,7 +252,29 @@ static void _twlblkAesDmaRead(TmioCtl* ctl, TmioTx* tx)
 			AES_FIFO_SZ_WORDS, tx->num_blocks*BLK_SECTOR_SZ_WORDS,
 			NDMA_TIMING(NdmaTiming_AesRdFifo) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_START);
 
-		_twlblkAesStart(tx);
+		_twlblkAesStart();
+	} else {
+		_twlblkAesDmaFinish(tx);
+	}
+}
+
+static void _twlblkAesDmaWrite(TmioCtl* ctl, TmioTx* tx)
+{
+	if (tx->status & TMIO_STAT_CMD_BUSY) {
+		dietPrint("[TWLBLK] AES-DMA Start (Write)\n");
+		_twlblkAesPrepare(tx);
+
+		_twlblkSetupDma(2,
+			(uptr)&REG_AES_RDFIFO, NdmaMode_Fixed, ctl->fifo_base, NdmaMode_Fixed,
+			AES_FIFO_SZ_WORDS, AES_FIFO_SZ_WORDS,
+			NDMA_TX_MODE(NdmaTxMode_Immediate));
+
+		_twlblkSetupDma(3,
+			(uptr)tx->user, NdmaMode_Increment, (uptr)&REG_AES_WRFIFO, NdmaMode_Fixed,
+			AES_FIFO_SZ_WORDS, tx->num_blocks*BLK_SECTOR_SZ_WORDS,
+			NDMA_TIMING(NdmaTiming_AesWrFifo) | NDMA_TX_MODE(NdmaTxMode_Timing) | NDMA_START);
+
+		_twlblkAesStart();
 	} else {
 		_twlblkAesDmaFinish(tx);
 	}
@@ -257,6 +294,15 @@ static void _twlblkAesDmaXferRecv(TmioCtl* ctl, TmioTx* tx)
 	}
 }
 
+static void _twlblkAesDmaXferSend(TmioCtl* ctl, TmioTx* tx)
+{
+	for (size_t i = 0; i < BLK_SECTOR_SZ; i += AES_FIFO_SZ) {
+		aesBusyWaitRdFifoReady();
+		REG_NDMAxCNT(2) |= NDMA_START;
+		ndmaBusyWait(2); // mostly only for show - see above comment
+	}
+}
+
 bool twlNandReadSectorsAes(void* buffer, u32 first_sector, u32 num_sectors)
 {
 	TmioTx tx;
@@ -270,6 +316,31 @@ bool twlNandReadSectorsAes(void* buffer, u32 first_sector, u32 num_sectors)
 		u32 cur_sectors = num_sectors > max_sectors ? max_sectors : num_sectors;
 
 		ret = sdmmcCardReadSectors(&s_sdmcDevNand, &tx, first_sector, cur_sectors);
+		if (!ret) {
+			break;
+		}
+
+		tx.user = (u8*)tx.user + cur_sectors*BLK_SECTOR_SZ;
+		first_sector += cur_sectors;
+		num_sectors -= cur_sectors;
+	}
+
+	return ret;
+}
+
+bool twlNandWriteSectorsAes(const void* buffer, u32 first_sector, u32 num_sectors)
+{
+	TmioTx tx;
+	tx.callback = _twlblkAesDmaWrite;
+	tx.xfer_isr = _twlblkAesDmaXferSend;
+	tx.user = (void*)buffer;
+
+	bool ret = false;
+	while (num_sectors) {
+		const u32 max_sectors = AES_MAX_PAYLOAD_SZ/BLK_SECTOR_SZ;
+		u32 cur_sectors = num_sectors > max_sectors ? max_sectors : num_sectors;
+
+		ret = sdmmcCardWriteSectors(&s_sdmcDevNand, &tx, first_sector, cur_sectors);
 		if (!ret) {
 			break;
 		}

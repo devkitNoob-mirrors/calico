@@ -16,6 +16,8 @@ bool twlSdWriteSectors(const void* buffer, u32 first_sector, u32 num_sectors);
 
 bool twlNandInit(void);
 bool twlNandReadSectors(void* buffer, u32 first_sector, u32 num_sectors);
+bool twlNandWriteSectors(const void* buffer, u32 first_sector, u32 num_sectors);
 bool twlNandReadSectorsAes(void* buffer, u32 first_sector, u32 num_sectors);
+bool twlNandWriteSectorsAes(const void* buffer, u32 first_sector, u32 num_sectors);
 
 MK_EXTERN_C_END

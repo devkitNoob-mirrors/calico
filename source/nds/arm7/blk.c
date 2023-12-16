@@ -176,6 +176,12 @@ MK_NOINLINE bool blkDevWriteSectors(BlkDevice dev, const void* buffer, u32 first
 
 		case BlkDevice_TwlSdCard:
 			return s_blkHasTwl && twlSdWriteSectors(buffer, first_sector, num_sectors);
+
+		case BlkDevice_TwlNand:
+			return s_blkHasTwl && twlNandWriteSectors(buffer, first_sector, num_sectors);
+
+		case BlkDevice_TwlNandAes:
+			return s_blkHasTwl && twlNandWriteSectorsAes(buffer, first_sector, num_sectors);
 	}
 }
 
