@@ -1,11 +1,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <calico/system/mutex.h>
 #include <calico/nds/env.h>
 #include <calico/nds/ntrcard.h>
 #include <calico/nds/nitrorom.h>
 
 typedef struct NitroRomFd {
+	Mutex mutex;
 	int fd;
 	u32 pos;
 } NitroRomFd;
@@ -15,10 +17,8 @@ MK_WEAK s8 g_nitroromCardDmaChannel = 3;
 static NitroRom s_nitroromSelf;
 static NitroRomFd s_nitroromFd;
 
-static bool _nitroromFdRead(void* user, u32 offset, void* buf, u32 size)
+MK_INLINE bool _nitroromFdReadImpl(NitroRomFd* self, u32 offset, void* buf, u32 size)
 {
-	NitroRomFd* self = user;
-
 	if (self->pos != offset) {
 		if (lseek(self->fd, offset, SEEK_SET) < 0) {
 			return false;
@@ -37,6 +37,15 @@ static bool _nitroromFdRead(void* user, u32 offset, void* buf, u32 size)
 	}
 
 	return true;
+}
+
+static bool _nitroromFdRead(void* user, u32 offset, void* buf, u32 size)
+{
+	NitroRomFd* self = user;
+	mutexLock(&self->mutex);
+	bool ok = _nitroromFdReadImpl(self, offset, buf, size);
+	mutexUnlock(&self->mutex);
+	return ok;
 }
 
 static void _nitroromFdClose(void* user)
