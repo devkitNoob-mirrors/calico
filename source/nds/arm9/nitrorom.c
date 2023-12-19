@@ -12,7 +12,7 @@ typedef struct NitroRomFd {
 	u32 pos;
 } NitroRomFd;
 
-MK_WEAK s8 g_nitroromCardDmaChannel = 3;
+MK_WEAK s8 g_nitroromCardDmaChannel = -1;
 
 static NitroRom s_nitroromSelf;
 static NitroRomFd s_nitroromFd;
