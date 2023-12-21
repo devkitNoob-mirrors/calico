@@ -87,18 +87,24 @@ MK_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
 		"addcss %2, %2, #1\n\t"
 		"addcs  %3, %3, #1\n\t"
 		: "+r"(iv->data[0]), "+r"(iv->data[1]), "+r"(iv->data[2]), "+r"(iv->data[3])
-		: "r"(value)
+		: "Ir"(value)
 		: "cc"
 	);
 }
 
 #else
 
-MK_EXTERN32 void aesCtrIncrementIvFromThumb(AesBlock* iv, u32 value);
-
 MK_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
 {
-	aesCtrIncrementIvFromThumb(iv, value);
+	__asm__ __volatile__ (
+		"adds %0, %0, %4\n\t"
+		"adcs %1, %1, %5\n\t"
+		"adcs %2, %2, %5\n\t"
+		"adcs %3, %3, %5\n\t"
+		: "+l"(iv->data[0]), "+l"(iv->data[1]), "+l"(iv->data[2]), "+l"(iv->data[3])
+		: "Il"(value), "l"(0)
+		: "cc"
+	);
 }
 
 #endif
