@@ -27,9 +27,9 @@ FUNC_START32 crt0SetupMPU
 	mcr   p15, 0, r10, c6, c6, 0
 	mcr   p15, 0, r11, c6, c7, 0
 
-	mov   r3, #(1<<1)
+	mov   r3, #0b00000010
 	mcr   p15, 0, r3, c3, c0, 0
-	mov   r3, #(1<<1) | (1<<6)
+	mov   r3, #0b01000010
 	mcr   p15, 0, r3, c2, c0, 0
 	mcr   p15, 0, r3, c2, c0, 1
 	ldr   r3, =0x66600060
