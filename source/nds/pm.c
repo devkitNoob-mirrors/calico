@@ -225,9 +225,6 @@ void __SYSCALL(exit)(int rc)
 		systemErrorExit(rc);
 	}
 
-	// Call event handlers
-	_pmCallEventHandlers(PmEvent_OnReset);
-
 	// Assert reset on the other processor
 	pxiSend(PxiChannel_Reset, pxiResetMakeMsg(PxiResetMsgType_Reset));
 
@@ -235,6 +232,9 @@ void __SYSCALL(exit)(int rc)
 	while (!(s_pmState.flags & PM_FLAG_RESET_ASSERTED)) {
 		threadSleep(1000);
 	}
+
+	// Call event handlers
+	_pmCallEventHandlers(PmEvent_OnReset);
 
 #if defined(ARM9)
 
