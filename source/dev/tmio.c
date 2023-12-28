@@ -430,7 +430,7 @@ int tmioThreadMain(TmioCtl* ctl)
 		// Disable interrupt if block transfer callback is used
 		if (isr_bits) {
 			// Disable 32-bit FIFO IRQs
-			REG_TMIO_CNT32 = (REG_TMIO_CNT32 &~ isr_bits) | TMIO_CNT32_FIFO_CLEAR;
+			REG_TMIO_CNT32 &= ~isr_bits;
 		} else if (fifo16_bits) {
 			// Disable 16-bit FIFO IRQs
 			REG_TMIO_STATHI = ~fifo16_bits;
