@@ -38,8 +38,10 @@ MK_INLINE bool _mcuIrqMaskUnpack(unsigned* pmask, unsigned* pid)
 
 static int _mcuThread(void* unused)
 {
+	// Enable MCU interrupt
+	irqEnable2(IRQ2_MCU);
+
 	for (;;) {
-		threadIrqWait2(false, IRQ2_MCU);
 		unsigned flags = _mcuCheckIrqFlags();
 
 		// Update power button state
@@ -58,6 +60,8 @@ static int _mcuThread(void* unused)
 				s_mcuIrqTable[id](1U << id);
 			}
 		}
+
+		threadIrqWait2(false, IRQ2_MCU);
 	}
 
 	return 0;
@@ -74,13 +78,13 @@ void mcuInit(void)
 	} else {
 		_i2cSetMcuDelay(0x90);
 	}
+}
 
-	// Set up MCU thread (max prio!)
-	threadPrepare(&s_mcuThread, _mcuThread, NULL, &s_mcuThreadStack[sizeof(s_mcuThreadStack)], 0x00);
+void mcuStartThread(u8 thread_prio)
+{
+	// Set up MCU thread
+	threadPrepare(&s_mcuThread, _mcuThread, NULL, &s_mcuThreadStack[sizeof(s_mcuThreadStack)], thread_prio);
 	threadStart(&s_mcuThread);
-
-	// Enable MCU interrupt
-	irqEnable2(IRQ2_MCU);
 }
 
 void mcuIrqSet(unsigned irq_mask, McuIrqHandler fn)

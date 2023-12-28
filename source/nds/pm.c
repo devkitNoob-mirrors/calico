@@ -373,6 +373,7 @@ void pmInit(void)
 		mcuInit();
 		mcuIrqSet(MCU_IRQ_PWRBTN_SHUTDOWN|MCU_IRQ_BATTERY_EMPTY, (McuIrqHandler)mcuIssueShutdown);
 		mcuIrqSet(MCU_IRQ_PWRBTN_BEGIN, (McuIrqHandler)pmPrepareToReset);
+		mcuStartThread(0x00); // highest prio!
 
 		// Check which wireless hardware is enabled, and switch to Mitsumi if
 		// Atheros is active. This is necessary in order to prevent sleep mode

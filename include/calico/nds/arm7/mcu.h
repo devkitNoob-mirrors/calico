@@ -68,6 +68,7 @@ MK_INLINE McuPwrBtnState mcuGetPwrBtnState(void)
 }
 
 void mcuInit(void);
+void mcuStartThread(u8 thread_prio);
 void mcuIrqSet(unsigned irq_mask, McuIrqHandler fn);
 void mcuIssueReset(void) MK_NORETURN;
 void mcuIssueShutdown(void) MK_NORETURN;
