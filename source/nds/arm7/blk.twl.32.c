@@ -89,6 +89,10 @@ bool twlNandInit(void)
 	dietPrint("NAND IV: %.8lX %.8lX\n         %.8lX %.8lX\n",
 		s_sdmcNandAesIv.data[0], s_sdmcNandAesIv.data[1], s_sdmcNandAesIv.data[2], s_sdmcNandAesIv.data[3]);
 
+	// Ensure NAND AES keyslot configuration is complete
+	aesBusyWaitReady();
+	REG_AES_SLOTxY(AesKeySlot_Nand).data[3] = 0xe1a00005;
+
 	return true;
 }
 
