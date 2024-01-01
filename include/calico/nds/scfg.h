@@ -147,9 +147,9 @@ typedef struct ScfgBackup {
 	union {
 		u16 other;
 		struct {
-			u16 op    : 3;
+			u16 op    : 2;
 			u16 a9rom : 2;
-			u16 a7rom : 2;
+			u16 a7rom : 3;
 			u16 wl    : 1;
 			u16 jtag  : 3;
 			u16 clk   : 5;
