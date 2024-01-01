@@ -64,6 +64,20 @@ static void crt0SetupArgv(bool is_twl)
 {
 	uptr argmem = MM_ENV_FREE_F000; // TEMP TEMP: Maybe we should move this somewhere else
 
+	// On DSi, check for the presence of the device list
+	if (is_twl) {
+		EnvTwlDeviceList* devlist = (void*)g_envAppTwlHeader->device_list_ram_address;
+		if (devlist && devlist->argv0[0] != 0) {
+			// Present - relocate it to the shared main RAM area if needed
+			if (devlist != g_envTwlDeviceList) {
+				crt0CopyMem32((uptr)g_envTwlDeviceList, (uptr)devlist, sizeof(EnvTwlDeviceList));
+			}
+		} else {
+			// Not present - clear out the shared main RAM area
+			crt0FillMem32((uptr)g_envTwlDeviceList, 0, sizeof(EnvTwlDeviceList));
+		}
+	}
+
 	// Check if we were supplied an argument string
 	if (g_envNdsArgvHeader->magic == ENV_NDS_ARGV_MAGIC) {
 		// Copy argument string to safe memory
