@@ -9,6 +9,8 @@ extern u8 armSwapByte(u8 value, u8* addr);
 
 #if __ARM_ARCH >= 5
 extern void armWaitForIrq(void);
+extern u32 armGetCp15Cr(void);
+extern void armSetCp15Cr(u32 value);
 #endif
 
 extern ArmIrqState armIrqLockByPsr(void);

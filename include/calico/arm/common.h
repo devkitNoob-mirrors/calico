@@ -73,6 +73,18 @@ MK_EXTINLINE void armWaitForIrq(void)
 	__asm__ __volatile__ ("mcr p15, 0, r0, c7, c0, 4" ::: "memory");
 }
 
+MK_EXTINLINE u32 armGetCp15Cr(void)
+{
+	u32 reg;
+	__asm__ __volatile__ ("mrc p15, 0, %0, c1, c0, 0" : "=r" (reg));
+	return reg;
+}
+
+MK_EXTINLINE void armSetCp15Cr(u32 value)
+{
+	__asm__ __volatile__ ("mcr p15, 0, %0, c1, c0, 0" :: "r" (value) : "memory");
+}
+
 #endif
 
 MK_EXTINLINE ArmIrqState armIrqLockByPsr(void)
@@ -99,6 +111,8 @@ MK_EXTERN32 u8 armSwapByte(u8 value, u8* addr);
 
 #if __ARM_ARCH >= 5
 MK_EXTERN32 void armWaitForIrq(void);
+MK_EXTERN32 u32 armGetCp15Cr(void);
+MK_EXTERN32 void armSetCp15Cr(u32 value);
 #endif
 
 MK_EXTERN32 ArmIrqState armIrqLockByPsr(void);
