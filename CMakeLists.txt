@@ -96,6 +96,7 @@ if(NINTENDO_DS)
 		source/nds/bios.s
 		source/nds/bios.twl.s
 		source/nds/irq_handler.32.s
+		source/nds/tlnc.twl.c
 		source/nds/pxi.c
 		source/nds/smutex.32.c
 		source/nds/keypad.c

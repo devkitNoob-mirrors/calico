@@ -87,6 +87,12 @@
 // SCFG registers backup
 #define MM_ENV_TWL_SCFG_BACKUP    0x2fffdf0
 
+// DSi reset-related flags (read from McuReg_WarmbootFlag)
+#define MM_ENV_TWL_RESET_FLAGS    0x2fffdfa
+
+// Pointer to DSi settings (usually MM_ENV_TWL_USER_SETTINGS)
+#define MM_ENV_TWL_SETTINGS_PTR   0x2fffdfc
+
 // NDS ROM header for the currently running application
 #define MM_ENV_APP_NDS_HEADER     0x2fffe00
 

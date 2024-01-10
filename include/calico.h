@@ -65,6 +65,7 @@
 #include "calico/nds/dma.h"
 #include "calico/nds/ndma.h"
 #include "calico/nds/env.h"
+#include "calico/nds/tlnc.h"
 #include "calico/nds/pxi.h"
 #include "calico/nds/smutex.h"
 #include "calico/nds/keypad.h"

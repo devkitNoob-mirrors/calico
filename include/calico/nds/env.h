@@ -13,6 +13,7 @@
 #define g_envUserSettings  ((EnvUserSettings*)      MM_ENV_USER_SETTINGS)
 #define g_envExtraInfo     ((EnvExtraInfo*)         MM_ENV_FREE_FDA0)
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
+#define g_envTwlResetFlags ((EnvTwlResetFlags*)     MM_ENV_TWL_RESET_FLAGS)
 
 MK_EXTERN_C_START
 
@@ -398,6 +399,16 @@ typedef struct EnvTwlDeviceList {
 	u8 _pad_0x39c[0x24];
 	char argv0[0x40];
 } EnvTwlDeviceList;
+
+typedef union EnvTwlResetFlags {
+	u8 value;
+	struct {
+		u8 is_warmboot : 1;
+		u8 skip_tlnc   : 1;
+		u8             : 5;
+		u8 is_valid    : 1;
+	};
+} EnvTwlResetFlags;
 
 #if defined(ARM7)
 void envReadNvramSettings(void);
