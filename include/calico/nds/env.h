@@ -385,9 +385,26 @@ typedef struct EnvExtraInfo {
 	u32 dldi_io_type;
 } EnvExtraInfo;
 
+#define ENV_TWL_DEV_PERM_W (1U<<1)
+#define ENV_TWL_DEV_PERM_R (1U<<2)
+
+typedef enum EnvTwlDrive {
+	EnvTwlDrive_Sd   = 0,
+	EnvTwlDrive_Nand = 1,
+} EnvTwlDrive;
+
+typedef enum EnvTwlMountType {
+	EnvTwlMountType_Drive  = 0, // Physical drive
+	EnvTwlMountType_File   = 1, // File mounted as drive
+	EnvTwlMountType_Folder = 2, // Folder aliased as drive
+} EnvTwlMountType;
+
 typedef struct EnvTwlDeviceListEntry {
-	char drive_letter;
-	u8 flags;
+	char letter;
+	u8 drive    : 3; // EnvTwlDrive
+	u8 type     : 2; // EnvTwlMountType
+	u8 nand_idx : 2; // NAND partition index
+	u8 unk7     : 1; // Unknown/seems unused?
 	u8 perms;
 	u8 _pad_0x3;
 	char name[0x10];
