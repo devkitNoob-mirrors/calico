@@ -12,6 +12,9 @@
 #define g_envBootParam     ((EnvBootParam*)         MM_ENV_BOOT_PARAM)
 #define g_envUserSettings  ((EnvUserSettings*)      MM_ENV_USER_SETTINGS)
 #define g_envExtraInfo     ((EnvExtraInfo*)         MM_ENV_FREE_FDA0)
+#define g_envTwlSecureInfo ((EnvTwlSecureInfo*)     MM_ENV_TWL_HWINFO_S)
+#define g_envTwlNormalInfo ((EnvTwlNormalInfo*)     MM_ENV_TWL_HWINFO_N)
+#define g_envTwlWlFirmInfo ((EnvTwlWlFirmInfo*)     MM_ENV_TWL_WLFIRM_INFO)
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
 #define g_envTwlResetFlags ((EnvTwlResetFlags*)     MM_ENV_TWL_RESET_FLAGS)
 
@@ -384,6 +387,41 @@ typedef struct EnvExtraInfo {
 	u16 dldi_features;
 	u32 dldi_io_type;
 } EnvExtraInfo;
+
+typedef enum EnvTwlRegion {
+	EnvTwlRegion_JPN = 0,
+	EnvTwlRegion_USA = 1,
+	EnvTwlRegion_EUR = 2,
+	EnvTwlRegion_AUS = 3,
+	EnvTwlRegion_CHN = 4,
+	EnvTwlRegion_KOR = 5,
+} EnvTwlRegion;
+
+typedef struct EnvTwlSecureInfo {
+	u32  lang_mask; // same as EnvUserSettingsNvram::ext.lang_mask
+	u8   wifi_forbidden;
+	u8   _pad_0x05[3];
+	u8   region;    // EnvTwlRegion
+	char serial[12];
+	u8   _pad_0x15[3];
+} EnvTwlSecureInfo;
+
+typedef struct EnvTwlNormalInfo {
+	u8 rtc_clockadj;     // Written to RtcReg_ClockAdj on boot
+	u8 _pad_0x01[3];
+	u8 movable_seed[16]; // Used for TAD files (similar to 3DS)
+} EnvTwlNormalInfo;
+
+typedef struct EnvTwlWlFirmInfo {
+	u8 type; // 1=DWM-W015, 2=W024, 3=W028
+	u8 _pad_0x01;
+	u16 config_crc16;
+	struct {
+		u32 ram_vars;
+		u32 ram_base;
+		u32 ram_size;
+	} config;
+} EnvTwlWlFirmInfo;
 
 #define ENV_TWL_DEV_PERM_W (1U<<1)
 #define ENV_TWL_DEV_PERM_R (1U<<2)
