@@ -97,10 +97,10 @@ MK_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
 MK_INLINE void aesCtrIncrementIv(AesBlock* iv, u32 value)
 {
 	__asm__ __volatile__ (
-		"adds %0, %0, %4\n\t"
-		"adcs %1, %1, %5\n\t"
-		"adcs %2, %2, %5\n\t"
-		"adcs %3, %3, %5\n\t"
+		"add %0, %4\n\t"
+		"adc %1, %5\n\t"
+		"adc %2, %5\n\t"
+		"adc %3, %5\n\t"
 		: "+l"(iv->data[0]), "+l"(iv->data[1]), "+l"(iv->data[2]), "+l"(iv->data[3])
 		: "Il"(value), "l"(0)
 		: "cc"
