@@ -10,7 +10,7 @@
 bool tlncGetDataTWL(TlncData* data)
 {
 	// Check if we can expect the TLNC to exist
-	if (g_envTwlResetFlags->is_valid && (!g_envTwlResetFlags->is_warmboot || g_envTwlResetFlags->skip_tlnc)) {
+	if (!g_envTwlResetFlags->is_valid || !g_envTwlResetFlags->is_warmboot || g_envTwlResetFlags->skip_tlnc) {
 		return false;
 	}
 
