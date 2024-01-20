@@ -11,6 +11,7 @@
 #define SDMMC_CMD_SELECT_CARD           (TMIO_CMD_INDEX(7)  | TMIO_CMD_RESP_48_BUSY)
 #define SDMMC_CMD_SET_IF_COND           (TMIO_CMD_INDEX(8)  | TMIO_CMD_RESP_48)
 #define SDMMC_CMD_GET_CSD               (TMIO_CMD_INDEX(9)  | TMIO_CMD_RESP_136)
+#define SDMMC_CMD_GET_STATUS            (TMIO_CMD_INDEX(13) | TMIO_CMD_RESP_48)
 #define SDMMC_CMD_SET_BLOCKLEN          (TMIO_CMD_INDEX(16) | TMIO_CMD_RESP_48)
 #define SDMMC_CMD_READ_MULTIPLE_BLOCK   (TMIO_CMD_INDEX(18) | TMIO_CMD_RESP_48 | TMIO_CMD_TX | TMIO_CMD_TX_READ  | TMIO_CMD_TX_MULTI)
 #define SDMMC_CMD_WRITE_MULTIPLE_BLOCK  (TMIO_CMD_INDEX(25) | TMIO_CMD_RESP_48 | TMIO_CMD_TX | TMIO_CMD_TX_WRITE | TMIO_CMD_TX_MULTI)
@@ -45,11 +46,33 @@ typedef struct SdmmcCard {
 
 	TmioResp cid;
 	TmioResp csd;
+	u32 ocr;
 	u32 scr_hi;
 	u32 num_sectors;
 } SdmmcCard;
 
+typedef struct SdmmcFrozenState {
+	TmioResp cid;
+	TmioResp csd;
+	u32 ocr;
+	u32 scr_hi_be;
+	u32 scr_lo_be;
+	u16 rca;
+	u16 is_mmc;
+	u16 is_sdhc;
+	u16 is_sd;
+	u32 unknown;
+	u32 csr;
+	u16 tmio_clkctl;
+	u16 tmio_option;
+	u16 is_ejected;
+	u16 tmio_port;
+} SdmmcFrozenState;
+
 bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc);
+bool sdmmcCardInitFromState(SdmmcCard* card, TmioCtl* ctl, SdmmcFrozenState const* state);
+void sdmmcCardDumpState(SdmmcCard* card, SdmmcFrozenState* state);
+
 bool sdmmcCardReadSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors);
 bool sdmmcCardWriteSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors);
 

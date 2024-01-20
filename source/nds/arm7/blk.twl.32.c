@@ -70,8 +70,17 @@ bool twlNandInit(void)
 		return true;
 	}
 
-	// TODO: Try importing the state from MM_ENV_TWL_NAND_INFO
-	bool ret = sdmmcCardInit(&s_sdmcDevNand, &s_sdmcCtl, 1, true);
+	// Try importing NAND driver state from the struct in shared main RAM
+	bool ret = sdmmcCardInitFromState(&s_sdmcDevNand, &s_sdmcCtl, (void*)MM_ENV_TWL_NAND_INFO);
+	if (!ret) {
+		// If that fails, try initializing NAND from scratch
+		ret = sdmmcCardInit(&s_sdmcDevNand, &s_sdmcCtl, 1, true);
+		if (ret) {
+			// Repopulate the state struct in shared main RAM
+			sdmmcCardDumpState(&s_sdmcDevNand, (void*)MM_ENV_TWL_NAND_INFO);
+		}
+	}
+
 	if (ret) {
 		s_transferRegion->blkdev_sector_count[BlkDevice_TwlNand] = s_sdmcDevNand.num_sectors;
 	} else {

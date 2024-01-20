@@ -12,24 +12,29 @@
 
 MK_CONSTEXPR u32 _sdmmcCalcNumSectors(TmioResp csd, bool ismmc)
 {
-	u32 c_size, c_blk;
+	u32 c_size;
+	int shift;
+
 	if (!ismmc && (csd.value[3]>>30) == 1) {
 		c_size = (csd.value[1]>>16) | ((csd.value[2]&0x3f)<<16);
-		c_blk  = 1024*512/SDMMC_SECTOR_SZ;
+		shift  = 10;
 	} else {
 		int block_len = (csd.value[2]>>16) & 0xF;
 		int mult      = (csd.value[1]>>15) & 7;
 		c_size = (csd.value[1]>>30) | ((csd.value[2]&0x3ff)<<2);
-		c_blk  = (1U<<(block_len+mult+2))/SDMMC_SECTOR_SZ;
+		shift  = block_len + (2+mult) - 9;
 	}
 
-	return (c_size+1) * c_blk;
+	if_likely (shift >= 0) {
+		return (c_size+1) << shift;
+	} else {
+		return (c_size+1) >> (-shift);
+	}
 }
 
 MK_CONSTEXPR bool _sdmmcCheckSectorRange(u32 total_sectors, u32 sector_id, u32 num_sectors)
 {
-	u32 end_sector = sector_id+num_sectors-1;
-	return sector_id<=end_sector && end_sector<total_sectors;
+	return sector_id < total_sectors && num_sectors <= (total_sectors - sector_id);
 }
 
 static bool _sdmmcTransact(SdmmcCard* card, TmioTx* tx, u16 type, u32 arg)
@@ -46,6 +51,21 @@ static bool _sdmmcTransact(SdmmcCard* card, TmioTx* tx, u16 type, u32 arg)
 	tx->type = type;
 	tx->arg = arg;
 	return tmioTransact(card->ctl, tx);
+}
+
+static bool _sdmmcCardReadCsr(SdmmcCard* card, u32* out_csr)
+{
+	TmioTx tx;
+	tx.callback = NULL;
+	tx.xfer_isr = NULL;
+
+	if (!_sdmmcTransact(card, &tx, SDMMC_CMD_GET_STATUS, card->rca << 16)) {
+		*out_csr = 0;
+		return false;
+	}
+
+	*out_csr = tx.resp.value[0];
+	return true;
 }
 
 bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc)
@@ -95,13 +115,14 @@ bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc)
 		}
 	} while (!(tx.resp.value[0] & (1U<<31)));
 
-	dietPrint("Card OCR = %#.8lx\n", tx.resp.value[0]);
+	card->ocr = tx.resp.value[0];
+	dietPrint("Card OCR = %#.8lx\n", card->ocr);
 
 	if (ismmc) {
 		card->type = SdmmcType_MMC;
 	} else if (!isv2) {
 		card->type = SdmmcType_SDv1;
-	} else if (!(tx.resp.value[0] & (1U<<30))) {
+	} else if (!(card->ocr & (1U<<30))) {
 		card->type = SdmmcType_SDv2_SDSC;
 	} else {
 		card->type = SdmmcType_SDv2_SDHC;
@@ -160,13 +181,17 @@ bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc)
 		goto _error;
 	}
 
+	const u32 scr_has_4bit = 1U<<(48-32+2);
 	if (ismmc) {
+		card->scr_hi = 0;
+
 		if (((card->csd.value[3]>>26)&0xf) >= 4) {
 			if (!_sdmmcTransact(card, &tx, SDMMC_CMD_MMC_SWITCH, SDMMC_CMD_MMC_SWITCH_ARG(3,183,1))) {
 				goto _error;
 			}
 
 			card->port.width = 4;
+			card->scr_hi |= scr_has_4bit;
 		}
 	} else {
 		if (!_sdmmcTransact(card, &tx, SDMMC_ACMD_SET_CLR_CARD_DETECT, 0)) {
@@ -188,7 +213,7 @@ bool sdmmcCardInit(SdmmcCard* card, TmioCtl* ctl, unsigned port, bool ismmc)
 		card->scr_hi = __builtin_bswap32(scr[0]);
 		dietPrint("SCR: %.8lX\n", card->scr_hi);
 
-		if (card->scr_hi & (1U<<(48-32+2))) {
+		if (card->scr_hi & scr_has_4bit) {
 			if (!_sdmmcTransact(card, &tx, SDMMC_ACMD_SET_BUS_WIDTH, 2)) {
 				goto _error;
 			}
@@ -207,6 +232,100 @@ _error:
 	dietPrint("SDMC init error %.8lX\n", tx.status);
 	card->type = SdmmcType_Invalid;
 	return false;
+}
+
+bool sdmmcCardInitFromState(SdmmcCard* card, TmioCtl* ctl, SdmmcFrozenState const* state)
+{
+	*card = (SdmmcCard){0};
+
+	// Fail early if the CID looks invalid
+	if (!state->cid.value[0]) {
+		dietPrint("Invalid sdmc state struct\n");
+		goto _error;
+	}
+
+	// Retrieve card type from the state struct
+	if_likely (state->is_mmc) {
+		card->type = SdmmcType_MMC;
+	} else if (state->is_sdhc) {
+		card->type = SdmmcType_SDv2_SDHC;
+	} else if (state->is_sd) {
+		// XX: The state struct offers no way of telling apart SDv1 from SDv2_SDSC.
+		// Assume non-SDHC cards are SDv1
+		card->type = SdmmcType_SDv1;
+	} else {
+		dietPrint("Unknown sdmc card type\n");
+		goto _error;
+	}
+
+	// Copy TMIO settings
+	card->ctl = ctl;
+	card->port.clock = TMIO_CLKCTL_AUTO | (state->tmio_clkctl & TMIO_CLKCTL_DIV(0xff));
+	card->port.num = state->tmio_port & 1;
+	card->port.width = (state->tmio_option & TMIO_OPTION_BUS_WIDTH1) ? 1 : 4;
+	card->rca = state->rca;
+
+	// Attempt to read the card's status register (CSR)
+	u32 csr;
+	if (!_sdmmcCardReadCsr(card, &csr)) {
+		dietPrint("Could not read CSR\n");
+		goto _error;
+	}
+
+	unsigned csr_state = (csr >> 9) & 0xf;
+	dietPrint("CSR = %.8lX (state=%u)\n", csr, csr_state);
+
+	// Ensure the card is in transfer state
+	if (csr_state != 4) {
+		dietPrint("Card not in transfer state\n");
+		goto _error;
+	}
+
+	// Ensure the card doesn't report any errors
+	if (csr & 0xf9ff0008) {
+		dietPrint("CSR error flags are set\n");
+		goto _error;
+	}
+
+	// XX: Official software deselects the card, reads CID, validates it against the struct,
+	// and reselects the card. We decide instead to trust the information in the struct.
+
+	card->cid = state->cid;
+	card->csd.value[0] = (state->csd.value[0]<<8);
+	card->csd.value[1] = (state->csd.value[1]<<8) | (state->csd.value[0]>>24);
+	card->csd.value[2] = (state->csd.value[2]<<8) | (state->csd.value[1]>>24);
+	card->csd.value[3] = (state->csd.value[3]<<8) | (state->csd.value[2]>>24);
+	card->ocr = state->ocr;
+	card->scr_hi = __builtin_bswap32(state->scr_hi_be);
+	card->num_sectors = _sdmmcCalcNumSectors(card->csd, state->is_mmc);
+	return true;
+
+_error:
+	card->type = SdmmcType_Invalid;
+	return false;
+}
+
+void sdmmcCardDumpState(SdmmcCard* card, SdmmcFrozenState* state)
+{
+	state->cid = card->cid;
+	state->csd.value[0] = (card->csd.value[0]>>8) | (card->csd.value[1]<<24);
+	state->csd.value[1] = (card->csd.value[1]>>8) | (card->csd.value[2]<<24);
+	state->csd.value[2] = (card->csd.value[2]>>8) | (card->csd.value[3]<<24);
+	state->csd.value[3] = (card->csd.value[3]>>8);
+	state->ocr = card->ocr;
+	state->scr_hi_be = __builtin_bswap32(card->scr_hi);
+	state->scr_lo_be = 0; // This is always zero/reserved
+	state->rca = card->rca;
+	state->is_mmc = card->type == SdmmcType_MMC;
+	state->is_sdhc = card->type == SdmmcType_SDv2_SDHC;
+	state->is_sd = card->type >= SdmmcType_SDv1;
+	state->unknown = 0;
+	_sdmmcCardReadCsr(card, &state->csr);
+	state->tmio_clkctl = TMIO_CLKCTL_ENABLE | (card->port.clock & TMIO_CLKCTL_DIV(0xff));
+	state->tmio_option = TMIO_OPTION_TIMEOUT(14) | TMIO_OPTION_NO_C2 |
+		((card->port.width == 1) ? TMIO_OPTION_BUS_WIDTH1 : TMIO_OPTION_BUS_WIDTH4);
+	state->is_ejected = 0;
+	state->tmio_port = card->port.num;
 }
 
 static bool _sdmmcCardReadWriteSectors(SdmmcCard* card, TmioTx* tx, u32 sector_id, u32 num_sectors, u16 type)
