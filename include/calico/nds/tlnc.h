@@ -5,6 +5,7 @@
 
 #define TLNC_MAGIC   0x434e4c54 // 'TLNC'
 #define TLNC_VERSION 1
+#define TLNC_MAX_PARAM_SZ 0x2ec
 
 MK_EXTERN_C_START
 
@@ -35,8 +36,35 @@ typedef struct TlncArea {
 	TlncData data;
 } TlncArea;
 
+typedef struct TlncParamArea {
+	u64 caller_tid;
+	u8  _unk_0x008;
+	u8  flags;
+	u16 caller_makercode;
+	u16 head_len;
+	u16 tail_len;
+	u16 crc16;
+	u16 extra;
+	u8  data[TLNC_MAX_PARAM_SZ];
+} TlncParamArea;
+
+typedef struct TlncParam {
+	u64 tid;
+	u16 makercode;
+	u16 extra;
+	u16 head_len;
+	u16 tail_len;
+	const void* head;
+	const void* tail;
+} TlncParam;
+
 bool tlncGetDataTWL(TlncData* data);
 void tlncSetDataTWL(TlncData const* data);
+
+bool tlncGetParamTWL(TlncParam* param);
+void tlncSetParamTWL(TlncParam const* param);
+
+bool tlncSetJumpByArgvTWL(char* const argv[]);
 
 MK_INLINE bool tlncGetData(TlncData* data)
 {
@@ -48,6 +76,23 @@ MK_INLINE void tlncSetData(TlncData const* data)
 	if (systemIsTwlMode()) {
 		tlncSetDataTWL(data);
 	}
+}
+
+MK_INLINE bool tlncGetParam(TlncParam* param)
+{
+	return systemIsTwlMode() && tlncGetParamTWL(param);
+}
+
+MK_INLINE void tlncSetParam(TlncParam const* param)
+{
+	if (systemIsTwlMode()) {
+		tlncSetParamTWL(param);
+	}
+}
+
+MK_INLINE bool tlncSetJumpByArgv(char* const argv[])
+{
+	return systemIsTwlMode() && tlncSetJumpByArgvTWL(argv);
 }
 
 MK_EXTERN_C_END
