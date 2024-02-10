@@ -3,6 +3,13 @@
 #include "thread.h"
 #include "mutex.h"
 
+/*! @addtogroup sync
+	@{
+*/
+/*! @name Condition variable
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef struct CondVar {
@@ -14,3 +21,7 @@ void condvarBroadcast(CondVar* cv);
 void condvarWait(CondVar* cv, Mutex* m);
 
 MK_EXTERN_C_END
+
+//! @}
+
+//! @}

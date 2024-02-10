@@ -6,6 +6,10 @@
 #include "../types.h"
 #include "io.h"
 
+/*! @addtogroup ntrcard
+	@{
+*/
+
 #define NTRCARD_SECTOR_SZ 0x200
 
 #define REG_NTRCARD_CNT       MK_REG(u16, IO_NTRCARD_CNT)
@@ -167,3 +171,5 @@ bool ntrcardSetPngSeed(u64 seed0, u64 seed1);
 bool ntrcardLeaveSecure(void);
 
 MK_EXTERN_C_END
+
+//! @}

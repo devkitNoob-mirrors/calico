@@ -5,6 +5,10 @@
 
 #include "../../types.h"
 
+/*! @addtogroup dev
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef void (* Arm7DebugFn)(const char* buf, size_t size);
@@ -12,3 +16,5 @@ typedef void (* Arm7DebugFn)(const char* buf, size_t size);
 void installArm7DebugSupport(Arm7DebugFn fn, u8 thread_prio);
 
 MK_EXTERN_C_END
+
+//! @}

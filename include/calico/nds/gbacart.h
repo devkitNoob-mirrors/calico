@@ -7,6 +7,10 @@
 #include "mm.h"
 #include "system.h"
 
+/*! @addtogroup gbacart
+	@{
+*/
+
 #define GBA_WAIT_SRAM_MASK (3U<<0)
 #define GBA_WAIT_SRAM_10   (0U<<0)
 #define GBA_WAIT_SRAM_8    (1U<<0)
@@ -44,3 +48,5 @@ bool gbacartIsOpen(void);
 unsigned gbacartSetTiming(unsigned mask, unsigned timing);
 
 MK_EXTERN_C_END
+
+//! @}

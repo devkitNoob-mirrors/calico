@@ -2,6 +2,10 @@
 #include "../types.h"
 #include "mm_env.h"
 
+/*! @addtogroup env
+	@{
+*/
+
 #define g_envAppNdsHeader  ((EnvNdsHeader*)         MM_ENV_APP_NDS_HEADER)
 #define g_envCardNdsHeader ((EnvNdsHeader*)         MM_ENV_CARD_NDS_HEADER)
 #define g_envAppTwlHeader  ((EnvTwlHeader*)         MM_ENV_APP_TWL_HEADER)
@@ -470,3 +474,5 @@ void envReadNvramSettings(void);
 #endif
 
 MK_EXTERN_C_END
+
+//! @}

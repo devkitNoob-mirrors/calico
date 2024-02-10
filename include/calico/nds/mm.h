@@ -3,6 +3,10 @@
 #error "This header file is only for NDS"
 #endif
 
+/*! @addtogroup mm
+	@{
+*/
+
 #ifdef ARM7
 #define MM_BIOS        0x0000000 // 32-bit bus
 #define MM_BIOS_SZ_NTR    0x4000 // 16kb
@@ -103,3 +107,5 @@
 #define MM_BIOS_SZ_NTR     0x1000 // 4kb
 #define MM_BIOS_SZ_TWL    0x10000 // 64kb
 #endif
+
+//! @}

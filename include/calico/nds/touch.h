@@ -5,6 +5,10 @@
 
 #include "../types.h"
 
+/*! @addtogroup touch
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef struct MK_STRUCT_ALIGN(4) TouchData {
@@ -21,3 +25,5 @@ void touchLoadCalibration(void);
 bool touchRead(TouchData* out);
 
 MK_EXTERN_C_END
+
+//! @}

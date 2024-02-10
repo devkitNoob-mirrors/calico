@@ -2,6 +2,14 @@
 #include "../types.h"
 #include "dldi_defs.h"
 
+/*! @addtogroup blkdev
+	@{
+*/
+
+/*! @name Generic disc interface
+	@{
+*/
+
 #define FEATURE_MEDIUM_CANREAD  DLDI_FEATURE_CAN_READ
 #define FEATURE_MEDIUM_CANWRITE DLDI_FEATURE_CAN_WRITE
 #define FEATURE_SLOT_GBA        DLDI_FEATURE_SLOT_GBA
@@ -9,6 +17,7 @@
 
 MK_EXTERN_C_START
 
+//! @brief Sector offset integer type
 typedef u32 sec_t;
 
 typedef bool (* FN_MEDIUM_STARTUP)(void);
@@ -18,6 +27,7 @@ typedef bool (* FN_MEDIUM_WRITESECTORS)(sec_t first_sector, sec_t num_sectors, c
 typedef bool (* FN_MEDIUM_CLEARSTATUS)(void);
 typedef bool (* FN_MEDIUM_SHUTDOWN)(void);
 
+//! @brief Generic disc interface struct
 typedef struct DISC_INTERFACE_STRUCT {
 	u32 ioType;
 	u32 features;
@@ -31,3 +41,7 @@ typedef struct DISC_INTERFACE_STRUCT {
 } DISC_INTERFACE;
 
 MK_EXTERN_C_END
+
+//! @}
+
+//! @}

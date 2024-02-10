@@ -2,8 +2,13 @@
 #include "dldi_defs.h"
 #include "disc_io.h"
 
+/*! @addtogroup blkdev
+	@{
+*/
+
 MK_EXTERN_C_START
 
+//! @brief DLDI driver header
 typedef struct DldiHeader {
 	u32  magic_num;
 	char magic_str[DLDI_MAGIC_STRING_LEN];
@@ -31,3 +36,5 @@ bool dldiDumpInternal(void* buffer);
 #endif
 
 MK_EXTERN_C_END
+
+//! @}

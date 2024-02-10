@@ -2,6 +2,10 @@
 #include "../types.h"
 #include "sysclock.h"
 
+/*! @addtogroup tick
+	@{
+*/
+
 #define TICK_FREQ (SYSTEM_CLOCK/64)
 
 MK_EXTERN_C_START
@@ -32,3 +36,5 @@ void tickTaskStart(TickTask* t, TickTaskFn fn, u32 delay_ticks, u32 period_ticks
 void tickTaskStop(TickTask* t);
 
 MK_EXTERN_C_END
+
+//! @}

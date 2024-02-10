@@ -1,6 +1,11 @@
 #pragma once
 #include "../types.h"
 
+/*! @addtogroup blkdev
+	Provides a common device-independent interface to all available storage devices.
+	@{
+*/
+
 #define BLK_SECTOR_SZ       512
 #define BLK_SECTOR_SZ_WORDS (BLK_SECTOR_SZ/sizeof(u32))
 
@@ -10,10 +15,10 @@ typedef enum BlkDevice {
 
 #if defined(__NDS__)
 
-	BlkDevice_Dldi       = 0,
-	BlkDevice_TwlSdCard  = 1,
-	BlkDevice_TwlNand    = 2,
-	BlkDevice_TwlNandAes = 3,
+	BlkDevice_Dldi       = 0, //!< DLDI device
+	BlkDevice_TwlSdCard  = 1, //!< DSi SD card device
+	BlkDevice_TwlNand    = 2, //!< DSi system memory (raw sector access)
+	BlkDevice_TwlNandAes = 3, //!< DSi system memory (transparent encryption)
 
 #else
 #error "Unsupported platform"
@@ -33,3 +38,5 @@ bool blkDevReadSectors(BlkDevice dev, void* buffer, u32 first_sector, u32 num_se
 bool blkDevWriteSectors(BlkDevice dev, const void* buffer, u32 first_sector, u32 num_sectors);
 
 MK_EXTERN_C_END
+
+//! @}

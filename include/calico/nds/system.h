@@ -6,6 +6,10 @@
 #include "../types.h"
 #include "io.h"
 
+/*! @addtogroup hw
+	@{
+*/
+
 #define REG_EXMEMCNT  MK_REG(u16, IO_EXMEMCNT)
 #ifdef ARM7
 #define REG_EXMEMCNT2 MK_REG(u16, IO_EXMEMCNT2)
@@ -22,6 +26,7 @@
 
 MK_EXTERN_C_START
 
+//! Returns true if the application is running in DSi mode
 MK_INLINE bool systemIsTwlMode(void)
 {
 	extern bool g_isTwlMode;
@@ -29,3 +34,5 @@ MK_INLINE bool systemIsTwlMode(void)
 }
 
 MK_EXTERN_C_END
+
+//! @}

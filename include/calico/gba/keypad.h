@@ -12,6 +12,10 @@
 #error "This header file is only for GBA and NDS"
 #endif
 
+/*! @addtogroup keypad
+	@{
+*/
+
 #define REG_KEYINPUT MK_REG(u16, IO_KEYINPUT)
 #define REG_KEYCNT   MK_REG(u16, IO_KEYCNT)
 
@@ -104,3 +108,5 @@ MK_INLINE u16 keypadUp(Keypad const* k)
 }
 
 MK_EXTERN_C_END
+
+//! @}

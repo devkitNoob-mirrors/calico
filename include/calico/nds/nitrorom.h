@@ -2,6 +2,10 @@
 #include "../types.h"
 #include "env.h"
 
+/*! @addtogroup nitrorom
+	@{
+*/
+
 #define NITROROM_ROOT_DIR 0xf000
 #define NITROROM_NAME_MAX 0x7f
 
@@ -110,3 +114,5 @@ MK_INLINE void nitroromRewindIter(NitroRomIter* iter)
 int nitroromResolvePath(NitroRom* nr, u16 base_dir, const char* path);
 
 MK_EXTERN_C_END
+
+//! @}

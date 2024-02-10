@@ -2,6 +2,10 @@
 #include "../../types.h"
 #include "../env.h"
 
+/*! @addtogroup ovl
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef EnvNdsOverlay OvlParams;
@@ -25,3 +29,5 @@ MK_INLINE bool ovlLoadAndActivate(unsigned ovl_id)
 }
 
 MK_EXTERN_C_END
+
+//! @}

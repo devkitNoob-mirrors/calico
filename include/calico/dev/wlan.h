@@ -1,6 +1,10 @@
 #pragma once
 #include "netbuf.h"
 
+/*! @addtogroup wlan
+	@{
+*/
+
 #define WLAN_OUI_NINTENDO  0x0009bf
 #define WLAN_OUI_IEEE      0x000fac
 #define WLAN_OUI_MICROSOFT 0x0050f2
@@ -290,3 +294,5 @@ WlanIeHdr* wlanFindRsnOrWpaIe(void* rawdata, unsigned rawdata_len);
 void wlanParseBeacon(WlanBssDesc* desc, WlanBssExtra* extra, NetBuf* pPacket);
 
 MK_EXTERN_C_END
+
+//! @}

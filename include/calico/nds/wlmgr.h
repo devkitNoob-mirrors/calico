@@ -7,6 +7,10 @@
 #include "../dev/netbuf.h"
 #include "../dev/wlan.h"
 
+/*! @addtogroup wlmgr
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef enum WlMgrMode {
@@ -85,3 +89,5 @@ void wlmgrStartServer(u8 thread_prio);
 #endif
 
 MK_EXTERN_C_END
+
+//! @}

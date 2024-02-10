@@ -1,5 +1,13 @@
 #pragma once
 
+/*! @addtogroup blkdev
+	@{
+*/
+
+/*! @name DLDI constants
+	@{
+*/
+
 #define DLDI_MAGIC_VAL         0xbf8da5ed
 #define DLDI_MAGIC_STRING      " Chishm"
 
@@ -24,3 +32,7 @@
 #define DLDI_SIZE_1KB          10
 
 #define DLDI_MAX_ALLOC_SZ      (1U<<DLDI_SIZE_MAX)
+
+//! @}
+
+//! @}

@@ -6,6 +6,10 @@
 #include "../types.h"
 #include "io.h"
 
+/*! @addtogroup pm
+	@{
+*/
+
 #if defined(ARM9)
 
 #define REG_POWCNT MK_REG(u32, IO_POWCNT9)
@@ -128,3 +132,5 @@ void pmMicSetAmp(bool enable, unsigned gain);
 bool pmReadNvram(void* data, u32 addr, u32 len);
 
 MK_EXTERN_C_END
+
+//! @}

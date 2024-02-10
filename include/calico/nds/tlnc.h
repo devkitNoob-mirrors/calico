@@ -3,6 +3,10 @@
 #include "system.h"
 #include "env.h"
 
+/*! @addtogroup tlnc
+	@{
+*/
+
 #define TLNC_MAGIC   0x434e4c54 // 'TLNC'
 #define TLNC_VERSION 1
 #define TLNC_MAX_PARAM_SZ 0x2ec
@@ -58,13 +62,13 @@ typedef struct TlncParam {
 	const void* tail;
 } TlncParam;
 
-bool tlncGetDataTWL(TlncData* data);
-void tlncSetDataTWL(TlncData const* data);
+bool tlncGetDataTWL(TlncData* data); //!< @private
+void tlncSetDataTWL(TlncData const* data); //!< @private
 
-bool tlncGetParamTWL(TlncParam* param);
-void tlncSetParamTWL(TlncParam const* param);
+bool tlncGetParamTWL(TlncParam* param); //!< @private
+void tlncSetParamTWL(TlncParam const* param); //!< @private
 
-bool tlncSetJumpByArgvTWL(char* const argv[]);
+bool tlncSetJumpByArgvTWL(char* const argv[]); //!< @private
 
 MK_INLINE bool tlncGetData(TlncData* data)
 {
@@ -96,3 +100,5 @@ MK_INLINE bool tlncSetJumpByArgv(char* const argv[])
 }
 
 MK_EXTERN_C_END
+
+//! @}

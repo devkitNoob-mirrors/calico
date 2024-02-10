@@ -5,6 +5,10 @@
 
 #include "mm.h"
 
+/*! @addtogroup io
+	@{
+*/
+
 // Basic video
 #define IO_DISPSTAT 0x004
 #define IO_VCOUNT   0x006
@@ -266,3 +270,5 @@
 #define IO_OTP_ERROR 0x4d08
 
 #endif
+
+//! @}

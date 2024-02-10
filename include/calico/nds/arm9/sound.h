@@ -5,6 +5,10 @@
 
 #include "../sound.h"
 
+/*! @addtogroup sound
+	@{
+*/
+
 #define SOUND_START (1U<<4)
 
 MK_EXTERN_C_START
@@ -56,3 +60,5 @@ MK_INLINE void soundPrepareCap(
 }
 
 MK_EXTERN_C_END
+
+//! @}

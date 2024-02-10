@@ -7,6 +7,10 @@
 #include "../system/sysclock.h"
 #include "io.h"
 
+/*! @addtogroup scfg
+	@{
+*/
+
 #define SCFG_MCINSREM_CLKDIV 0x200
 #define SCFG_MCINSREM_CLOCK  (SYSTEM_CLOCK/SCFG_MCINSREM_CLKDIV)
 
@@ -186,3 +190,5 @@ MK_INLINE u32 mbkMakeMapping(uptr start_addr, uptr end_addr, MbkMapSize sz)
 bool scfgSetMcPower(bool on);
 
 MK_EXTERN_C_END
+
+//! @}

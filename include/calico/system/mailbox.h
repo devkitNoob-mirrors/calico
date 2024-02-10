@@ -2,6 +2,13 @@
 #include "../types.h"
 #include "thread.h"
 
+/*! @addtogroup sync
+	@{
+*/
+/*! @name Mailbox
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef struct Mailbox {
@@ -27,3 +34,7 @@ bool mailboxTryRecv(Mailbox* mb, u32* out);
 u32 mailboxRecv(Mailbox* mb);
 
 MK_EXTERN_C_END
+
+//! @}
+
+//! @}

@@ -1,10 +1,23 @@
 #pragma once
 
+/*! @addtogroup cache
+	@{
+*/
+
 #define ARM_ICACHE_SZ     0x2000
 #define ARM_DCACHE_SZ     0x1000
 #define ARM_CACHE_LINE_SZ 32
 #define ARM_DCACHE_SETS_LOG2 2
 #define ARM_DCACHE_SETS (1 << ARM_DCACHE_SETS_LOG2)
+
+//! @}
+
+/*! @addtogroup cp15
+	@{
+*/
+/*! @name CP15 control register
+	@{
+*/
 
 #define CP15_CR_PU_ENABLE     (1<<0)
 #define CP15_CR_DCACHE_ENABLE (1<<2)
@@ -18,6 +31,12 @@
 #define CP15_CR_DTCM_LOAD     (1<<17)
 #define CP15_CR_ITCM_ENABLE   (1<<18)
 #define CP15_CR_ITCM_LOAD     (1<<19)
+
+//! @}
+
+/*! @name ITCM/DTCM size register
+	@{
+*/
 
 #define CP15_TCM_4K   (0b00011 << 1)
 #define CP15_TCM_8K   (0b00100 << 1)
@@ -36,6 +55,12 @@
 #define CP15_TCM_64M  (0b10001 << 1)
 #define CP15_TCM_128M (0b10010 << 1)
 #define CP15_TCM_256M (0b10011 << 1)
+
+//! @}
+
+/*! @name MPU region configuration register
+	@{
+*/
 
 #define CP15_PU_ENABLE 1
 
@@ -61,9 +86,19 @@
 #define CP15_PU_2G   (0b11110 << 1)
 #define CP15_PU_4G   (0b11111 << 1)
 
+//! @}
+
+/*! @name MPU region permissions
+	@{
+*/
+
 #define CP15_PU_PERM_NONE    0
 #define CP15_PU_PERM_PRIV_RW 1
 #define CP15_PU_PERM_RW_R    2
 #define CP15_PU_PERM_RW      3
 #define CP15_PU_PERM_PRIV_RO 5
 #define CP15_PU_PERM_RO      6
+
+//! @}
+
+//! @}

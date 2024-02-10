@@ -2,6 +2,14 @@
 #include "../types.h"
 #include "thread.h"
 
+/*! @addtogroup sync
+	@{
+*/
+/*! @name Mutex
+	The quintessential synchronization primitive, with priority inheritance.
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef struct Mutex {
@@ -39,3 +47,7 @@ MK_INLINE void rmutexUnlock(RMutex* m)
 }
 
 MK_EXTERN_C_END
+
+//! @}
+
+//! @}

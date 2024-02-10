@@ -4,6 +4,10 @@
 #include "irq.h"
 #include "tick.h"
 
+/*! @addtogroup thread
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef struct Thread Thread;
@@ -149,3 +153,5 @@ MK_INLINE void threadWaitForVBlank(void)
 #endif
 
 MK_EXTERN_C_END
+
+//! @}

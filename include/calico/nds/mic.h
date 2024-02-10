@@ -7,6 +7,10 @@
 #include "../system/sysclock.h"
 #include "timer.h"
 
+/*! @addtogroup mic
+	@{
+*/
+
 typedef enum MicFmt {
 	MicFmt_Pcm8  = 0,
 	MicFmt_Pcm16 = 1,
@@ -29,3 +33,5 @@ MK_CONSTEXPR unsigned soundTimerFromMicRate(MicRate rate)
 {
 	return 512*((unsigned)rate + 1);
 }
+
+//! @}

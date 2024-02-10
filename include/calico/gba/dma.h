@@ -9,6 +9,10 @@
 #error "This header file is only for GBA and NDS"
 #endif
 
+/*! @addtogroup dma
+	@{
+*/
+
 #define REG_DMAxSAD(_x)   MK_REG(u32, IO_DMAxSAD(_x))
 #define REG_DMAxDAD(_x)   MK_REG(u32, IO_DMAxDAD(_x))
 #define REG_DMAxCNT(_x)   MK_REG(u32, IO_DMAxCNT(_x))
@@ -141,3 +145,5 @@ MK_INLINE void dmaStartFill16(unsigned id, void* dst, u16 value, size_t size)
 }
 
 MK_EXTERN_C_END
+
+//! @}

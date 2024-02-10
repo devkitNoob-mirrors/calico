@@ -10,6 +10,10 @@
 #error "This header file is only for GBA and NDS"
 #endif
 
+/*! @addtogroup timer
+	@{
+*/
+
 #define REG_TMxCNT(_x)   MK_REG(u32, IO_TMxCNT(_x))
 #define REG_TMxCNT_L(_x) MK_REG(u16, IO_TMxCNT(_x)+0)
 #define REG_TMxCNT_H(_x) MK_REG(u16, IO_TMxCNT(_x)+2)
@@ -64,3 +68,5 @@ MK_INLINE u16 timerRead(unsigned id)
 }
 
 MK_EXTERN_C_END
+
+//! @}

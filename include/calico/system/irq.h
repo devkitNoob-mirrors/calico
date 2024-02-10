@@ -9,6 +9,10 @@
 #error "Unsupported platform."
 #endif
 
+/*! @addtogroup irq
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef void (*IrqHandler)(void);
@@ -64,3 +68,5 @@ MK_INLINE void irqDisable2(IrqMask mask)
 #endif
 
 MK_EXTERN_C_END
+
+//! @}

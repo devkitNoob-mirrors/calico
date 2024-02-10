@@ -5,6 +5,10 @@
 #include "cp15.h"
 #endif
 
+/*! @addtogroup arm
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef struct ArmContext {
@@ -127,3 +131,5 @@ MK_EXTERN32 u32 armContextSave(ArmContext* ctx, ArmIrqState st, u32 ret);
 MK_EXTERN32 void armContextLoad(const ArmContext* ctx) MK_NORETURN;
 
 MK_EXTERN_C_END
+
+//! @}

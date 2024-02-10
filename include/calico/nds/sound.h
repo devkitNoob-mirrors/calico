@@ -6,6 +6,10 @@
 #include "../types.h"
 #include "../system/sysclock.h"
 
+/*! @addtogroup sound
+	@{
+*/
+
 #define SOUND_CLOCK         (SYSTEM_CLOCK/2)
 #define SOUND_MIXER_FREQ_HZ (SYSTEM_CLOCK/1024)
 #define SOUND_UPDATE_HZ     192
@@ -101,3 +105,5 @@ MK_CONSTEXPR unsigned soundMakeCapConfig(SoundCapDst dst, SoundCapSrc src, bool 
 }
 
 MK_EXTERN_C_END
+
+//! @}

@@ -6,6 +6,13 @@
 #include "../types.h"
 #include "cp15.h"
 
+/*! @addtogroup cp15
+	@{
+*/
+/*! @name MPU configuration
+	@{
+*/
+
 #define _MPU_ACCESSORS \
 	_MPU_AUTOGEN(DCacheConfig, "c2, c0, 0") \
 	_MPU_AUTOGEN(ICacheConfig, "c2, c0, 1") \
@@ -132,3 +139,7 @@ MK_INLINE void armMpuClearRegion(unsigned id)
 }
 
 MK_EXTERN_C_END
+
+//! @}
+
+//! @}

@@ -2,6 +2,10 @@
 #include "../types.h"
 #include "../arm/common.h"
 
+/*! @addtogroup netbuf
+	@{
+*/
+
 MK_EXTERN_C_START
 
 typedef struct NetBuf NetBuf;
@@ -123,3 +127,5 @@ MK_INLINE NetBuf* netbufQueueRemoveAll(NetBufListNode* q) {
 }
 
 MK_EXTERN_C_END
+
+//! @}

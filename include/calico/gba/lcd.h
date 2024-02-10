@@ -9,6 +9,10 @@
 #error "This header file is only for GBA and NDS"
 #endif
 
+/*! @addtogroup lcd
+	@{
+*/
+
 #if defined(__GBA__)
 #define LCD_WIDTH  240
 #define LCD_HEIGHT 160
@@ -35,6 +39,7 @@
 #define DISPSTAT_LYC_MASK  (0x1ff<<7)
 #define DISPSTAT_LYC(_x)   _lcdCalcLyc(_x)
 
+//! @private
 MK_CONSTEXPR unsigned _lcdCalcLyc(unsigned lyc)
 {
 	return ((lyc&0xff) << 8) | (((lyc>>8)&1) << 7);
@@ -89,3 +94,5 @@ MK_INLINE unsigned lcdGetVCount(void)
 }
 
 MK_EXTERN_C_END
+
+//! @}

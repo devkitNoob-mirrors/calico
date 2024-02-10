@@ -6,6 +6,10 @@
 #include "../types.h"
 #include "io.h"
 
+/*! @addtogroup pxi
+	@{
+*/
+
 #define REG_PXI_SYNC MK_REG(u16, IO_PXI_SYNC)
 #define REG_PXI_CNT  MK_REG(u32, IO_PXI_CNT)
 #define REG_PXI_SEND MK_REG(u32, IO_PXI_SEND)
@@ -171,3 +175,5 @@ MK_INLINE u32 pxiSendWithDataAndReceive(PxiChannel ch, u32 imm, const u32* data,
 }
 
 MK_EXTERN_C_END
+
+//! @}

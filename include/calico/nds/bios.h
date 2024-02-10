@@ -1,6 +1,10 @@
 #pragma once
 #include "../types.h"
 
+/*! @addtogroup bios
+	@{
+*/
+
 // Parameters for svcCpuSet
 #define SVC_SET_SIZE_16(_sz) (((_sz)/2) & 0x1fffff)
 #define SVC_SET_SIZE_32(_sz) (((_sz)/4) & 0x1fffff)
@@ -53,7 +57,7 @@ void svcHalt(void);
 void svcSleep(void);
 void svcSoundBias(bool enable, u32 delay_count);
 #endif
-u64 svcDivModImpl(s32 num, s32 den) __asm__("svcDivMod");
+u64 svcDivModImpl(s32 num, s32 den) __asm__("svcDivMod"); //!< @private
 void svcCpuSet(const void* src, void* dst, u32 mode);
 u16 svcSqrt(u32 num);
 u16 svcGetCRC16(u16 initial_crc, const void* mem, u32 size);
@@ -89,3 +93,5 @@ bool svcSha1VerifyTWL(const void* lhs, const void* rhs);
 void svcSha1RandomTWL(void* output, size_t out_size, const void* seed, size_t seed_size);
 
 MK_EXTERN_C_END
+
+//! @}

@@ -6,6 +6,10 @@
 #include "../types.h"
 #include "cp15.h"
 
+/*! @addtogroup cache
+	@{
+*/
+
 MK_EXTERN_C_START
 
 void armDrainWriteBuffer(void);
@@ -18,3 +22,5 @@ void armICacheInvalidateAll(void);
 void armICacheInvalidate(void* addr, size_t size);
 
 MK_EXTERN_C_END
+
+//! @}

@@ -90,9 +90,6 @@
 	/*! @defgroup env Environment
 		@brief Definitions for shared memory areas in the environment \sa mm_env
 	*/
-	/*! @defgroup tlnc TLNC
-		@brief Autoload protocol (DSi-only)
-	*/
 	/*! @defgroup pxi PXI
 		@brief ARM9<->ARM7 inter-processor messaging system
 	*/
@@ -119,8 +116,8 @@
 	/*! @defgroup wlmgr Wireless
 		@brief Wireless management
 	*/
-	/*! @defgroup nitrorom NitroROM
-		@brief DS ROM filesystem access
+	/*! @defgroup blkdev Storage
+		@brief Block device access
 	*/
 #ifdef ARM9
 	/*! @defgroup ovl Overlays
@@ -136,3 +133,22 @@
 #endif
 
 //! @}
+
+#ifdef __NDS__
+	/*! @defgroup tlnc TLNC
+		@ingroup env
+		@brief Autoload protocol (DSi-only)
+	*/
+	/*! @defgroup netbuf NetBuf
+		@ingroup wlmgr
+		@brief Network buffer/packet management
+	*/
+	/*! @defgroup wlan 802.11
+		@ingroup wlmgr
+		@brief IEEE 802.11 (Wi-Fi) definitions and utilities
+	*/
+	/*! @defgroup nitrorom NitroROM
+		@ingroup ntrcard
+		@brief DS ROM filesystem access
+	*/
+#endif

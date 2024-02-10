@@ -1,5 +1,12 @@
 #pragma once
 
+/*! @addtogroup arm
+	@{
+*/
+/*! @name PSR state flags
+	@{
+*/
+
 #define ARM_PSR_MODE_USR  0x10
 #define ARM_PSR_MODE_FIQ  0x11
 #define ARM_PSR_MODE_IRQ  0x12
@@ -17,3 +24,7 @@
 #define ARM_PSR_C (1<<29)
 #define ARM_PSR_Z (1<<30)
 #define ARM_PSR_N (1<<31)
+
+//! @}
+
+//! @}

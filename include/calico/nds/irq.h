@@ -7,6 +7,10 @@
 #include "../arm/common.h"
 #include "io.h"
 
+/*! @addtogroup irq
+	@{
+*/
+
 #define REG_IME MK_REG(u32, IO_IME)
 #define REG_IE  MK_REG(u32, IO_IE)
 #define REG_IF  MK_REG(u32, IO_IF)
@@ -88,3 +92,5 @@ MK_INLINE void irqUnlock(IrqState state)
 	REG_IME = state;
 	armCompilerBarrier();
 }
+
+//! @}
