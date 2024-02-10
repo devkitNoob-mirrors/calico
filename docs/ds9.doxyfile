@@ -1,0 +1,22 @@
+@INCLUDE = common.doxyfile
+
+OUTPUT_DIRECTORY = out/ds9
+
+PREDEFINED += __NDS__ ARM9 __ARM_ARCH=5
+
+EXCLUDE = \
+    ../include/calico/nds/arm7 \
+    ../include/calico/gba/bios.h \
+    ../include/calico/gba/io.h \
+    ../include/calico/gba/irq.h \
+    ../include/calico/gba/lcd.h \
+    ../include/calico/gba/mm.h \
+    ../include/calico/dev/ar6k \
+    ../include/calico/dev/mwl \
+    ../include/calico/dev/ar6k.h \
+    ../include/calico/dev/mwl.h \
+    ../include/calico/dev/sdio.h \
+    ../include/calico/dev/sdmmc.h \
+    ../include/calico/dev/tmio_regs.h \
+    ../include/calico/dev/tmio.h \
+    ../include/calico/dev/wpa.h
