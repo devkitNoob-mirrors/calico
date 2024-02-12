@@ -12,11 +12,13 @@ MK_EXTERN_C_START
 
 typedef struct Thread Thread;
 
+//! List of blocked threads, used as a building block for synchronization primitives
 typedef struct ThrListNode {
 	Thread* next;
 	Thread* prev;
 } ThrListNode;
 
+//! @private
 typedef enum ThrStatus {
 	ThrStatus_Uninitialized,
 	ThrStatus_Finished,
@@ -25,19 +27,22 @@ typedef enum ThrStatus {
 	ThrStatus_WaitingOnMutex,
 } ThrStatus;
 
+//! @private
 typedef enum ThrUnblockMode {
 	ThrUnblockMode_Any,
 	ThrUnblockMode_ByValue,
 	ThrUnblockMode_ByMask,
 } ThrUnblockMode;
 
-#define THREAD_MAX_PRIO 0x00
-#define THREAD_MIN_PRIO 0x3F
+#define THREAD_MAX_PRIO 0x00 //!< Maximum priority value of a thread
+#define THREAD_MIN_PRIO 0x3f //!< Minimum priority value of a thread
 
-#define MAIN_THREAD_PRIO 0x1C
+#define MAIN_THREAD_PRIO 0x1c //!< Default priority value of the main thread
 
+//! Thread entrypoint type
 typedef int (* ThreadFunc)(void* arg);
 
+//! Data structure containing all management information for a thread
 struct Thread {
 	ArmContext ctx;
 
@@ -64,6 +69,7 @@ struct Thread {
 	};
 };
 
+//! @private
 typedef struct ThrSchedState {
 	Thread *cur;
 	Thread *deferred;
@@ -76,81 +82,214 @@ typedef struct ThrSchedState {
 #endif
 } ThrSchedState;
 
+/*! @name Thread initialization and synchronization
+
+	This group of functions is used to set up a thread, and wait for it to finish.
+
+	@{
+*/
+
+/*! @brief Initializes a new @ref Thread @p t with the specified settings
+	@param[in] entrypoint Function that will be called when the thread starts executing
+	@param[in] arg Argument to pass to @p entrypoint
+	@param[in] stack_top Initial value of the stack pointer (must be 8-byte aligned)
+	@param[in] prio Numeric priority level of the thread.
+	Higher numerical values correspond to lower thread priority, and viceversa.
+	The lowest priority is @ref THREAD_MIN_PRIO, while the highest is @ref THREAD_MAX_PRIO.
+
+	Example usage:
+	@code
+	alignas(8) static u8 s_myThreadStack[2048];
+	static Thread s_myThread;
+
+	//...
+
+	threadPrepare(&s_myThread, myThreadFunc, NULL, &s_myThreadStack[sizeof(s_myThreadStack)], MAIN_THREAD_PRIO);
+	threadAttachLocalStorage(&s_myThread, NULL);
+	threadStart(&s_myThread);
+	@endcode
+
+	@note 16 bytes of stack space are always reserved to support calling BIOS routines.
+*/
 void threadPrepare(Thread* t, ThreadFunc entrypoint, void* arg, void* stack_top, u8 prio);
+
+//! @brief Returns the required size for thread-local storage (8-byte aligned) @see threadAttachLocalStorage
 size_t threadGetLocalStorageSize(void);
+
+/*! @brief Attaches thread-local storage to a @ref Thread @p t
+	@param[in] storage 8-byte aligned memory buffer to use as thread-local storage,
+	or NULL to consume thread stack memory instead
+
+	Thread-local storage includes book-keeping information used by the C standard
+	library, as well as any objects marked as `thread_local` anywhere in the binary.
+	The required amount of space can be obtained using @ref threadGetLocalStorageSize().
+	If a thread is started without attached local storage, it is illegal to call
+	functions from the C standard library or use `thread_local` objects.
+*/
 void threadAttachLocalStorage(Thread* t, void* storage);
+
+//! @brief Starts the @ref Thread @p t
 void threadStart(Thread* t);
+
+//! @private
 void threadFree(Thread* t);
+
+/*! @brief Waits for the @ref Thread @p t to finish executing
+	@returns Result code returned by the entrypoint function, or passed to @ref threadExit.
+*/
 int threadJoin(Thread* t);
 
-void threadYield(void);
-u32  threadIrqWait(bool next_irq, IrqMask mask);
-#if MK_IRQ_NUM_HANDLERS > 32
-u32  threadIrqWait2(bool next_irq, IrqMask mask);
-#endif
-void threadExit(int rc) MK_NORETURN;
+//! @}
 
-MK_EXTERN32 void threadBlock(ThrListNode* queue, u32 token);
-MK_EXTERN32 void threadUnblock(ThrListNode* queue, int max, ThrUnblockMode mode, u32 ref);
+/*! @name Basic thread operations
 
-MK_EXTERN32 void threadUnblockOneByValue(ThrListNode* queue, u32 ref);
-MK_EXTERN32 void threadUnblockOneByMask(ThrListNode* queue, u32 ref);
-MK_EXTERN32 void threadUnblockAllByValue(ThrListNode* queue, u32 ref);
-MK_EXTERN32 void threadUnblockAllByMask(ThrListNode* queue, u32 ref);
+	This group of functions apply to the currently running thread.
 
-void threadSleepTicks(u32 ticks);
-void threadTimerStartTicks(TickTask* task, u32 period_ticks);
-void threadTimerWait(TickTask* task);
+	@{
+*/
 
-MK_INLINE void threadSleep(u32 usec)
-{
-	threadSleepTicks(ticksFromUsec(usec));
-}
-
-MK_INLINE void threadTimerStart(TickTask* task, u32 period_hz)
-{
-	threadTimerStartTicks(task, ticksFromHz(period_hz));
-}
-
+//! @brief Returns the pointer to the currently running thread
 MK_INLINE Thread* threadGetSelf(void)
 {
 	extern ThrSchedState __sched_state;
 	return __sched_state.cur;
 }
 
-MK_CONSTEXPR bool threadIsValid(Thread* t)
-{
-	return t->status != ThrStatus_Uninitialized;
-}
+/*! @brief Relinquishes control of the CPU to other runnable threads
+	@note In practice, yielding is only useful for sharing the CPU between threads
+	of the same priority. Higher priority threads are always guaranteed to preempt
+	the current thread when they become runnable, and lower priority threads cannot
+	be yielded to at all.
+*/
+void threadYield(void);
 
-MK_CONSTEXPR bool threadIsWaiting(Thread* t)
-{
-	return t->status >= ThrStatus_Waiting;
-}
+/*! @brief Waits for any of the specified interrupts to occur
+	@param[in] next_irq
+		If false, immediately returns when the interrupt(s) have already occurred.
+		If true, waits for the next instance of the interrupt(s) to occur instead.
+	@param[in] mask Bitmask specifying which interrupts to wait for.
+	@returns Bitmask indicating which interrupt(s) have occurred.
+	@note This function has the same semantics as the IntrWait routine in the GBA/DS BIOS.
+*/
+u32  threadIrqWait(bool next_irq, IrqMask mask);
 
-MK_CONSTEXPR bool threadIsWaitingOnMutex(Thread* t)
-{
-	return t->status == ThrStatus_WaitingOnMutex;
-}
-
-MK_CONSTEXPR bool threadIsRunning(Thread* t)
-{
-	return t->status == ThrStatus_Running;
-}
-
-MK_CONSTEXPR bool threadIsFinished(Thread* t)
-{
-	return t->status == ThrStatus_Finished;
-}
+#if MK_IRQ_NUM_HANDLERS > 32
+//! @brief Same as @ref threadIrqWait, but for extended interrupts.
+u32  threadIrqWait2(bool next_irq, IrqMask mask);
+#endif
 
 #if defined(IRQ_VBLANK)
 
+/*! @brief Waits for the next VBlank interrupt to occur
+	@note This function has the same semantics as the VBlankIntrWait routine in the GBA/DS BIOS.
+*/
 MK_INLINE void threadWaitForVBlank(void)
 {
 	threadIrqWait(true, IRQ_VBLANK);
 }
 
 #endif
+
+//! @brief Exits the current thread with @p rc as the result code
+void threadExit(int rc) MK_NORETURN;
+
+//! @}
+
+/*! @name Thread blocking and unblocking
+
+	This group of functions is used to implement synchronization between threads.
+
+	@{
+*/
+
+/*! @brief Blocks the current thread into the given @p queue, using the specified @p token.
+
+	The thread will be woken up when any of the threadUnblock<em>XX</em> functions are called,
+	and the @p token depending condition is met. The following conditions are supported:
+	- **By value**: unblocks threads whose @p token exactly matches the reference value (`==` equals operator)
+		@see threadUnblockOneByValue, threadUnblockAllByValue
+	- **By mask**: unblocks threads whose @p token has one or more bits in common with the reference mask (`&` bitwise-and operator)
+		@see threadUnblockOneByMask, threadUnblockAllByMask
+*/
+MK_EXTERN32 void threadBlock(ThrListNode* queue, u32 token);
+
+//! @private
+MK_EXTERN32 void threadUnblock(ThrListNode* queue, int max, ThrUnblockMode mode, u32 ref);
+
+//! @brief Unblocks at most one thread in the @p queue matching the specified @p ref value @see threadBlock
+MK_EXTERN32 void threadUnblockOneByValue(ThrListNode* queue, u32 ref);
+//! @brief Unblocks at most one thread in the @p queue matching the specified @p ref mask @see threadBlock
+MK_EXTERN32 void threadUnblockOneByMask(ThrListNode* queue, u32 ref);
+//! @brief Unblocks all threads in the @p queue matching the specified @p ref value @see threadBlock
+MK_EXTERN32 void threadUnblockAllByValue(ThrListNode* queue, u32 ref);
+//! @brief Unblocks all threads in the @p queue matching the specified @p ref mask @see threadBlock
+MK_EXTERN32 void threadUnblockAllByMask(ThrListNode* queue, u32 ref);
+
+//! @}
+
+/*! @name Thread sleeping
+
+	This group of functions allow the current thread to sleep for specified durations.
+
+	@{
+*/
+
+//! @brief Pauses the thread for the specified time interval expressed in ticks @see ticksFromUsec
+void threadSleepTicks(u32 ticks);
+
+//! @brief Starts a @ref TickTask based timer with the specified period in ticks @see ticksFromHz
+void threadTimerStartTicks(TickTask* task, u32 period_ticks);
+
+/*! @brief Waits for the specified timer
+	@warning The timer must have been previously started with
+	@ref threadTimerStart() or @ref threadTimerStartTicks(). It is invalid to call this function
+	with an arbitrary @ref TickTask.
+*/
+void threadTimerWait(TickTask* task);
+
+//! @brief Pauses the thread for the specified time interval in microseconds @see threadSleepTicks
+MK_INLINE void threadSleep(u32 usec)
+{
+	threadSleepTicks(ticksFromUsec(usec));
+}
+
+//! @brief Starts a @ref TickTask based timer with the specified period in Hz @see threadTimerStartTicks
+MK_INLINE void threadTimerStart(TickTask* task, u32 period_hz)
+{
+	threadTimerStartTicks(task, ticksFromHz(period_hz));
+}
+
+//! @}
+
+//! @private
+MK_CONSTEXPR bool threadIsValid(Thread* t)
+{
+	return t->status != ThrStatus_Uninitialized;
+}
+
+//! @private
+MK_CONSTEXPR bool threadIsWaiting(Thread* t)
+{
+	return t->status >= ThrStatus_Waiting;
+}
+
+//! @private
+MK_CONSTEXPR bool threadIsWaitingOnMutex(Thread* t)
+{
+	return t->status == ThrStatus_WaitingOnMutex;
+}
+
+//! @private
+MK_CONSTEXPR bool threadIsRunning(Thread* t)
+{
+	return t->status == ThrStatus_Running;
+}
+
+//! @private
+MK_CONSTEXPR bool threadIsFinished(Thread* t)
+{
+	return t->status == ThrStatus_Finished;
+}
 
 MK_EXTERN_C_END
 
