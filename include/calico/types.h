@@ -58,7 +58,7 @@ typedef volatile sptr vsptr; //!< Pointer-sized volatile signed integer.
 #define MK_DEPRECATED __attribute__((deprecated))
 //! @brief Marks a small, utility function whose contents will be inserted into the caller ("inlined").
 #define MK_INLINE     __attribute__((always_inline)) static inline
-/*! @brief Similar to \ref MK_INLINE, but allowing the function body to be
+/*! @brief Similar to @ref MK_INLINE, but allowing the function body to be
 	emitted in an object file when explicitly requested.
 	@note This is mostly useful for ASM wrappers that can be inline in ARM mode
 	but not in THUMB mode. In addition, this feature is only supported by C (not C++).
@@ -105,11 +105,11 @@ typedef volatile sptr vsptr; //!< Pointer-sized volatile signed integer.
 #define MK_EXTERN32
 #endif
 
-/*! @brief Similar to \ref MK_INLINE, but also marking the function as eligible
+/*! @brief Similar to @ref MK_INLINE, but also marking the function as eligible
 	for compile-time evaluation.
 	@note When compiling as C++, this macro adds the `constexpr` specifier,
 	allowing the defined function to work from constexpr contexts.
-	In C, this macro is otherwise identical to \ref MK_INLINE.
+	In C, this macro is otherwise identical to @ref MK_INLINE.
 */
 #if __cplusplus >= 201402L
 #define MK_CONSTEXPR  MK_INLINE constexpr

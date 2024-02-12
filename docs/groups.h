@@ -45,7 +45,7 @@
 		@brief Interrupt handling
 	*/
 	/*! @defgroup thread Threads
-		@brief Thread management
+		@brief Thread management @see @ref thrd_intro
 	*/
 	/*! @defgroup sync Sync
 		@brief Synchronization primitives
@@ -88,7 +88,7 @@
 	*/
 #ifdef __NDS__
 	/*! @defgroup env Environment
-		@brief Definitions for shared memory areas in the environment \sa mm_env
+		@brief Definitions for shared memory areas in the environment @see mm_env
 	*/
 	/*! @defgroup pxi PXI
 		@brief ARM9<->ARM7 inter-processor messaging system

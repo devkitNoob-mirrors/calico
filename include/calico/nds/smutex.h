@@ -6,7 +6,7 @@
 */
 /*! @name System-wide mutex
 	Provides a mutex that can be used to arbitrate accesses to resources between
-	the ARM9 and the ARM7. Unlike \ref Mutex, this primitive does not implement
+	the ARM9 and the ARM7. Unlike @ref Mutex, this primitive does not implement
 	priority inheritance.
 	@{
 */
