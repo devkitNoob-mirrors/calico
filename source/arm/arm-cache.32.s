@@ -19,9 +19,9 @@ FUNC_START32 armDCacheFlushAll
 	orr  r2, r1, r0
 	mcr  p15, 0, r2, c7, c14, 2 @ Clean+Invalidate DCache entry by Set/Way
 	add  r0, r0, #ARM_CACHE_LINE_SZ
-	cmp  r0, #ARM_DCACHE_SZ/ARM_DCACHE_SETS
+	cmp  r0, #ARM_DCACHE_SZ/ARM_DCACHE_WAYS
 	bne  .Ldfa_clean_line
-	adds r1, r1, #(1 << (32 - ARM_DCACHE_SETS_LOG2))
+	adds r1, r1, #(1 << (32 - ARM_DCACHE_WAYS_LOG2))
 	bne  .Ldfa_clean_set
 
 	b    armDrainWriteBuffer
