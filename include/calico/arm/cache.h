@@ -8,49 +8,52 @@
 
 /*! @addtogroup cache
 	@{
+
+	@note Cache operations by address range are **always** performed on cache line boundaries.
+	This means that the start of the given range is rounded down (`addr &~ 0x1f`), while
+	the end of the range is rounded up (`(addr + size + 0x1f) &~ 0x1f`).
 */
 
 MK_EXTERN_C_START
 
-/*! @brief Emits a "drain write buffer" instruction, also known as DataSynchronizationBarrier (DSB) in Armv6+
-	@note Such a barrier is needed when sharing memory with the other CPU and with DMA; though, all cache
-	manipulation functions include this instruction, thus explicit calls to this function aren't usually needed
+/*! @brief Drains the CPU's write buffer, making changes observable to other devices (e.g. ARM7 or DMA).
+	@note It is usually not necessary to use this barrier because the data cache management functions
+	(such as @ref armDCacheFlush) already include it.
+	In addition, uncacheable MPU regions do not usually have the write buffer enabled anyway.
+	@note In later versions of the ARM architecture (v6+), this is known as a Data Synchronization Barrier (DSB),
+	and it is also in charge of preventing memory access reordering.
 */
 void armDrainWriteBuffer(void);
 
-//! @brief Cleans and invalidates all data cache lines
+//! @brief Flushes (cleans and invalidates) the entire data cache
 void armDCacheFlushAll(void);
 
-/*! @brief Cleans and invalidates data cache lines by address
+/*! @brief Flushes (cleans and invalidates) the data cache lines pertaining to the specified address range
 	@param addr Start address (any pointer type)
 	@param size Size of the address range
-	@note Cache operations by address are done on cache line boundaries, ie. from `addr_ & ~0x1F` to
-	`(addr_ + size) & ~0x1F` where `addr_ = (uintptr_t)addr`
-	@note If `size` is large, consider using @ref armDCacheFlushAll instead. On the 3DS Arm9 Kernel,
-	Nintendo uses 16 KiB as threshold
+	@note Use this function when sharing a main RAM memory buffer with the ARM7, or with DMA/devices.
+	@note Consider using @ref armDCacheFlushAll when `size` is large.
+	As an example, the 3DS ARM9 kernel uses 16 KiB as the threshold.
 */
 void armDCacheFlush(const volatile void* addr, size_t size);
 
-/*! @brief Invalidates data cache lines by address
+/*! @brief Invalidates the data cache lines pertaining to the specified address range
 	@param addr Start address (any pointer type)
 	@param size Size of the address range
-	@note Cache operations by address are done on cache line boundaries, ie. from `addr_ & ~0x1F` to
-	`(addr_ + size) & ~0x1F` where `addr_ = (uintptr_t)addr`
-	@note If `addr` and `(uintptr_t)addr + size` aren't 32-byte aligned, there is a risk of data loss
-	@note If `size` is large, consider using @ref armDCacheInvalidateAll instead. On the 3DS Arm9 Kernel,
-	Nintendo uses 16 KiB as threshold
+	@warning Data cache invalidation is rarely useful, and **will** lead to data corruption when used incorrectly.
+	Prefer using @ref armDCacheFlush, unless the address range is guaranteed to be aligned to cache line boundaries
+	and it is explicitly permitted to discard unflushed writes within the range.
 */
 void armDCacheInvalidate(const volatile void* addr, size_t size);
 
-//! @brief Invalidates all instruction cache lines
+//! @brief Invalidates the entire instruction cache
 void armICacheInvalidateAll(void);
 
-/*! @brief Invalidates instruction cache lines by address
+/*! @brief Invalidates the instruction cache lines pertaining to the specified address range
 	@param addr Start address (any pointer type)
 	@param size Size of the address range
-	@note Cache operations by address are done on cache line boundaries, ie. from `addr_ & ~0x1F` to
-	`(addr_ + size) & ~0x1F` where `addr_ = (uintptr_t)addr`.
-	@note Consider just using @ref armICacheInvalidateAll unless `size` is known to be small
+	@note Use this function when dynamically loading/generating code (do not forget to use @ref armDCacheFlush too).
+	@note Consider using @ref armICacheInvalidateAll unless `size` is known to be small.
 */
 void armICacheInvalidate(const volatile void* addr, size_t size);
 

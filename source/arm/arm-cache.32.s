@@ -13,7 +13,7 @@ FUNC_START32 armDCacheFlushAll
 
 	@ Flush all cache lines
 	mov  r1, #0
-.Ldfa_clean_set:
+.Ldfa_clean_way:
 	mov  r0, #0
 .Ldfa_clean_line:
 	orr  r2, r1, r0
@@ -22,7 +22,7 @@ FUNC_START32 armDCacheFlushAll
 	cmp  r0, #ARM_DCACHE_SZ/ARM_DCACHE_WAYS
 	bne  .Ldfa_clean_line
 	adds r1, r1, #(1 << (32 - ARM_DCACHE_WAYS_LOG2))
-	bne  .Ldfa_clean_set
+	bne  .Ldfa_clean_way
 
 	b    armDrainWriteBuffer
 
