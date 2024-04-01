@@ -18,6 +18,10 @@ static ThrListNode s_pxiRecvQueue;
 static u32 s_pxiRecvState;
 static PxiChannelState s_pxiChannels[PxiChannel_Count];
 
+MK_WEAK void _pxiRecvUnhandled(PxiChannel ch, u32 data)
+{
+}
+
 MK_INLINE u32 _pxiProcessPacket(u32 packet)
 {
 	PxiChannel ch = pxiPacketGetChannel(packet);
@@ -40,6 +44,8 @@ MK_INLINE u32 _pxiProcessPacket(u32 packet)
 			if_unlikely (num_words) {
 				num_words |= (1U << 26) | (ch << 27);
 			}
+		} else {
+			_pxiRecvUnhandled(ch, imm);
 		}
 	} else if_likely (state->recv_mutex.owner) {
 		state->reply = imm;
@@ -51,12 +57,14 @@ MK_INLINE u32 _pxiProcessPacket(u32 packet)
 
 MK_INLINE u32 _pxiProcessData(u32 state, u32 data)
 {
+	PxiChannel ch = (PxiChannel)(state >> 27);
+
 	state --;
 	if_unlikely (!(state & (1U << 26))) {
+		_pxiRecvUnhandled(ch, data);
 		return state;
 	}
 
-	PxiChannel ch = (PxiChannel)(state >> 27);
 	PxiChannelState* st = &s_pxiChannels[ch];
 	st->fn(st->user, data);
 
