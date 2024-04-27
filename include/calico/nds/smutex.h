@@ -4,7 +4,7 @@
 /*! @addtogroup sync
 	@{
 */
-/*! @name System-wide mutex
+/*! @name System-wide mutex (or "Super-mutex")
 	Provides a mutex that can be used to arbitrate accesses to resources between
 	the ARM9 and the ARM7. Unlike @ref Mutex, this primitive does not implement
 	priority inheritance.
@@ -21,15 +21,20 @@
 
 MK_EXTERN_C_START
 
-// Spin-mutex, or "Super-mutex"
+//! System-wide mutex object
 typedef struct SMutex {
-	u32 spinner;
-	u32 thread_ptr : 28;
-	u32 cpu_id : 4;
+	u32 spinner;          //!< @private
+	u32 thread_ptr : 28;  //!< @private
+	u32 cpu_id : 4;       //!< @private
 } SMutex;
 
+//! @brief Locks the SMutex @p m
 MK_EXTERN32 void smutexLock(SMutex* m);
+
+//! @brief Tries to lock the SMutex @p m without blocking, returning true on success
 MK_EXTERN32 bool smutexTryLock(SMutex* m);
+
+//! @brief Unlocks the SMutex @p m
 MK_EXTERN32 void smutexUnlock(SMutex* m);
 
 MK_EXTERN_C_END

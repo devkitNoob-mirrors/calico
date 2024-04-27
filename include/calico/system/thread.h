@@ -44,16 +44,17 @@ typedef int (* ThreadFunc)(void* arg);
 
 //! Data structure containing all management information for a thread
 struct Thread {
-	ArmContext ctx;
+	ArmContext ctx;      //!< CPU context structure
 
-	void* tp;
-	void* impure;
+	void* tp;            //!< Virtual thread pointer register
+	void* impure;        //!< @private
 
-	Thread* next;
-	ThrStatus status;
-	u8 prio, baseprio;
+	Thread* next;        //!< @private
+	ThrStatus status;    //!< @private
+	u8 prio;             //!< Current thread priority (including inheritance)
+	u8 baseprio;         //!< Nominal thread priority (not including inheritance)
 
-	ThrListNode waiters;
+	ThrListNode waiters; //!< @private
 
 	union {
 		// Data for waiting threads
@@ -66,7 +67,7 @@ struct Thread {
 		struct {
 			int rc;
 		};
-	};
+	}; //!< @private
 };
 
 //! @private
