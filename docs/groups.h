@@ -61,7 +61,7 @@
 	@{
 */
 
-	/*! @defgroup timer Timers
+	/*! @defgroup timer Timer
 		@brief System timers
 	*/
 	/*! @defgroup dma DMA
