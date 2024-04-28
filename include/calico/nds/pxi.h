@@ -157,6 +157,7 @@ MK_CONSTEXPR u16 pxiExtPacketGetImmediate(u32 packet)
 	@param[in] user User data set by @ref pxiSetHandler
 	@param[in] data Data packet
 	@warning The handler callback runs in IRQ mode - exercise caution!
+	See @ref IrqHandler for more details on how to write IRQ mode handlers.
 */
 typedef void (* PxiHandlerFn)(void* user, u32 data);
 
