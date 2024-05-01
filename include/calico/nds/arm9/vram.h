@@ -10,6 +10,10 @@
 	@{
 */
 
+/*! @name VRAM configuration registers
+	@{
+*/
+
 #define REG_VRAMCNT_A MK_REG(u8, IO_VRAMCNT_A)
 #define REG_VRAMCNT_B MK_REG(u8, IO_VRAMCNT_B)
 #define REG_VRAMCNT_C MK_REG(u8, IO_VRAMCNT_C)
@@ -30,5 +34,7 @@
 #define VRAM_MST(_x)    ((_x)&7)
 #define VRAM_OFFSET(_x) (((_x)&3)<<3)
 #define VRAM_CONFIG(_mst, _off) (VRAM_MST(_mst) | VRAM_OFFSET(_off) | VRAM_ENABLE)
+
+//! @}
 
 //! @}

@@ -10,6 +10,10 @@
 	@{
 */
 
+/*! @name "External" memory configuration registers
+	@{
+*/
+
 #define REG_EXMEMCNT  MK_REG(u16, IO_EXMEMCNT)
 #ifdef ARM7
 #define REG_EXMEMCNT2 MK_REG(u16, IO_EXMEMCNT2)
@@ -23,6 +27,8 @@
 #define EXMEMCNT_MAIN_RAM_IFACE_SYNC  (1U<<14)
 #define EXMEMCNT_MAIN_RAM_PRIO_ARM9   (0U<<15)
 #define EXMEMCNT_MAIN_RAM_PRIO_ARM7   (1U<<15)
+
+//! @}
 
 MK_EXTERN_C_START
 
