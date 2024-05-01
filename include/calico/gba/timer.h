@@ -40,7 +40,7 @@
 
 MK_EXTERN_C_START
 
-//! Calculates the period of a timer with the given @p prescaler and @p freq (in Hz)
+//! Calculates the period of a timer with the given @p prescaler (TIMER_PRESCALER_\*) and @p freq (in Hz)
 MK_CONSTEXPR unsigned timerCalcPeriod(unsigned prescaler, unsigned freq)
 {
 	unsigned basefreq = TIMER_BASE_FREQ;
