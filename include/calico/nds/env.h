@@ -6,6 +6,10 @@
 	@{
 */
 
+/*! @name Accessors for structures in shared main RAM
+	@{
+*/
+
 #define g_envAppNdsHeader  ((EnvNdsHeader*)         MM_ENV_APP_NDS_HEADER)
 #define g_envCardNdsHeader ((EnvNdsHeader*)         MM_ENV_CARD_NDS_HEADER)
 #define g_envAppTwlHeader  ((EnvTwlHeader*)         MM_ENV_APP_TWL_HEADER)
@@ -22,10 +26,14 @@
 #define g_envTwlDeviceList ((EnvTwlDeviceList*)     MM_ENV_TWL_DEVICE_LIST)
 #define g_envTwlResetFlags ((EnvTwlResetFlags*)     MM_ENV_TWL_RESET_FLAGS)
 
+//! @}
+
 MK_EXTERN_C_START
 
+//! Expected CRC16 value of the Nintendo logo
 #define ENV_NIN_LOGO_CRC16 0xcf56
 
+//! NDS ROM header structure
 typedef struct EnvNdsHeader {
 	char title[12];
 	char gamecode[4];
@@ -84,6 +92,7 @@ typedef struct EnvNdsHeader {
 	u16 header_crc16;
 } EnvNdsHeader;
 
+//! NDS ROM header debug fields
 typedef struct EnvNdsHeaderDebugFields {
 	u32 debug_rom_offset;
 	u32 debug_size;
@@ -91,11 +100,13 @@ typedef struct EnvNdsHeaderDebugFields {
 	u32 _pad_0x0C;
 } EnvNdsHeaderDebugFields;
 
+//! NDS ROM header structure with debug fields
 typedef struct EnvNdsHeaderDebug {
 	EnvNdsHeader base;
 	EnvNdsHeaderDebugFields debug;
 } EnvNdsHeaderDebug;
 
+//! DSi ROM header structure
 typedef struct EnvTwlHeader {
 	EnvNdsHeader base;
 	EnvNdsHeaderDebugFields debug;
@@ -184,6 +195,7 @@ typedef struct EnvTwlHeader {
 	u8 rsa_sha1_signature[0x80];
 } EnvTwlHeader;
 
+//! NDS banner header structure
 typedef struct EnvNdsBanner {
 	u16 version;
 	u16 crc16_v1;
@@ -202,8 +214,9 @@ typedef struct EnvNdsBanner {
 	u16 twl_anim_seq[64];
 } EnvNdsBanner;
 
+//! NitroFS directory table entry
 typedef struct EnvNdsDirTableEntry {
-	u32 subtable_offset; // relative to FNT start
+	u32 subtable_offset; //!< relative to FNT start
 	u16 file_id_base;
 	union {
 		u16 num_dirs;
@@ -211,11 +224,13 @@ typedef struct EnvNdsDirTableEntry {
 	};
 } EnvNdsDirTableEntry;
 
+//! NitroFS file table entry
 typedef struct EnvNdsFileTableEntry {
-	u32 start_offset; // relative to IMG start
+	u32 start_offset; //!< relative to IMG start
 	u32 end_offset;
 } EnvNdsFileTableEntry;
 
+//! NitroFS overlay table entry
 typedef struct EnvNdsOverlay {
 	u32 overlay_id;
 	u32 ram_address;
@@ -227,10 +242,12 @@ typedef struct EnvNdsOverlay {
 	u32 reserved;
 } EnvNdsOverlay;
 
+//! Magic value for EnvNdsArgvHeader
 #define ENV_NDS_ARGV_MAGIC 0x5f617267 // '_arg'
 
+//! Homebrew argument structure
 typedef struct EnvNdsArgvHeader {
-	u32 magic; // ENV_NDS_ARGV_MAGIC
+	u32 magic; //!< @ref ENV_NDS_ARGV_MAGIC
 	char* args_str;
 	u32 args_str_size;
 	int argc;
@@ -239,65 +256,71 @@ typedef struct EnvNdsArgvHeader {
 	u32 dslink_host_ipv4;
 } EnvNdsArgvHeader;
 
+//! Magic value for EnvNdsBootstubHeader
 #define ENV_NDS_BOOTSTUB_MAGIC 0x62757473746f6f62ULL // 'bootstub'
 
+//! Homebrew bootstub header (used for ret2hbmenu)
 typedef struct EnvNdsBootstubHeader {
-	u64 magic; // ENV_NDS_BOOTSTUB_MAGIC
+	u64 magic; //!< @ref ENV_NDS_BOOTSTUB_MAGIC
 
-	// Main return-to-hbmenu entrypoint, for use on ARM9.
+	//! Main return-to-hbmenu entrypoint, for use on ARM9.
 	MK_NORETURN void (*arm9_entrypoint)(void);
 
-	// This entrypoint is intended for requesting return-to-hbmenu directly from ARM7.
+	//! This entrypoint is intended for requesting return-to-hbmenu directly from ARM7.
 	void (*arm7_entrypoint)(void);
 } EnvNdsBootstubHeader;
 
+//! Application boot source
 typedef enum EnvBootSrc {
-	EnvBootSrc_Unknown  = 0, // Unspecified
-	EnvBootSrc_Card     = 1, // Booted from NDS card in Slot 1
-	EnvBootSrc_Wireless = 2, // Booted from DS Download Play
-	EnvBootSrc_TwlBlk   = 3, // Booted from DSi SD card or NAND (DSiWare)
-	EnvBootSrc_Ram      = 4, // Booted directly from RAM
+	EnvBootSrc_Unknown  = 0, //!< Unspecified
+	EnvBootSrc_Card     = 1, //!< Booted from NDS card in Slot 1
+	EnvBootSrc_Wireless = 2, //!< Booted from DS Download Play
+	EnvBootSrc_TwlBlk   = 3, //!< Booted from DSi SD card or NAND (DSiWare)
+	EnvBootSrc_Ram      = 4, //!< Booted directly from RAM
 } EnvBootSrc;
 
-#define ENV_BIOS7_CRC16   0x5835
-#define ENV_NDS_ARM_UNDEF 0xe7ffdeff
+#define ENV_BIOS7_CRC16   0x5835     //!< Expected CRC16 value of the NDS ARM7 BIOS
+#define ENV_NDS_ARM_UNDEF 0xe7ffdeff //!< ARM undefined opcode used to overwrite invalid data
 
+//! Boot-time information left by the DS firmware in shared main RAM
 typedef struct EnvFwBootInfo {
 	u32 card_chip_id_normal;
 	u32 card_chip_id_secure;
 	u16 card_header_crc16;
 	u16 card_secure_crc16;
-	u16 card_header_bad;     // 1 if EnvNdsHeader::header_crc16 is incorrect or nintendo_logo_crc16 != ENV_NIN_LOGO_CRC16
-	u16 card_secure_invalid; // 1 if the secure area has been destroyed with ENV_NDS_ARM_UNDEF
-	u16 bios7_crc16;         // ENV_BIOS7_CRC16
-	u16 card_secure_disable; // 1 if EnvNdsHeader::secure_area_disable_magic is NmMdOnly after decryption
+	u16 card_header_bad;     //!< 1 if EnvNdsHeader::header_crc16 is incorrect or `nintendo_logo_crc16 != ENV_NIN_LOGO_CRC16`
+	u16 card_secure_invalid; //!< 1 if the secure area has been destroyed with @ref ENV_NDS_ARM_UNDEF
+	u16 bios7_crc16;         //!< @ref ENV_BIOS7_CRC16
+	u16 card_secure_disable; //!< 1 if EnvNdsHeader::secure_area_disable_magic is `NmMdOnly` after decryption
 	u16 has_serial_debugger;
 	u8  rtc_is_bad;
 	u8  rtc_random;
 
 	u8  _pad_0x18[0x18];
 
-	u16 gba_id;         // from 0x80000be
-	u8  gba_id_ext[3];  // from 0x80000b5..7
+	u16 gba_id;         //!< from 0x80000be
+	u8  gba_id_ext[3];  //!< from 0x80000b5..7
 	u8  gba_flags;
-	u16 gba_maker_code; // from 0x80000b0
-	u32 gba_game_code;  // from 0x80000ac
+	u16 gba_maker_code; //!< from 0x80000b0
+	u32 gba_game_code;  //!< from 0x80000ac
 
 	u32 vblank_count;
 } EnvFwBootInfo;
 
+//! Boot parameters left in shared main RAM
 typedef struct EnvBootParam {
-	u16 boot_src; // EnvBootSrc
+	u16 boot_src; //!< @ref EnvBootSrc
 
-	u8 _pad_0x02[MM_ENV_BOOT_PARAM_SZ - 2]; // used by DS Download Play
+	u8 _pad_0x02[MM_ENV_BOOT_PARAM_SZ - 2]; //!< used by DS Download Play
 } EnvBootParam;
 
-#define ENV_USER_SETTINGS_VERSION     5
-#define ENV_USER_SETTINGS_VERSION_EXT 1
+#define ENV_USER_SETTINGS_VERSION     5 //!< Current version of user settings structure
+#define ENV_USER_SETTINGS_VERSION_EXT 1 //!< Current version of extended user settings structure
 
-#define ENV_USER_NAME_LEN    10
-#define ENV_USER_COMMENT_LEN 26
+#define ENV_USER_NAME_LEN    10 //!< Maximum user name length, in UCS-2 code units
+#define ENV_USER_COMMENT_LEN 26 //!< Maximum user comment length, in UCS-2 code units
 
+//! System language
 typedef enum EnvLanguage {
 	EnvLanguage_Japanese = 0,
 	EnvLanguage_English  = 1,
@@ -309,6 +332,7 @@ typedef enum EnvLanguage {
 	EnvLanguage_Korean   = 7,
 } EnvLanguage;
 
+//! User settings structure
 typedef struct EnvUserSettings {
 	u8 version;
 	u8 _pad_0x01;
@@ -343,7 +367,7 @@ typedef struct EnvUserSettings {
 	} touch_calib;
 
 	struct {
-		u16 language          : 3; // see EnvLanguage
+		u16 language          : 3; //!< see EnvLanguage
 		u16 gba_on_bottom_lcd : 1;
 		u16 dslite_brightness : 2;
 		u16 autoboot          : 1;
@@ -352,10 +376,11 @@ typedef struct EnvUserSettings {
 		u8  unused_maybe1;
 		u8  unused_maybe2;
 		s32 rtc_offset_lo;
-		s32 rtc_offset_hi; // only sign extend/useless (?)
+		s32 rtc_offset_hi; //!< only sign extend/useless (?)
 	} config;
 } EnvUserSettings;
 
+//! User settings structure stored in NVRAM
 typedef struct EnvUserSettingsNvram {
 	EnvUserSettings base;
 	u16 counter;
@@ -372,6 +397,7 @@ typedef struct EnvUserSettingsNvram {
 	u16 ext_crc16;
 } EnvUserSettingsNvram;
 
+//! Console type
 typedef enum EnvConsoleType {
 	EnvConsoleType_DS         = 0,
 	EnvConsoleType_DSLite     = 0x20,
@@ -380,9 +406,10 @@ typedef enum EnvConsoleType {
 	EnvConsoleType_iQueDSLite = 0x63,
 } EnvConsoleType;
 
+//! Extra information in shared main RAM maintained by calico
 typedef struct EnvExtraInfo {
 	u16 nvram_offset_div8;
-	u8  nvram_console_type; // EnvConsoleType
+	u8  nvram_console_type; //!< @ref EnvConsoleType
 	u8  wlmgr_rssi;
 	u8  wlmgr_macaddr[6];
 	u16 wlmgr_channel_mask;
@@ -392,6 +419,7 @@ typedef struct EnvExtraInfo {
 	u32 dldi_io_type;
 } EnvExtraInfo;
 
+//! DSi system region
 typedef enum EnvTwlRegion {
 	EnvTwlRegion_JPN = 0,
 	EnvTwlRegion_USA = 1,
@@ -401,23 +429,26 @@ typedef enum EnvTwlRegion {
 	EnvTwlRegion_KOR = 5,
 } EnvTwlRegion;
 
+//! DSi "secure" information, sourced from HWINFO_S.dat
 typedef struct EnvTwlSecureInfo {
-	u32  lang_mask; // same as EnvUserSettingsNvram::ext.lang_mask
+	u32  lang_mask; //!< same as EnvUserSettingsNvram::ext.lang_mask
 	u8   wifi_forbidden;
 	u8   _pad_0x05[3];
-	u8   region;    // EnvTwlRegion
+	u8   region;    //!< @ref EnvTwlRegion
 	char serial[12];
 	u8   _pad_0x15[3];
 } EnvTwlSecureInfo;
 
+//! DSi "normal" information, sourced from HWINFO_N.dat
 typedef struct EnvTwlNormalInfo {
-	u8 rtc_clockadj;     // Written to RtcReg_ClockAdj on boot
+	u8 rtc_clockadj;     //!< Written to RtcReg_ClockAdj on boot
 	u8 _pad_0x01[3];
-	u8 movable_seed[16]; // Used for TAD files (similar to 3DS)
+	u8 movable_seed[16]; //!< Used for TAD files (similar to 3DS)
 } EnvTwlNormalInfo;
 
+//! DSi Atheros wireless firmware information
 typedef struct EnvTwlWlFirmInfo {
-	u8 type; // 1=DWM-W015, 2=W024, 3=W028
+	u8 type; //!< 1=DWM-W015, 2=W024, 3=W028
 	u8 _pad_0x01;
 	u16 config_crc16;
 	struct {
@@ -427,38 +458,43 @@ typedef struct EnvTwlWlFirmInfo {
 	} config;
 } EnvTwlWlFirmInfo;
 
-#define ENV_TWL_DEV_PERM_W (1U<<1)
-#define ENV_TWL_DEV_PERM_R (1U<<2)
+#define ENV_TWL_DEV_PERM_W (1U<<1) //!< Specifies write permission in EnvTwlDeviceListEntry::perms
+#define ENV_TWL_DEV_PERM_R (1U<<2) //!< Specifies read permission in EnvTwlDeviceListEntry::perms
 
+//! DSi device list drive
 typedef enum EnvTwlDrive {
 	EnvTwlDrive_Sd   = 0,
 	EnvTwlDrive_Nand = 1,
 } EnvTwlDrive;
 
+//! DSi device list mount type
 typedef enum EnvTwlMountType {
-	EnvTwlMountType_Drive  = 0, // Physical drive
-	EnvTwlMountType_File   = 1, // File mounted as drive
-	EnvTwlMountType_Folder = 2, // Folder aliased as drive
+	EnvTwlMountType_Drive  = 0, //!< Physical drive
+	EnvTwlMountType_File   = 1, //!< File mounted as drive
+	EnvTwlMountType_Folder = 2, //!< Folder aliased as drive
 } EnvTwlMountType;
 
+//! DSi device list entry
 typedef struct EnvTwlDeviceListEntry {
 	char letter;
-	u8 drive    : 3; // EnvTwlDrive
-	u8 type     : 2; // EnvTwlMountType
-	u8 nand_idx : 2; // NAND partition index
-	u8 unk7     : 1; // Unknown/seems unused?
+	u8 drive    : 3; //!< @ref EnvTwlDrive
+	u8 type     : 2; //!< @ref EnvTwlMountType
+	u8 nand_idx : 2; //!< NAND partition index
+	u8 unk7     : 1; //!< Unknown/seems unused?
 	u8 perms;
 	u8 _pad_0x3;
 	char name[0x10];
 	char path[0x40];
 } EnvTwlDeviceListEntry;
 
+//! DSi device list structure
 typedef struct EnvTwlDeviceList {
 	EnvTwlDeviceListEntry devices[11];
 	u8 _pad_0x39c[0x24];
 	char argv0[0x40];
 } EnvTwlDeviceList;
 
+//! DSi reset flags
 typedef union EnvTwlResetFlags {
 	u8 value;
 	struct {
