@@ -32,6 +32,7 @@ typedef struct DldiHeader {
 } DldiHeader;
 
 #if defined(__NDS__) && defined(ARM9)
+//! @private
 bool dldiDumpInternal(void* buffer);
 #endif
 
