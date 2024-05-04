@@ -66,7 +66,12 @@ MK_INLINE void soundPowerOff(void)
 	soundSetPower(false);
 }
 
-//! Returns a bitmask of sound channels currently playing audio @see soundSynchronize, soundSetAutoUpdate
+/*! @brief Returns a bitmask of sound channels currently playing audio
+	@note If auto-update is disabled, this function will implicitly
+	call @ref soundSynchronize in order to ensure the correct data is returned.
+	If you intend to call this function often, consider enabling auto-update
+	(see @ref soundSetAutoUpdate).
+*/
 unsigned soundGetActiveChannels(void);
 
 //! Sets the main volume of the sound mixer to @p vol (0..127)
