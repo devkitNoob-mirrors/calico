@@ -1,3 +1,5 @@
+%include <sync-none.specs>
+
 *link:
 + -dT ds9.ld --gc-sections --nmagic --no-warn-rwx-segments --use-blx
 

@@ -385,7 +385,7 @@ MK_NOINLINE void dietPrintV(const char* fmt, va_list va)
 			case 's': { // String
 				const char* str = (const char*)u.str;
 				str = str ? str : "(null)";
-				size_t len = strnlen(str, (flags & DP_FLAG_PRECISION) ? precision : SIZE_MAX);
+				size_t len = strnlen(str, (flags & DP_FLAG_PRECISION) ? precision : INTPTR_MAX);
 				_dietPrintWidth(flags, width, str, len);
 				break;
 			}
