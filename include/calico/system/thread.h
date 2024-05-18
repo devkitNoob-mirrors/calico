@@ -5,6 +5,22 @@
 #include "tick.h"
 
 /*! @addtogroup thread
+
+	Calico provides a simple preemptive multithreading system. Each thread is
+	assigned a priority level and has its own execution state, allowing software
+	to be better structured by having different processing tasks each in its own
+	thread. Threads may wait on events such as interrupts. Calico ensures at all
+	times that the currently running thread is always the highest priority thread
+	that can run. If any event occurs that causes a higher priority thread to
+	become runnable, Calico will preempt the current thread. Unlike in common PC
+	operating systems, Calico presently does not implement timeslicing to share
+	the CPU between threads of the same priority; meaning it is necessary to
+	explicitly yield control of the CPU if any such threads exist.
+
+	While Calico provides its own threading API, it is also possible to use standard
+	threading APIs such as POSIX threads or C++ threads. These APIs are in fact
+	preferred when working with cross platform projects.
+
 	@{
 */
 
@@ -14,8 +30,8 @@ typedef struct Thread Thread;
 
 //! List of blocked threads, used as a building block for synchronization primitives
 typedef struct ThrListNode {
-	Thread* next;
-	Thread* prev;
+	Thread* next; //!< @private
+	Thread* prev; //!< @private
 } ThrListNode;
 
 //! @private
@@ -46,8 +62,8 @@ typedef int (* ThreadFunc)(void* arg);
 struct Thread {
 	ArmContext ctx;      //!< CPU context structure
 
-	void* tp;            //!< Virtual thread pointer register
-	void* impure;        //!< @private
+	void* tp;            //!< Virtual thread-local segment register
+	void* impure;        //!< Pointer to per-thread C standard library state
 
 	Thread* next;        //!< @private
 	ThrStatus status;    //!< @private

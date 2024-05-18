@@ -45,7 +45,7 @@
 		@brief Interrupt handling
 	*/
 	/*! @defgroup thread Threads
-		@brief Thread management @see @ref thrd_intro
+		@brief Thread management
 	*/
 	/*! @defgroup sync Sync
 		@brief Synchronization primitives
@@ -57,7 +57,7 @@
 //! @}
 
 /*! @defgroup hw Hardware
-	@brief Low-level device wrappers
+	@brief Low-level system devices
 	@{
 */
 
@@ -79,7 +79,7 @@
 //! @}
 
 /*! @defgroup dev Devices
-	@brief High-level device drivers
+	@brief Device drivers and associated APIs
 	@{
 */
 
