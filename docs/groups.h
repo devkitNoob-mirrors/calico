@@ -125,10 +125,10 @@
 	*/
 #endif
 	/*! @defgroup ntrcard NDS slot
-		@brief DS card slot access (Slot-1)
+		@brief DS gamecard access (Slot-1)
 	*/
 	/*! @defgroup gbacart GBA slot
-		@brief GBA cartridge slot access (Slot-2, DS-only)
+		@brief GBA cartridge access (Slot-2, DS-only)
 	*/
 #endif
 

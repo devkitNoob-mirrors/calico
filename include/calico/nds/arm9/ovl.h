@@ -27,6 +27,10 @@ typedef EnvNdsOverlay OvlParams;   //!< @private
 typedef void (*OvlStaticFn)(void); //!< @private
 
 /*! @brief Initializes the overlay system
+
+	The overlay system uses @ref nitroromGetSelf to obtain access to the
+	application's DS ROM. Please refer to its documentation for more details.
+
 	@return true on success, false on failure
 */
 bool ovlInit(void);
