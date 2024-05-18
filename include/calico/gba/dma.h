@@ -102,7 +102,7 @@ MK_INLINE void dmaBusyWait(unsigned id)
 }
 
 /*! @brief Starts a 32-bit immediate DMA transfer on channel @p id
-	@param[in] dst Destination address
+	@param[out] dst Destination address
 	@param[in] src Source address
 	@param[in] size Length of the transfer in bytes
 */
@@ -120,7 +120,7 @@ MK_INLINE void dmaStartCopy32(unsigned id, void* dst, const void* src, size_t si
 }
 
 /*! @brief Starts a 16-bit immediate DMA transfer on channel @p id
-	@param[in] dst Destination address
+	@param[out] dst Destination address
 	@param[in] src Source address
 	@param[in] size Length of the transfer in bytes
 */
@@ -138,7 +138,7 @@ MK_INLINE void dmaStartCopy16(unsigned id, void* dst, const void* src, size_t si
 }
 
 /*! @brief Starts a 32-bit immediate DMA fill on channel @p id
-	@param[in] dst Destination address
+	@param[out] dst Destination address
 	@param[in] value 32-bit fill value
 	@param[in] size Length of the fill in bytes
 */
@@ -157,7 +157,7 @@ MK_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 }
 
 /*! @brief Starts a 16-bit immediate DMA fill on channel @p id
-	@param[in] dst Destination address
+	@param[out] dst Destination address
 	@param[in] value 16-bit fill value
 	@param[in] size Length of the fill in bytes
 */

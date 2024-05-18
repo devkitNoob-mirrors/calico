@@ -144,7 +144,7 @@ enum {
 void pmInit(void);
 
 /*! @brief Registers a power management event handler
-	@param[in] cookie Cookie structure owned by the event handler
+	@param[out] cookie Cookie structure owned by the event handler
 	@param[in] handler Event handler callback to use
 	@param[in] user User-provided parameter to pass to the handler callback
 */
@@ -254,7 +254,7 @@ void pmSetPowerLed(PmLedMode mode);
 void pmMicSetAmp(bool enable, unsigned gain);
 
 /*! @brief Reads data from the DS's built-in firmware/configuration chip
-	@param[in] data Data buffer
+	@param[out] data Data buffer
 	@param[in] addr NVRAM byte offset
 	@param[in] len Length of the read in bytes
 	@return true on success, false on failure

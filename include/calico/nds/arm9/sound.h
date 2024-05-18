@@ -159,7 +159,7 @@ MK_INLINE void soundSetMixerConfig(SoundOutSrc src_l, SoundOutSrc src_r, bool mu
 
 /*! @brief Configures capture unit @p cap
 	@param[in] cap Capture unit number (0..1)
-	@param[in] dst Output channel destination (see @ref SoundCapDst)
+	@param[out] dst Output channel destination (see @ref SoundCapDst)
 	@param[in] src Capture source (see @ref SoundCapSrc)
 	@param[in] loop Pass true to perform a looped capture
 	@param[in] fmt Capture sample format (see @ref SoundCapFmt)

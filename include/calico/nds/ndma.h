@@ -123,7 +123,7 @@ MK_INLINE void ndmaBusyWait(unsigned id)
 }
 
 /*! @brief Starts an immediate NDMA transfer on channel @p id
-	@param[in] dst Destination address
+	@param[out] dst Destination address
 	@param[in] src Source address
 	@param[in] size Length of the transfer in bytes
 */
@@ -142,7 +142,7 @@ MK_INLINE void ndmaStartCopy32(unsigned id, void* dst, const void* src, size_t s
 }
 
 /*! @brief Starts an immediate NDMA fill on channel @p id
-	@param[in] dst Destination address
+	@param[out] dst Destination address
 	@param[in] value 32-bit fill value
 	@param[in] size Length of the fill in bytes
 */

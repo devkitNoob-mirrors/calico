@@ -58,7 +58,7 @@ bool micSetDmaRate(MicRate rate);
 void micSetCallback(MicBufferFn fn, void* user);
 
 /*! @brief Starts microphone recording activity
-	@param[in] buf Recording buffer. As an output buffer, it <b>must</b> be cache
+	@param[out] buf Recording buffer. As an output buffer, it <b>must</b> be cache
 	line (32-<b>byte</b>) aligned and visible to ARM7.
 	@param[in] byte_sz Size of the buffer in bytes (must be 32-<b>byte</b> aligned)
 	@param[in] fmt Recording format (see @ref MicFmt)
