@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include <calico/types.h>
 #include <calico/dev/tmio.h>
 #include <calico/dev/sdio.h>

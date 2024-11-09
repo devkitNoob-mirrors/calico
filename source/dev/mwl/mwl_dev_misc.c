@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include "common.h"
 
 bool mwlDevWlanToDix(NetBuf* pPacket)

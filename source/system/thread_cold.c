@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 // Avoid a hard dependency on _impure_data if it is never referenced
 #define __ATTRIBUTE_IMPURE_DATA__ __attribute__((weak))
 

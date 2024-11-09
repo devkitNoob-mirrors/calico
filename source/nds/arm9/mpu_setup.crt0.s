@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include <calico/asm.inc>
 #include <calico/arm/cp15.h>
 #include <calico/nds/mm.h>

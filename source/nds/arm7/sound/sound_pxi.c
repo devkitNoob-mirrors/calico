@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include "common.h"
 
 MK_INLINE bool _soundBitmaskUnpack(unsigned* mask, unsigned* i)

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include "common.h"
 #include <calico/nds/bios.h>
 #include <calico/nds/pm.h>

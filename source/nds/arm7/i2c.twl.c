@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include <calico/system/mutex.h>
 #include <calico/nds/bios.h>
 #include <calico/nds/arm7/i2c.h>

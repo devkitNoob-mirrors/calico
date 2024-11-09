@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include <calico/asm.inc>
 
 @ Contrary to the AAPCS32, __aeabi_read_tp is NOT allowed to clobber r1-r3.

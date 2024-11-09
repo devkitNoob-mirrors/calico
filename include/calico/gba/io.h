@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #pragma once
 #if !defined(__GBA__)
 #error "This header file is only for GBA"

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include <calico/dev/fugu.h>
 
 MK_INLINE u32 _fuguSubstitute(FuguState const* state, u32 x)

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include <calico/system/irq.h>
 #include <calico/system/thread.h>
 #include <calico/nds/arm7/pmic.h>

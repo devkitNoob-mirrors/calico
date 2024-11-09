@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #pragma once
 #if !defined(__NDS__) || !(defined(ARM9) || defined(ARM7))
 #error "This header file is only for NDS"

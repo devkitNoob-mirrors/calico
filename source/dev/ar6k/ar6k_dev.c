@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include "common.h"
 
 #define AR6K_BOARD_INIT_TIMEOUT 2000

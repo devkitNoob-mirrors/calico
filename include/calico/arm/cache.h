@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #pragma once
 #if __ARM_ARCH < 5
 #error "This header is for ARMv5+ only"

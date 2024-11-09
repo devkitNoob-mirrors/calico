@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ZPL-2.1
+// SPDX-FileCopyrightText: Copyright fincs, devkitPro
 #include <calico/types.h>
 #if defined(ARM9)
 #include <calico/arm/cache.h>
