@@ -24,7 +24,6 @@ bool g_cdcIsTwlMode;
 
 extern void *fake_heap_start, *fake_heap_end;
 
-void __libc_init_array(void);
 void _threadInit(void);
 void _pxiInit(void);
 
@@ -34,6 +33,9 @@ void crt0SetupMPU(bool is_twl);
 void systemStartup(void);
 
 extern char __heap_start_ntr[], __heap_start_twl[];
+
+// Main thread stack size (0 = default)
+MK_WEAK u32 __stacksize__ = 0;
 
 #elif defined(ARM7)
 
@@ -236,7 +238,4 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 	// Shelter DLDI driver from ARM9 executable
 	_blkShelterDldi();
 #endif
-
-	// Call global constructors
-	__libc_init_array();
 }

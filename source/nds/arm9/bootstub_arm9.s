@@ -224,6 +224,26 @@ FUNC_START32 __ds9_bootstub_trampoline, crt0, local
 	str  r0, [r8, #0x400]
 #endif
 
+	@ Check if the requested main thread stack size fits in DTCM
+	ldr  r0, =__stacksize__
+	ldr  r1, =__dtcm_bss_end
+	ldr  r0, [r0]
+	sub  r1, sp, r1
+	cmp  r0, r1
+	bls  1f
+
+	@ If not: carve out main thread stack from heap
+	ldr  r1, =fake_heap_start
+	ldr  r2, [r1]
+	add  r2, r2, r0
+	add  r2, r2, #7
+	bic  sp, r2, #7
+	str  sp, [r1]
+
+1:
+	@ Call global constructors
+	bl   __libc_init_array
+
 	@ Jump to main()
 	ldr  r2, =MM_ENV_ARGV_HEADER+0x0c
 	ldr  r4, =main

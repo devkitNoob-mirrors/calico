@@ -63,6 +63,11 @@ FUNC_START32 __ds7_bootstub, bootstub
 	adr  lr, 1f
 	bx   r2
 1:
+	@ Call global constructors
+	ldr  r0, =__libc_init_array
+	adr  lr, 1f
+	bx   r0
+1:
 	@ Calculate end of main RAM reserved for ARM9
 	cmp  r4, #0
 	ldr  r4, =__main_start
