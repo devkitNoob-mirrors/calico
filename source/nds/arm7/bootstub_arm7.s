@@ -13,6 +13,9 @@ FUNC_START32 __ds7_bootstub, bootstub
 
 .Lmodule_header:
 	.ascii "MOD7"
+	.hword 1 @ Flags
+	.hword .Lactual_start - .Lmodule_header
+
 	.word __loadlist_lma
 	.word __loadlist_start
 	.word __loadlist_end

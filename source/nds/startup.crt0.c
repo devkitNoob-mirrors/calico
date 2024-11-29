@@ -132,8 +132,9 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 	crt0SetupMPU(is_twl);
 
 	// Shelter the header on stack in order to prevent LMA/VMA overlaps from overwriting it
-	Crt0Header _hdr = *hdr;
-	hdr = &_hdr;
+	Crt0Header9 hdr9;
+	crt0CopyMem32((uptr)&hdr9, (uptr)hdr, sizeof(hdr9));
+	hdr = &hdr9.base;
 #endif
 
 	// Clear DMA and timers
@@ -197,6 +198,13 @@ void crt0Startup(Crt0Header const* hdr, bool is_twl _EXTRA_ARGS)
 	if (is_twl) {
 		// Back up DSi mode codec flag too
 		g_cdcIsTwlMode = g_envAppTwlHeader->twl_flags2 & 1;
+	}
+#endif
+
+#if defined(ARM9)
+	// Honor stack size override if specified
+	if (hdr9.stack_size) {
+		__stacksize__ = hdr9.stack_size;
 	}
 #endif
 

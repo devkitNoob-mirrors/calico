@@ -46,6 +46,9 @@ FUNC_START32 __ds9_bootstub, bootstub
 
 .Lmodule_header:
 	.ascii "MOD9"
+	.hword 1 @ Flags
+	.hword .Lactual_start - .Lmodule_header
+
 	.word __loadlist_lma
 	.word __loadlist_start
 	.word __loadlist_end
@@ -53,6 +56,7 @@ FUNC_START32 __ds9_bootstub, bootstub
 	.word __twl_loadlist_start
 	.word __twl_loadlist_end
 
+	.word 0 @ Main thread stack size override (0=disable)
 	.word __dldi_lma
 
 .Lactual_start:

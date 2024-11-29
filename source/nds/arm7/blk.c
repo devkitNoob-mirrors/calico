@@ -191,7 +191,7 @@ void _blkShelterDldi(void)
 {
 	// Check if we have a valid ARM9 module header
 	Crt0Header9* mod9 = (Crt0Header9*)(g_envAppNdsHeader->arm9_entrypoint + 4);
-	if (mod9->base.magic != CRT0_MAGIC_ARM9) {
+	if (!crt0IsValidHeader(&mod9->base, CRT0_MAGIC_ARM9)) {
 		return;
 	}
 
