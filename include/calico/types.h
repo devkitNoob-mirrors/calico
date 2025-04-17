@@ -101,7 +101,7 @@ typedef volatile sptr vsptr; //!< Pointer-sized volatile signed integer.
 	code compiled in THUMB mode. The GNU linker will automatically generate
 	appropriate stubs for interworking when this macro is not used.
 */
-#if __thumb__ && __ARM_ARCH < 5
+#if __thumb__ && __ARM_ARCH < 5 && !__clang__
 #define MK_EXTERN32   __attribute__((long_call))
 #else
 #define MK_EXTERN32
