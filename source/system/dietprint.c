@@ -375,7 +375,7 @@ MK_NOINLINE void dietPrintV(const char* fmt, va_list va)
 			// Fast path when the upper 32 bits aren't actually used
 			if_likely ((u.arg_u64 >> 32) == 0) {
 				flags &= ~DP_FLAG_64;
-				u.arg_u64 = u.arg_u32;
+				u.arg_u32 = u.arg_u64;
 			}
 		}
 
