@@ -21,9 +21,17 @@ MK_WEAK void systemStartup(void)
 {
 	// Clear video display registers
 	REG_POWCNT = POWCNT_LCD | POWCNT_2D_GFX_A | POWCNT_2D_GFX_B | POWCNT_LCD_SWAP;
-	dmaStartFill32(3, (void*)(MM_IO + IO_GFX_A), 0, IO_TVOUTCNT-IO_DISPCNT);
+
+	// Engine A: we MUST avoid writing to VCOUNT (as it is actually writable from Arm9), and we
+	// should avoid writing to MMEM_FIFO as well
+	MK_REG(u16, IO_GFX_A + IO_DISPSTAT) = 0;
+	MK_REG(u32, IO_GFX_A + IO_DISPCNT) = 0;
+	dmaStartFill32(3, (void*)(MM_IO + IO_GFX_A + IO_BGxCNT(0)), 0, IO_DISP_MMEM_FIFO-IO_BGxCNT(0));
 	dmaBusyWait(3);
-	dmaStartFill32(3, (void*)(MM_IO + IO_GFX_B), 0, IO_TVOUTCNT-IO_DISPCNT);
+	MK_REG(u16, IO_GFX_A + IO_MASTER_BRIGHT) = 0;
+
+	// Engine B; note that it is OK to write to nonexistent registers
+	dmaStartFill32(3, (void*)(MM_IO + IO_GFX_B + IO_DISPCNT), 0, IO_TVOUTCNT-IO_DISPCNT);
 	dmaBusyWait(3);
 
 	// Unmap VRAM
