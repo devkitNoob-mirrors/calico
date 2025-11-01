@@ -8,7 +8,7 @@
 
 static ThrListNode s_cvWaitQueue;
 
-static void threadUpdateDynamicPrio(Thread* t)
+void threadUpdateDynamicPrio(Thread* t)
 {
 	for (;;) {
 		// Calculate the expected dynamic priority of the thread
@@ -29,17 +29,22 @@ static void threadUpdateDynamicPrio(Thread* t)
 		threadEnqueue(t);
 
 		// If the thread is running we're done
-		if_likely (threadIsRunning(t)) {
+		if_likely (t->status == ThrStatus_Running) {
+			break;
+		}
+
+		// If the thread is paused (== not waiting on any queue) we're also done
+		ThrListNode* queue = t->queue;
+		if_likely (!queue) {
 			break;
 		}
 
 		// Reflect the bumped priority too in the queue the thread is blocked on
-		ThrListNode* queue = t->queue;
 		threadLinkDequeue(queue, t);
 		threadLinkEnqueue(queue, t);
 
 		// If the thread is not waiting on a mutex, we're done
-		if_likely (!threadIsWaitingOnMutex(t)) {
+		if_likely (t->status != ThrStatus_WaitingOnMutex) {
 			break;
 		}
 
@@ -58,7 +63,7 @@ static Thread* threadRemoveWaiter(Thread* t, u32 token)
 			threadLinkDequeue(&t->waiters, cur);
 			if_likely (!next_owner) {
 				next_owner = cur;
-				cur->status = ThrStatus_Running;
+				cur->status = !cur->pause ? ThrStatus_Running : ThrStatus_Waiting;
 			} else {
 				// TODO: Both the source list and the target list are sorted.
 				// Should we try to optimize this to take that into account?
@@ -74,6 +79,20 @@ static Thread* threadRemoveWaiter(Thread* t, u32 token)
 	}
 
 	return next_owner;
+}
+
+bool mutexTryLock(Mutex* m)
+{
+	Thread* self = threadGetSelf();
+	ArmIrqState st = armIrqLockByPsr();
+	bool rc = !m->owner;
+
+	if_likely (rc) {
+		m->owner = self;
+	}
+
+	armIrqUnlockByPsr(st);
+	return rc;
 }
 
 void mutexLock(Mutex* m)
@@ -97,7 +116,7 @@ void mutexLock(Mutex* m)
 			threadUpdateDynamicPrio(m->owner);
 
 			// Fast path when the owner thread is runnable
-			if_likely (threadIsRunning(m->owner)) {
+			if_likely (m->owner->status == ThrStatus_Running) {
 				next = m->owner;
 			}
 		}
@@ -155,7 +174,6 @@ void condvarWait(CondVar* cv, Mutex* m)
 
 	m->owner = threadRemoveWaiter(self, (u32)m);
 	threadBlock(&s_cvWaitQueue, (u32)cv);
-	armIrqUnlockByPsr(st);
-
 	mutexLock(m);
+	armIrqUnlockByPsr(st);
 }

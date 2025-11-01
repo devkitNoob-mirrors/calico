@@ -84,15 +84,21 @@ void threadPrepare(Thread* t, ThreadFunc entrypoint, void* arg, void* stack_top,
 	t->ctx.psr    = ARM_PSR_MODE_SYS;
 	t->tp         = s_mainThread.tp;
 	t->impure     = s_mainThread.impure;
-	t->status     = ThrStatus_Running;
+	t->status     = ThrStatus_Waiting;
 	t->prio       = prio & THREAD_MIN_PRIO;
 	t->baseprio   = t->prio;
+	t->pause      = 1;
 
 	// Adjust THUMB entrypoints
 	if (t->ctx.r[15] & 1) {
 		t->ctx.r[15] &= ~1;
 		t->ctx.psr   |= ARM_PSR_T;
 	}
+
+	// Insert into thread list
+	ArmIrqState st = armIrqLockByPsr();
+	threadEnqueue(t);
+	armIrqUnlockByPsr(st);
 }
 
 size_t threadGetLocalStorageSize(void)
@@ -157,22 +163,62 @@ void threadAttachLocalStorage(Thread* t, void* storage)
 
 void threadStart(Thread* t)
 {
-	// Add thread to queue
 	ArmIrqState st = armIrqLockByPsr();
-	threadEnqueue(t);
-	if (t->prio < s_curThread->prio)
-		threadSwitchTo(t, st);
-	else
+
+	if (!t->pause || (--t->pause)) {
 		armIrqUnlockByPsr(st);
+		return;
+	}
+
+	if (!t->queue) {
+		t->status = ThrStatus_Running;
+		threadReschedule(t, st);
+	} else {
+		armIrqUnlockByPsr(st);
+	}
+
 }
 
-void threadFree(Thread* t)
+void threadPause(Thread* t)
 {
-	// Wait for the thread to finish if it's not already finished
-	if (!threadIsFinished(t))
-		threadJoin(t);
+	Thread* self = s_curThread;
+	ArmIrqState st = armIrqLockByPsr();
 
-	// TODO: destruct callback goes here
+	if ((t->pause++) != 0 || t->status != ThrStatus_Running) {
+		armIrqUnlockByPsr(st);
+		return;
+	}
+
+	t->status = ThrStatus_Waiting;
+	t->queue = NULL;
+
+	if (self == t) {
+		Thread* next = threadFindRunnable(s_firstThread);
+		threadSwitchTo(next, st);
+	} else {
+		armIrqUnlockByPsr(st);
+	}
+}
+
+void threadSetPrio(Thread* t, u8 prio)
+{
+	Thread* self = s_curThread;
+	ArmIrqState st = armIrqLockByPsr();
+
+	unsigned curprio = self->prio;
+	t->baseprio = prio & THREAD_MIN_PRIO;
+	threadUpdateDynamicPrio(t);
+
+	Thread* next = NULL;
+	if (t == self) {
+		if (self->prio > curprio) {
+			next = threadFindRunnable(s_firstThread);
+		}
+	} else if (t->status == ThrStatus_Running) {
+		next = t;
+	}
+
+	threadReschedule(next, st);
 }
 
 int threadJoin(Thread* t)
@@ -180,7 +226,7 @@ int threadJoin(Thread* t)
 	ArmIrqState st = armIrqLockByPsr();
 
 	// Block on thread if it's not already finished
-	if (!threadIsFinished(t))
+	if (t->status >= ThrStatus_Running)
 		threadBlock(&s_joinThreads, (u32)t);
 
 	int rc = t->rc;
@@ -191,13 +237,14 @@ int threadJoin(Thread* t)
 
 void threadYield(void)
 {
+	Thread* self = s_curThread;
 	ArmIrqState st = armIrqLockByPsr();
 
-	Thread* t = threadFindRunnable(s_curThread->next);
-	if (t->prio > s_curThread->prio)
+	Thread* t = threadFindRunnable(self->next);
+	if (t->prio > self->prio)
 		t = threadFindRunnable(s_firstThread);
 
-	if (t != s_curThread)
+	if (t != self)
 		threadSwitchTo(t, st);
 	else
 		armIrqUnlockByPsr(st);
@@ -219,9 +266,10 @@ MK_INLINE u32 _threadIrqWaitImpl(bool next_irq, IrqMask mask, ThrListNode* wait_
 	}
 
 	*wait_mask |= mask;
-	threadBlock(wait_list, mask);
+	u32 ret = threadBlock(wait_list, mask);
 	armIrqUnlockByPsr(st);
-	return s_curThread->token;
+
+	return ret;
 }
 
 u32 threadIrqWait(bool next_irq, IrqMask mask)
@@ -240,12 +288,15 @@ u32 threadIrqWait2(bool next_irq, IrqMask mask)
 
 void threadExit(int rc)
 {
+	Thread* self = s_curThread;
 	armIrqLockByPsr();
-	threadDequeue(s_curThread);
-	s_curThread->status = ThrStatus_Finished;
-	s_curThread->rc = rc;
-	// TODO: exit callback goes here
-	threadUnblockAllByValue(&s_joinThreads, (u32)s_curThread);
+
+	threadDequeue(self);
+	self->status = ThrStatus_Finished;
+	self->prio = THREAD_MAX_PRIO; // avoid preemption in threadUnblock
+	self->rc = rc;
+	threadUnblockAllByValue(&s_joinThreads, (u32)self);
+
 	s_curThread = threadFindRunnable(s_firstThread);
 	armContextLoad(&s_curThread->ctx);
 }

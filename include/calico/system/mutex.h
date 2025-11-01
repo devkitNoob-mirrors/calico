@@ -41,6 +41,9 @@ MK_INLINE bool mutexIsLockedByCurrentThread(Mutex* m)
 	return m->owner == threadGetSelf();
 }
 
+//! @brief Attempts to lock the Mutex @p m
+bool mutexTryLock(Mutex* m);
+
 //! @brief Locks the Mutex @p m
 void mutexLock(Mutex* m);
 
@@ -48,6 +51,22 @@ void mutexLock(Mutex* m);
 	@warning @p m **must** be held by the current thread
 */
 void mutexUnlock(Mutex* m);
+
+//! @brief Attempts to lock the RMutex @p m
+MK_INLINE bool rmutexTryLock(RMutex* m)
+{
+	bool rc;
+	if (mutexIsLockedByCurrentThread(&m->mutex)) {
+		rc = true;
+		m->counter ++;
+	} else {
+		rc = mutexTryLock(&m->mutex);
+		if (rc) {
+			m->counter = 1;
+		}
+	}
+	return rc;
+}
 
 //! @brief Locks the RMutex @p m
 MK_INLINE void rmutexLock(RMutex* m)

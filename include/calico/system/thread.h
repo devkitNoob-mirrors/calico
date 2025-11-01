@@ -45,13 +45,6 @@ typedef enum ThrStatus {
 	ThrStatus_WaitingOnMutex,
 } ThrStatus;
 
-//! @private
-typedef enum ThrUnblockMode {
-	ThrUnblockMode_Any,
-	ThrUnblockMode_ByValue,
-	ThrUnblockMode_ByMask,
-} ThrUnblockMode;
-
 #define THREAD_MAX_PRIO 0x00 //!< Maximum priority value of a thread
 #define THREAD_MIN_PRIO 0x3f //!< Minimum priority value of a thread
 
@@ -71,6 +64,7 @@ struct Thread {
 	ThrStatus status;    //!< @private
 	u8 prio;             //!< Current thread priority (including inheritance)
 	u8 baseprio;         //!< Nominal thread priority (not including inheritance)
+	u8 pause;            //!< @private
 
 	ThrListNode waiters; //!< @private
 
@@ -147,11 +141,14 @@ size_t threadGetLocalStorageSize(void);
 */
 void threadAttachLocalStorage(Thread* t, void* storage);
 
-//! @brief Starts the @ref Thread @p t
+//! @brief Starts or unpauses the @ref Thread @p t
 void threadStart(Thread* t);
 
-//! @private
-void threadFree(Thread* t);
+//! @brief Pauses the @ref Thread @p t
+void threadPause(Thread* t);
+
+//! @brief Changes the priority of @ref Thread @p t to @p prio
+void threadSetPrio(Thread* t, u8 prio);
 
 /*! @brief Waits for the @ref Thread @p t to finish executing
 	@returns Result code returned by the entrypoint function, or passed to @ref threadExit.
@@ -229,11 +226,10 @@ void threadExit(int rc) MK_NORETURN;
 		@see threadUnblockOneByValue, threadUnblockAllByValue
 	- **By mask**: unblocks threads whose @p token has one or more bits in common with the reference mask (`&` bitwise-and operator)
 		@see threadUnblockOneByMask, threadUnblockAllByMask
-*/
-MK_EXTERN32 void threadBlock(ThrListNode* queue, u32 token);
 
-//! @private
-MK_EXTERN32 void threadUnblock(ThrListNode* queue, int max, ThrUnblockMode mode, u32 ref);
+	@return 0 if threadBlockCancel was called, 1 if the thread was unblocked by value, the matched bits if the thread was unblocked by mask.
+*/
+MK_EXTERN32 u32 threadBlock(ThrListNode* queue, u32 token);
 
 //! @brief Unblocks at most one thread in the @p queue matching the specified @p ref value @see threadBlock
 MK_EXTERN32 void threadUnblockOneByValue(ThrListNode* queue, u32 ref);
@@ -243,6 +239,9 @@ MK_EXTERN32 void threadUnblockOneByMask(ThrListNode* queue, u32 ref);
 MK_EXTERN32 void threadUnblockAllByValue(ThrListNode* queue, u32 ref);
 //! @brief Unblocks all threads in the @p queue matching the specified @p ref mask @see threadBlock
 MK_EXTERN32 void threadUnblockAllByMask(ThrListNode* queue, u32 ref);
+
+//! @brief Removes thread @p t from the specified @p queue
+MK_EXTERN32 void threadBlockCancel(ThrListNode* queue, Thread* t);
 
 //! @}
 
@@ -280,34 +279,10 @@ MK_INLINE void threadTimerStart(TickTask* task, u32 period_hz)
 
 //! @}
 
-//! @private
+//! @brief Returns true if thread @p t is valid
 MK_CONSTEXPR bool threadIsValid(Thread* t)
 {
 	return t->status != ThrStatus_Uninitialized;
-}
-
-//! @private
-MK_CONSTEXPR bool threadIsWaiting(Thread* t)
-{
-	return t->status >= ThrStatus_Waiting;
-}
-
-//! @private
-MK_CONSTEXPR bool threadIsWaitingOnMutex(Thread* t)
-{
-	return t->status == ThrStatus_WaitingOnMutex;
-}
-
-//! @private
-MK_CONSTEXPR bool threadIsRunning(Thread* t)
-{
-	return t->status == ThrStatus_Running;
-}
-
-//! @private
-MK_CONSTEXPR bool threadIsFinished(Thread* t)
-{
-	return t->status == ThrStatus_Finished;
 }
 
 MK_EXTERN_C_END

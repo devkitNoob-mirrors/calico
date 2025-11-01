@@ -19,6 +19,12 @@ extern ThrSchedState __sched_state;
 #define s_irqWaitList2 __sched_state.irqWaitList2
 #endif
 
+typedef enum ThrUnblockMode {
+	ThrUnblockMode_Any,
+	ThrUnblockMode_ByValue,
+	ThrUnblockMode_ByMask,
+} ThrUnblockMode;
+
 MK_INLINE Thread* threadGetInsertPosition(Thread* t)
 {
 	Thread* pos = NULL;
@@ -29,10 +35,12 @@ MK_INLINE Thread* threadGetInsertPosition(Thread* t)
 
 MK_INLINE Thread* threadGetPrevious(Thread* t)
 {
-	Thread* pos = NULL;
-	for (Thread* cur = s_firstThread; cur && cur != t; cur = cur->next)
-		pos = cur;
-	return pos;
+	for (Thread* cur = s_firstThread; cur; cur = cur->next) {
+		if (cur->next == t) {
+			return cur;
+		}
+	}
+	return NULL;
 }
 
 MK_INLINE void threadEnqueue(Thread* t)
@@ -49,26 +57,21 @@ MK_INLINE void threadEnqueue(Thread* t)
 
 MK_INLINE void threadDequeue(Thread* t)
 {
-	Thread* prev = threadGetPrevious(t);
-	if (prev)
-		prev->next = t->next;
-	else
+	if (s_firstThread == t) {
 		s_firstThread = t->next;
+	} else {
+		Thread* prev = threadGetPrevious(t);
+		if (prev) {
+			prev->next = t->next;
+		}
+	}
 }
 
 MK_INLINE Thread* threadFindRunnable(Thread* first)
 {
 	Thread* t;
-	for (t = first; t && !threadIsRunning(t); t = t->next);
+	for (t = first; t && t->status != ThrStatus_Running; t = t->next);
 	return t;
-}
-
-MK_INLINE void threadSwitchTo(Thread* t, ArmIrqState st)
-{
-	if (!armContextSave(&__sched_state.cur->ctx, st, 1)) {
-		s_curThread = t;
-		armContextLoad(&t->ctx);
-	}
 }
 
 MK_INLINE Thread* threadLinkGetInsertPosition(ThrListNode* queue, Thread* t)
@@ -119,4 +122,15 @@ MK_INLINE bool threadTestUnblock(Thread* t, ThrUnblockMode mode, u32 ref)
 	}
 }
 
-//MK_EXTERN32 void _threadReschedule(Thread* t, ArmIrqState st);
+MK_EXTERN32 void threadSwitchTo(Thread* t, ArmIrqState st);
+
+MK_INLINE void threadReschedule(Thread* t, ArmIrqState st)
+{
+	if (t && t->prio < s_curThread->prio) {
+		threadSwitchTo(t, st);
+	} else {
+		armIrqUnlockByPsr(st);
+	}
+}
+
+void threadUpdateDynamicPrio(Thread* t);
