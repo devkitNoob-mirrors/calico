@@ -94,7 +94,7 @@ static NetBuf* _netbufPoolAlloc(_NetBufPool* p, unsigned hdr_headroom_sz, unsign
 
 static void _netbufPoolFree(_NetBufPool* p, NetBuf* nb)
 {
-	NetBufListNode* subpool = (NetBufListNode*)nb->reserved[2];
+	NetBufListNode* subpool = (NetBufListNode*)nb->system[1];
 	if (subpool) {
 		_netbufEnqueue(subpool, nb);
 	}
@@ -108,8 +108,8 @@ static void* _netbufPoolInit(_NetBufPool* p, void* start, const u16* counts)
 			NetBuf* nb = (NetBuf*)start;
 			*nb = (NetBuf){0};
 			nb->capacity = s_netbufListSizes[i];
-			nb->reserved[2] = (uptr)subpool;
-			nb->reserved[3] = (uptr)p;
+			nb->system[0] = (uptr)p;
+			nb->system[1] = (uptr)subpool;
 			start = (u8*)(nb+1) + nb->capacity;
 			_netbufEnqueue(subpool, nb);
 		}
@@ -154,7 +154,7 @@ void netbufFree(NetBuf* nb)
 		return; // NOP
 	}
 
-	_NetBufPool* p = (_NetBufPool*)nb->reserved[3];
+	_NetBufPool* p = (_NetBufPool*)nb->system[0];
 	if (!p) {
 		// Do nothing if this netbuf isn't managed by us
 		return;

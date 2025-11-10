@@ -143,7 +143,7 @@ static int _wlmgrThreadMain(void* arg)
 		NetBuf* pNext;
 		for (; pPacket; pPacket = pNext) {
 			pNext = pPacket->link.next;
-			_wlmgrRssiBufUpdate(pPacket->reserved[0]);
+			_wlmgrRssiBufUpdate(pPacket->user[0]);
 			if (s_wlmgrState.rx_cb) {
 				s_wlmgrState.rx_cb(s_wlmgrState.rx_user, pPacket);
 			} else {

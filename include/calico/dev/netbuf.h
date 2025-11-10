@@ -50,7 +50,8 @@ struct NetBuf {
 	u16 capacity;        //!< Total capacity of the buffer
 	u16 pos;             //!< Start position of the packet data within the buffer
 	u16 len;             //!< Current length of the packet data
-	u32 reserved[4];     //!< @private
+	u32 system[2];       //!< @private
+	u32 user[2];         //!< Free use storage
 };
 
 //! Network packet heap IDs

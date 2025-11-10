@@ -39,7 +39,7 @@ static unsigned _mwlTxQueueWrite(unsigned qid, NetBuf* pPacket)
 	}
 
 	// Ensure packet fits in Wifi RAM
-	if_unlikely ((hdr.mpdu_len - 4) >= s_mwlState.tx_size[qid]) {
+	if_unlikely ((hdr.mpdu_len - 4) > s_mwlState.tx_size[qid]) {
 		return 0;
 	}
 
@@ -97,8 +97,8 @@ MK_NOINLINE static void _mwlTxQueueKick(unsigned qid)
 		if (can_kick) {
 			q->list.next = pPacket->link.next;
 
-			q->cb  = (MwlTxCallback)pPacket->reserved[0];
-			q->arg = (void*)pPacket->reserved[1];
+			q->cb  = (MwlTxCallback)pPacket->user[0];
+			q->arg = (void*)pPacket->user[1];
 
 			unsigned reg = _mwlTxQueueWrite(qid, pPacket);
 			netbufFree(pPacket);
@@ -171,8 +171,8 @@ void _mwlTxQueueClear(unsigned qid)
 	NetBuf* next;
 	for (NetBuf* pPacket = q->list.next; pPacket; pPacket = next) {
 		next = pPacket->link.next;
-		q->cb  = (MwlTxCallback)pPacket->reserved[0];
-		q->arg = (void*)pPacket->reserved[1];
+		q->cb  = (MwlTxCallback)pPacket->user[0];
+		q->arg = (void*)pPacket->user[1];
 		netbufFree(pPacket);
 
 		if (q->cb) {
@@ -188,8 +188,8 @@ void mwlDevTx(unsigned qid, NetBuf* pPacket, MwlTxCallback cb, void* arg)
 {
 	MwlTxQueue* q = &s_mwlState.tx_queues[qid];
 
-	pPacket->reserved[0] = (u32)cb;
-	pPacket->reserved[1] = (u32)arg;
+	pPacket->user[0] = (u32)cb;
+	pPacket->user[1] = (u32)arg;
 
 	mutexLock(&s_mwlState.tx_mutex);
 	netbufQueueAppend(&q->list, pPacket);

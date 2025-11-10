@@ -156,7 +156,7 @@ void _ar6kWmiDataRx(Ar6kDev* dev, Ar6kHtcSrvId srvid, NetBuf* pPacket)
 
 	if (dev->cb_rx) {
 		int rssi = datahdr->rssi;
-		pPacket->reserved[0] = rssi >= 0 ? rssi : 0;
+		pPacket->user[0] = rssi >= 0 ? rssi : 0;
 		dev->cb_rx(dev, pPacket);
 	}
 }

@@ -208,7 +208,7 @@ void _mwlRxEndTask(void)
 			case MwlRxType_IeeeData: {
 				if (dot11hdr->fc.type == WlanFrameType_Data && !(dot11hdr->fc.subtype & WLAN_DATA_IS_NULL) && s_mwlState.status == MwlStatus_Class3) {
 					// Handle data frames in a separate task
-					pPacket->reserved[0] = mwlDecodeRssi(rxhdr.rssi);
+					pPacket->user[0] = mwlDecodeRssi(rxhdr.rssi);
 					netbufQueueAppend(&s_mwlState.rx_data, pPacket);
 					pPacket = NULL;
 					_mwlPushTask(MwlTask_RxDataFrame);
