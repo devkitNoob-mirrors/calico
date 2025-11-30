@@ -36,6 +36,8 @@ MK_INLINE void mailboxPrepare(Mailbox* mb, u32* slots, unsigned num_slots)
 	mb->num_slots = num_slots;
 	mb->cur_slot = 0;
 	mb->pending_slots = 0;
+	mb->send_waiters = 0;
+	mb->recv_waiters = 0;
 }
 
 //! @brief Asynchronously sends a @p message to Mailbox @p mb.
