@@ -160,14 +160,16 @@ static void _ntrcardRecvByDma(u32 romcnt, void* buf, unsigned dma_ch, u32 size)
 
 	REG_DMAxSAD(dma_ch) = (uptr)&REG_NTRCARD_FIFO;
 	REG_DMAxDAD(dma_ch) = (uptr)buf;
-	REG_DMAxCNT_L(dma_ch) = 1;
-	REG_DMAxCNT_H(dma_ch) =
+
+	size_t wordCount = 1;
+	unsigned flags =
 		DMA_MODE_DST(DmaMode_Increment) |
 		DMA_MODE_SRC(DmaMode_Fixed) |
 		DMA_MODE_REPEAT |
 		DMA_UNIT_32 |
 		DMA_TIMING(DmaTiming_Slot1) |
 		DMA_START;
+	_dmaSetDmaCnt(dma_ch, wordCount, flags);
 
 	REG_NTRCARD_ROMCNT = romcnt;
 	_ntrcardIrqWaitIdle();
@@ -193,14 +195,16 @@ static void _ntrcardDummyRecvByDma(u32 romcnt, unsigned dma_ch)
 
 	REG_DMAxSAD(dma_ch) = (uptr)&REG_NTRCARD_FIFO;
 	REG_DMAxDAD(dma_ch) = (uptr)&REG_DMAxFIL(dma_ch);
-	REG_DMAxCNT_L(dma_ch) = 1;
-	REG_DMAxCNT_H(dma_ch) =
+
+	size_t wordCount = 1;
+	unsigned flags =
 		DMA_MODE_DST(DmaMode_Fixed) |
 		DMA_MODE_SRC(DmaMode_Fixed) |
 		DMA_MODE_REPEAT |
 		DMA_UNIT_32 |
 		DMA_TIMING(DmaTiming_Slot1) |
 		DMA_START;
+	_dmaSetDmaCnt(dma_ch, wordCount, flags);
 
 	REG_NTRCARD_ROMCNT = romcnt;
 	_ntrcardIrqWaitIdle();

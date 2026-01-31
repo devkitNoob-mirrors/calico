@@ -22,12 +22,21 @@
 #define REG_DMAxSAD(_x)   MK_REG(u32, IO_DMAxSAD(_x))
 #define REG_DMAxDAD(_x)   MK_REG(u32, IO_DMAxDAD(_x))
 #define REG_DMAxCNT(_x)   MK_REG(u32, IO_DMAxCNT(_x))
+// Helper macros. REG_DMAxCNT_L doesn't make sense for NDS Arm9 as word count field is 21-bit there.
+#if defined(ARM7)
 #define REG_DMAxCNT_L(_x) MK_REG(u16, IO_DMAxCNT(_x)+0)
+#endif
 #define REG_DMAxCNT_H(_x) MK_REG(u16, IO_DMAxCNT(_x)+2)
 #if defined(IO_DMAxFIL)
 #define REG_DMAxFIL(_x)   MK_REG(u32, IO_DMAxFIL(_x))
 #else
 #define REG_DMAxFIL(_x)   __dma_fill[(_x)]
+#endif
+
+#if defined(__NDS__) && defined(ARM9)
+#define DMA_WCOUNT_MASK   0x1fffffu // 21 bits
+#else
+#define DMA_WCOUNT_MASK   0x00ffffu // 16 bits
 #endif
 
 #define DMA_MODE_DST(_x) (((_x)&3)<<5)
@@ -103,6 +112,12 @@ MK_INLINE void dmaBusyWait(unsigned id)
 	while (dmaIsBusy(id));
 }
 
+//! @private
+MK_INLINE void _dmaSetDmaCnt(unsigned id, size_t wordCount, unsigned flags)
+{
+	REG_DMAxCNT(id) = ((flags << 16) & ~DMA_WCOUNT_MASK) | (wordCount & DMA_WCOUNT_MASK);
+}
+
 /*! @brief Starts a 32-bit immediate DMA transfer on channel @p id
 	@param[out] dst Destination address
 	@param[in] src Source address
@@ -112,13 +127,16 @@ MK_INLINE void dmaStartCopy32(unsigned id, void* dst, const void* src, size_t si
 {
 	REG_DMAxSAD(id) = (u32)src;
 	REG_DMAxDAD(id) = (u32)dst;
-	REG_DMAxCNT_L(id) = size/4;
-	REG_DMAxCNT_H(id) =
+
+	size_t wordCount = size/4;
+	unsigned flags =
 		DMA_MODE_DST(DmaMode_Increment) |
 		DMA_MODE_SRC(DmaMode_Increment) |
 		DMA_UNIT_32 |
 		DMA_TIMING(DmaTiming_Immediate) |
 		DMA_START;
+
+	_dmaSetDmaCnt(id, wordCount, flags);
 }
 
 /*! @brief Starts a 16-bit immediate DMA transfer on channel @p id
@@ -130,13 +148,16 @@ MK_INLINE void dmaStartCopy16(unsigned id, void* dst, const void* src, size_t si
 {
 	REG_DMAxSAD(id) = (u32)src;
 	REG_DMAxDAD(id) = (u32)dst;
-	REG_DMAxCNT_L(id) = size/2;
-	REG_DMAxCNT_H(id) =
+
+	size_t wordCount = size/2;
+	unsigned flags =
 		DMA_MODE_DST(DmaMode_Increment) |
 		DMA_MODE_SRC(DmaMode_Increment) |
 		DMA_UNIT_16 |
 		DMA_TIMING(DmaTiming_Immediate) |
 		DMA_START;
+
+	_dmaSetDmaCnt(id, wordCount, flags);
 }
 
 /*! @brief Starts a 32-bit immediate DMA fill on channel @p id
@@ -149,13 +170,16 @@ MK_INLINE void dmaStartFill32(unsigned id, void* dst, u32 value, size_t size)
 	REG_DMAxFIL(id) = value;
 	REG_DMAxSAD(id) = (u32)&REG_DMAxFIL(id);
 	REG_DMAxDAD(id) = (u32)dst;
-	REG_DMAxCNT_L(id) = size/4;
-	REG_DMAxCNT_H(id) =
+
+	size_t wordCount = size/4;
+	unsigned flags =
 		DMA_MODE_DST(DmaMode_Increment) |
 		DMA_MODE_SRC(DmaMode_Fixed) |
 		DMA_UNIT_32 |
 		DMA_TIMING(DmaTiming_Immediate) |
 		DMA_START;
+
+	_dmaSetDmaCnt(id, wordCount, flags);
 }
 
 /*! @brief Starts a 16-bit immediate DMA fill on channel @p id
@@ -168,13 +192,16 @@ MK_INLINE void dmaStartFill16(unsigned id, void* dst, u16 value, size_t size)
 	REG_DMAxFIL(id) = value;
 	REG_DMAxSAD(id) = (u32)&REG_DMAxFIL(id);
 	REG_DMAxDAD(id) = (u32)dst;
-	REG_DMAxCNT_L(id) = size/2;
-	REG_DMAxCNT_H(id) =
+
+	size_t wordCount = size/2;
+	unsigned flags =
 		DMA_MODE_DST(DmaMode_Increment) |
 		DMA_MODE_SRC(DmaMode_Fixed) |
 		DMA_UNIT_16 |
 		DMA_TIMING(DmaTiming_Immediate) |
 		DMA_START;
+
+	_dmaSetDmaCnt(id, wordCount, flags);
 }
 
 MK_EXTERN_C_END
