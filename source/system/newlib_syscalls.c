@@ -75,6 +75,11 @@ void __SYSCALL(lock_acquire)(_LOCK_T* lock)
 	mutexLock((Mutex*)lock);
 }
 
+int __SYSCALL(lock_try_acquire)(_LOCK_T* lock)
+{
+	return mutexTryLock((Mutex*)lock) ? 0 : 1;
+}
+
 void __SYSCALL(lock_release)(_LOCK_T* lock)
 {
 	mutexUnlock((Mutex*)lock);
@@ -88,6 +93,11 @@ void __SYSCALL(lock_init_recursive)(_LOCK_RECURSIVE_T* lock)
 void __SYSCALL(lock_acquire_recursive)(_LOCK_RECURSIVE_T* lock)
 {
 	rmutexLock((RMutex*)lock);
+}
+
+int __SYSCALL(lock_try_acquire_recursive)(_LOCK_RECURSIVE_T* lock)
+{
+	return rmutexTryLock((RMutex*)lock) ? 0 : 1;
 }
 
 void __SYSCALL(lock_release_recursive)(_LOCK_RECURSIVE_T* lock)
