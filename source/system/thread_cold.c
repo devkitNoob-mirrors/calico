@@ -163,20 +163,26 @@ void threadAttachLocalStorage(Thread* t, void* storage)
 
 void threadStart(Thread* t)
 {
+	Thread* self = s_curThread;
 	ArmIrqState st = armIrqLockByPsr();
 
-	if (!t->pause || (--t->pause)) {
+	if (!t->pause || (--t->pause) || t->queue) {
 		armIrqUnlockByPsr(st);
 		return;
 	}
 
-	if (!t->queue) {
-		t->status = ThrStatus_Running;
+	t->status = ThrStatus_Running;
+
+	if (t != self) {
 		threadReschedule(t, st);
 	} else {
+		// We are assuming 1) we are in IRQ mode, 2) threadPause(self) was called before, and thus 3) s_deferredThread != NULL
+		if (t->prio < s_deferredThread->prio) {
+			s_deferredThread = NULL;
+		}
+
 		armIrqUnlockByPsr(st);
 	}
-
 }
 
 void threadPause(Thread* t)
@@ -192,10 +198,18 @@ void threadPause(Thread* t)
 	t->status = ThrStatus_Waiting;
 	t->queue = NULL;
 
-	if (self == t) {
-		Thread* next = threadFindRunnable(s_firstThread);
+	Thread* next = NULL;
+	if (t == self || t == s_deferredThread) {
+		next = threadFindRunnable(s_firstThread);
+	}
+
+	if (t == self) {
 		threadSwitchTo(next, st);
 	} else {
+		if (t == s_deferredThread) {
+			s_deferredThread = next != self ? next : NULL;
+		}
+
 		armIrqUnlockByPsr(st);
 	}
 }
@@ -241,7 +255,7 @@ void threadYield(void)
 	ArmIrqState st = armIrqLockByPsr();
 
 	Thread* t = threadFindRunnable(self->next);
-	if (t->prio > self->prio)
+	if (!t || t->prio > self->prio)
 		t = threadFindRunnable(s_firstThread);
 
 	if (t != self)
